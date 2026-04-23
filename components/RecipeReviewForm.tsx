@@ -14,27 +14,51 @@ interface Props {
   onDiscard: () => void;
 }
 
+// Avoid floating-point noise when scaling amounts
+function scaleAmount(amount: number, factor: number): string {
+  const result = amount * factor;
+  return String(parseFloat(result.toPrecision(6)));
+}
+
 export default function RecipeReviewForm({ initial, saving, error, onSave, onDiscard }: Props) {
+  // Used only to initialise ingredient display amounts — not reactive
+  const initServings = initial.servings > 0 ? initial.servings : 1;
+
   const [title, setTitle] = useState(initial.title);
-  const [servings, setServings] = useState(String(initial.servings));
+  // Show empty string when servings is 0 so the field prompts for input
+  const [servings, setServings] = useState(initial.servings > 0 ? String(initial.servings) : "");
   const [prepTime, setPrepTime] = useState(String(initial.prepTime));
   const [cookTime, setCookTime] = useState(String(initial.cookTime));
+  // Ingredients are initialised as total amounts (per-serving × servings)
   const [ingredients, setIngredients] = useState<DraftIngredient[]>(
-    initial.ingredients.map((i) => ({ amount: String(i.amount), unit: i.unit, name: i.name }))
+    initial.ingredients.map((i) => ({
+      amount: scaleAmount(i.amount, initServings),
+      unit: i.unit,
+      name: i.name,
+    }))
   );
   const [steps, setSteps] = useState<DraftStep[]>(
     initial.steps.map((s) => ({ text: s.text, timerSeconds: s.timerSeconds }))
   );
   const [tagsInput, setTagsInput] = useState(initial.tags.join(", "));
 
+  const currentServings = parseInt(servings);
+  const showServingsWarning = isNaN(currentServings) || currentServings <= 0;
+
   function handleSave() {
+    const sv = currentServings > 0 ? currentServings : 1;
     onSave({
       title: title.trim(),
-      servings: parseInt(servings) || 0,
+      servings: sv,
       prepTime: parseInt(prepTime) || 0,
       cookTime: parseInt(cookTime) || 0,
+      // User edited total amounts → divide back to per-serving before saving
       ingredients: ingredients
-        .map((i) => ({ amount: parseFloat(i.amount) || 0, unit: i.unit, name: i.name }))
+        .map((i) => ({
+          amount: (parseFloat(i.amount) || 0) / sv,
+          unit: i.unit,
+          name: i.name,
+        }))
         .filter((i) => i.name.trim() !== ""),
       steps: steps
         .filter((s) => s.text.trim() !== "")
@@ -76,8 +100,21 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Meta row */}
       <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="block text-xs text-ink-tertiary mb-1.5">
+            Portionen{showServingsWarning && <span className="text-amber-600 ml-0.5">*</span>}
+          </label>
+          <input
+            type="number"
+            value={servings}
+            onChange={(e) => setServings(e.target.value)}
+            min={1}
+            placeholder="z.B. 4"
+            disabled={saving}
+            className={`${smallFieldCls} ${showServingsWarning ? "border-amber-400 bg-amber-50/50" : ""}`}
+          />
+        </div>
         {[
-          { label: "Portionen", value: servings, set: setServings },
           { label: "Vorbereitung (Min.)", value: prepTime, set: setPrepTime },
           { label: "Kochen (Min.)", value: cookTime, set: setCookTime },
         ].map(({ label, value, set }) => (
@@ -90,11 +127,24 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Ingredients */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-2">Zutaten</label>
+        <div className="flex items-baseline justify-between mb-2">
+          <label className="text-xs text-ink-tertiary">
+            Zutaten für{" "}
+            <span className={`font-medium ${showServingsWarning ? "text-amber-600" : "text-ink-primary"}`}>
+              {showServingsWarning ? "?" : currentServings}
+            </span>{" "}
+            Portionen
+          </label>
+        </div>
+        {showServingsWarning && (
+          <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 mb-3">
+            Die Portionsangabe fehlt. Bitte ergänze sie oben, damit die Mengen korrekt skaliert werden können.
+          </p>
+        )}
         <div className="flex flex-col gap-2">
           {ingredients.map((ing, idx) => (
             <div key={idx} className="flex gap-2 items-center">
-              <input type="number" value={ing.amount} onChange={(e) => updateIngredient(idx, "amount", e.target.value)} placeholder="Menge" min={0} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+              <input type="number" value={ing.amount} onChange={(e) => updateIngredient(idx, "amount", e.target.value)} placeholder="Menge" min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
               <input type="text" value={ing.unit} onChange={(e) => updateIngredient(idx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
               <input type="text" value={ing.name} onChange={(e) => updateIngredient(idx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
               <button type="button" onClick={() => removeIngredient(idx)} disabled={saving} className={removeBtnCls}>×</button>

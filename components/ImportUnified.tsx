@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
+import ImportProgress from "@/components/ImportProgress";
 
 type Phase = "input" | "loading" | "review" | "success";
 type ImportType = "url" | "youtube" | "photo";
@@ -71,11 +72,6 @@ async function compressImage(file: File): Promise<File> {
   });
 }
 
-const LOADING_HINT: Record<ImportType, string> = {
-  url: "Seite wird geladen und analysiert…",
-  youtube: "Transkript wird abgerufen — das kann etwas dauern…",
-  photo: "Claude liest das Rezeptfoto…",
-};
 
 export default function ImportUnified() {
   const router = useRouter();
@@ -205,6 +201,14 @@ export default function ImportUnified() {
     setPhase("input");
   }
 
+  if (phase === "loading" && activeType) {
+    return (
+      <div className="py-4">
+        <ImportProgress importType={activeType} />
+      </div>
+    );
+  }
+
   if (phase === "success") {
     return (
       <div className="flex flex-col gap-4 py-2">
@@ -302,9 +306,6 @@ export default function ImportUnified() {
         {phase === "loading" ? "Wird analysiert…" : "Rezept importieren"}
       </button>
 
-      {phase === "loading" && activeType && (
-        <p className="text-xs text-ink-tertiary">{LOADING_HINT[activeType]}</p>
-      )}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
         <p className="text-xs text-ink-tertiary text-center">

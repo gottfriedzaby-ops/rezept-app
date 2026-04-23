@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { ParsedRecipe, Recipe } from "@/types/recipe";
+import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
 export const dynamic = "force-dynamic";
 
@@ -19,15 +20,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "recipe is required" }, { status: 400 });
     }
 
-    const { data: existing } = await supabaseAdmin
-      .from("recipes")
-      .select("id")
-      .eq("source_value", recipe.source.value)
-      .maybeSingle();
-
-    if (existing) {
+    const duplicate = await findDuplicateRecipe(recipe.title, recipe.source.value);
+    if (duplicate) {
       return NextResponse.json(
-        { data: null, error: "Ein Rezept aus dieser Quelle existiert bereits" },
+        { data: null, error: "duplicate", ...duplicate },
         { status: 409 }
       );
     }

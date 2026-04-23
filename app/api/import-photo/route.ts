@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import heicConvert from "heic-convert";
 import { parseRecipeFromImage, reviewAndImproveRecipe } from "@/lib/claude";
 import { supabaseAdmin } from "@/lib/supabase";
+import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -90,6 +91,14 @@ export async function POST(request: NextRequest) {
 
     const reviewed = await reviewAndImproveRecipe(parsed);
     console.log("[import-photo] review complete, returning response");
+
+    const duplicate = await findDuplicateRecipe(reviewed.title, fileName);
+    if (duplicate) {
+      return NextResponse.json(
+        { data: null, error: "duplicate", ...duplicate },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: fileName, imageUrl },

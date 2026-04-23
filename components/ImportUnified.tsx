@@ -16,11 +16,18 @@ interface ParseResult {
   imageUrl?: string | null;
 }
 
+interface ImportApiResponse {
+  data: ParseResult | null;
+  error: string | null;
+  existingRecipeId?: string;
+  existingTitle?: string;
+}
+
 const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
 const URL_RE = /^https?:\/\//i;
 const MAX_SIDE = 1920;
 
-async function safeParseJson(res: Response): Promise<{ data: ParseResult | null; error: string | null }> {
+async function safeParseJson(res: Response): Promise<ImportApiResponse> {
   const ct = res.headers.get("content-type") ?? "";
   if (!ct.includes("application/json")) {
     const body = await res.text().catch(() => "");
@@ -86,6 +93,8 @@ export default function ImportUnified() {
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicateId, setDuplicateId] = useState<string | null>(null);
+  const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
 
   const inputType = detectType(urlInput, file);
   const canSubmit = inputType !== null && phase !== "loading";
@@ -121,6 +130,8 @@ export default function ImportUnified() {
     setPhase("loading");
     setActiveType(inputType);
     setError(null);
+    setDuplicateId(null);
+    setDuplicateTitle(null);
 
     try {
       let json: { data: ParseResult | null; error: string | null };
@@ -142,7 +153,11 @@ export default function ImportUnified() {
         json = await safeParseJson(res);
       }
 
-      if (json.error || !json.data) {
+      if (json.error === "duplicate" && json.existingRecipeId) {
+        setDuplicateId(json.existingRecipeId);
+        setDuplicateTitle(json.existingTitle ?? null);
+        setPhase("input");
+      } else if (json.error || !json.data) {
         setError(json.error ?? "Import fehlgeschlagen");
         setPhase("input");
       } else {
@@ -173,7 +188,12 @@ export default function ImportUnified() {
       });
       const json = (await res.json()) as { data: unknown; error: string | null };
 
-      if (json.error) {
+      if (json.error === "duplicate" && json.existingRecipeId) {
+        setDuplicateId(json.existingRecipeId);
+        setDuplicateTitle(json.existingTitle ?? null);
+        setPhase("input");
+        setParseResult(null);
+      } else if (json.error) {
         setError(json.error);
       } else {
         setPhase("success");
@@ -189,6 +209,8 @@ export default function ImportUnified() {
   function handleDiscard() {
     setParseResult(null);
     setError(null);
+    setDuplicateId(null);
+    setDuplicateTitle(null);
     setPhase("input");
   }
 
@@ -197,6 +219,8 @@ export default function ImportUnified() {
     clearFile();
     setParseResult(null);
     setError(null);
+    setDuplicateId(null);
+    setDuplicateTitle(null);
     setActiveType(null);
     setPhase("input");
   }
@@ -306,6 +330,17 @@ export default function ImportUnified() {
         {phase === "loading" ? "Wird analysiert…" : "Rezept importieren"}
       </button>
 
+      {duplicateId && (
+        <p className="text-sm text-ink-secondary">
+          Dieses Rezept existiert bereits:{" "}
+          <a
+            href={`/${duplicateId}`}
+            className="text-forest underline hover:text-forest-deep transition-colors"
+          >
+            {duplicateTitle ?? "Zum Rezept"}
+          </a>
+        </p>
+      )}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
         <p className="text-xs text-ink-tertiary text-center">

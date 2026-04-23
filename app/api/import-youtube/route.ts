@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
+import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -78,6 +79,14 @@ export async function POST(request: NextRequest) {
 
     const parsed = await parseRecipeFromText(combined, "youtube", videoId);
     const reviewed = await reviewAndImproveRecipe(parsed);
+
+    const duplicate = await findDuplicateRecipe(reviewed.title, videoId);
+    if (duplicate) {
+      return NextResponse.json(
+        { data: null, error: "duplicate", ...duplicate },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: channelName, imageUrl },

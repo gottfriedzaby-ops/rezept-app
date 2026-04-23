@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
+import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -126,6 +127,14 @@ export async function POST(request: NextRequest) {
 
     const parsed = await parseRecipeFromText(text, "url", url);
     const reviewed = await reviewAndImproveRecipe(parsed);
+
+    const duplicate = await findDuplicateRecipe(reviewed.title, url);
+    if (duplicate) {
+      return NextResponse.json(
+        { data: null, error: "duplicate", ...duplicate },
+        { status: 409 }
+      );
+    }
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: pageTitle || reviewed.title, stepImages, imageUrl },

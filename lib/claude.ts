@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedRecipe, SourceType } from "@/types/recipe";
+import { normalizeTags } from "@/lib/tags";
 
 const client = new Anthropic();
 
@@ -21,6 +22,7 @@ const RULES = `
 - Store each ingredient's amount per 1 serving: divide the total amount by the recipe's serving count (e.g. recipe serves 4, needs 400 g flour → store amount as 100)
 - timerSeconds: null if the step has no specific time, otherwise the duration in seconds
 - If a numeric field is unknown use 0; infer tags from ingredients and title
+- tags: always lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never capitalised
 `.trim();
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -63,7 +65,8 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
   const improved = JSON.parse(extractJson(block.text)) as ParsedRecipe;
-  improved.source = recipe.source; // never let the review pass overwrite the source
+  improved.source = recipe.source;
+  improved.tags = normalizeTags(improved.tags);
   return improved;
 }
 
@@ -95,7 +98,9 @@ export async function parseRecipeFromImage(
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  return JSON.parse(extractJson(block.text)) as ParsedRecipe;
+  const parsed = JSON.parse(extractJson(block.text)) as ParsedRecipe;
+  parsed.tags = normalizeTags(parsed.tags);
+  return parsed;
 }
 
 export async function parseRecipeFromText(
@@ -117,5 +122,7 @@ export async function parseRecipeFromText(
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  return JSON.parse(extractJson(block.text)) as ParsedRecipe;
+  const parsed = JSON.parse(extractJson(block.text)) as ParsedRecipe;
+  parsed.tags = normalizeTags(parsed.tags);
+  return parsed;
 }

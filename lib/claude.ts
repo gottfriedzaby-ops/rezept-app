@@ -49,7 +49,7 @@ Review checklist:
 export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<ParsedRecipe> {
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2048,
+    max_tokens: 4096,
     system: REVIEW_SYSTEM,
     messages: [
       {
@@ -74,7 +74,7 @@ export async function parseRecipeFromImage(
 ): Promise<ParsedRecipe> {
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [
       {
         role: "user",
@@ -105,7 +105,7 @@ export async function parseRecipeFromText(
 ): Promise<ParsedRecipe> {
   const message = await client.messages.create({
     model: "claude-sonnet-4-6",
-    max_tokens: 2048,
+    max_tokens: 4096,
     messages: [
       {
         role: "user",

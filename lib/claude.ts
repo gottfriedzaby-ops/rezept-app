@@ -25,6 +25,7 @@ const RULES = `
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
+
 const REVIEW_SYSTEM = `
 You are a professional recipe editor. You will receive a parsed recipe as JSON and must review and improve it.
 Return ONLY the improved recipe as valid JSON in the exact same schema — no markdown fences, no extra text.
@@ -48,14 +49,14 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
         role: "user",
         content: `Review and improve this recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRecipe to review:\n${JSON.stringify(recipe, null, 2)}`,
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  const raw = block.text.trim().replace(/^```json\s*|```\s*$/g, "");
-  const improved = JSON.parse(raw) as ParsedRecipe;
+  const improved = JSON.parse("{" + block.text.trim().replace(/```\s*$/g, "")) as ParsedRecipe;
   improved.source = recipe.source; // never let the review pass overwrite the source
   return improved;
 }
@@ -82,14 +83,14 @@ export async function parseRecipeFromImage(
           },
         ],
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  const raw = block.text.trim().replace(/^```json\s*|```\s*$/g, "");
-  return JSON.parse(raw) as ParsedRecipe;
+  return JSON.parse("{" + block.text.trim().replace(/```\s*$/g, "")) as ParsedRecipe;
 }
 
 export async function parseRecipeFromText(
@@ -105,12 +106,12 @@ export async function parseRecipeFromText(
         role: "user",
         content: `Extract the recipe from the following text and return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "${sourceType}", source.value must be "${sourceValue}"\n\nText:\n${text.slice(0, 15000)}`,
       },
+      { role: "assistant", content: "{" },
     ],
   });
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  const raw = block.text.trim().replace(/^```json\s*|```\s*$/g, "");
-  return JSON.parse(raw) as ParsedRecipe;
+  return JSON.parse("{" + block.text.trim().replace(/```\s*$/g, "")) as ParsedRecipe;
 }

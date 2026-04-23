@@ -1,0 +1,326 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import type { ParsedRecipe } from "@/types/recipe";
+import RecipeReviewForm from "@/components/RecipeReviewForm";
+
+type Phase = "input" | "loading" | "review" | "success";
+type ImportType = "url" | "youtube" | "photo";
+
+interface ParseResult {
+  recipe: ParsedRecipe;
+  sourceTitle: string;
+  stepImages?: string[];
+}
+
+const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
+const URL_RE = /^https?:\/\//i;
+const MAX_SIDE = 1920;
+
+function detectType(url: string, file: File | null): ImportType | null {
+  if (file) return "photo";
+  const t = url.trim();
+  if (YOUTUBE_RE.test(t)) return "youtube";
+  if (URL_RE.test(t)) return "url";
+  return null;
+}
+
+async function compressImage(file: File): Promise<File> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      let { width, height } = img;
+      if (width > MAX_SIDE || height > MAX_SIDE) {
+        if (width >= height) { height = Math.round(height * (MAX_SIDE / width)); width = MAX_SIDE; }
+        else { width = Math.round(width * (MAX_SIDE / height)); height = MAX_SIDE; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { reject(new Error("Canvas nicht verfügbar")); return; }
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => {
+          if (!blob) { reject(new Error("Komprimierung fehlgeschlagen")); return; }
+          resolve(new File([blob], file.name, { type: "image/jpeg" }));
+        },
+        "image/jpeg",
+        0.85
+      );
+    };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Bild konnte nicht geladen werden")); };
+    img.src = objectUrl;
+  });
+}
+
+const LOADING_HINT: Record<ImportType, string> = {
+  url: "Seite wird geladen und analysiert…",
+  youtube: "Transkript wird abgerufen und verarbeitet — das kann etwas dauern…",
+  photo: "Claude liest das Rezeptfoto — das kann einige Sekunden dauern…",
+};
+
+export default function ImportUnified() {
+  const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [urlInput, setUrlInput] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [phase, setPhase] = useState<Phase>("input");
+  const [activeType, setActiveType] = useState<ImportType | null>(null);
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const inputType = detectType(urlInput, file);
+  const canSubmit = inputType !== null && phase !== "loading";
+
+  function applyFile(f: File) {
+    setFile(f);
+    setUrlInput("");
+    setError(null);
+    const reader = new FileReader();
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
+    reader.readAsDataURL(f);
+  }
+
+  function clearFile() {
+    setFile(null);
+    setPreview(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(true);
+  }
+
+  function handleDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setIsDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f?.type.startsWith("image/")) applyFile(f);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!inputType) return;
+
+    setPhase("loading");
+    setActiveType(inputType);
+    setError(null);
+
+    try {
+      let json: { data: ParseResult | null; error: string | null };
+
+      if (inputType === "photo" && file) {
+        let fileToUpload = file;
+        try { fileToUpload = await compressImage(file); } catch { /* use original */ }
+        const formData = new FormData();
+        formData.append("photo", fileToUpload);
+        const res = await fetch("/api/import-photo", { method: "POST", body: formData });
+        json = await res.json();
+      } else {
+        const endpoint = inputType === "youtube" ? "/api/import-youtube" : "/api/import-url";
+        const res = await fetch(endpoint, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: urlInput.trim() }),
+        });
+        json = await res.json();
+      }
+
+      if (json.error || !json.data) {
+        setError(json.error ?? "Import fehlgeschlagen");
+        setPhase("input");
+      } else {
+        setParseResult(json.data);
+        setPhase("review");
+      }
+    } catch {
+      setError("Netzwerkfehler. Bitte erneut versuchen.");
+      setPhase("input");
+    }
+  }
+
+  async function handleSave(recipe: ParsedRecipe) {
+    if (!parseResult) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/recipes/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          recipe,
+          sourceTitle: parseResult.sourceTitle,
+          stepImages: parseResult.stepImages ?? [],
+        }),
+      });
+      const json = (await res.json()) as { data: unknown; error: string | null };
+
+      if (json.error) {
+        setError(json.error);
+      } else {
+        setPhase("success");
+        router.refresh();
+      }
+    } catch {
+      setError("Netzwerkfehler. Bitte erneut versuchen.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function handleDiscard() {
+    setParseResult(null);
+    setError(null);
+    setPhase("input");
+  }
+
+  function handleReset() {
+    setUrlInput("");
+    clearFile();
+    setParseResult(null);
+    setError(null);
+    setActiveType(null);
+    setPhase("input");
+  }
+
+  if (phase === "success") {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-green-600">Rezept erfolgreich gespeichert!</p>
+        <button
+          type="button"
+          onClick={handleReset}
+          className="self-start text-xs text-blue-600 hover:underline"
+        >
+          Weiteres Rezept importieren
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === "review" && parseResult) {
+    return (
+      <div className="flex flex-col gap-4">
+        {preview && (
+          <img
+            src={preview}
+            alt="Vorschau"
+            className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
+          />
+        )}
+        <RecipeReviewForm
+          initial={parseResult.recipe}
+          saving={saving}
+          error={error}
+          onSave={handleSave}
+          onDiscard={handleDiscard}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`flex flex-col gap-3 max-w-xl rounded-xl p-1 transition-colors ${
+        isDragging ? "outline outline-2 outline-blue-400 bg-blue-50" : ""
+      }`}
+    >
+      {/* URL input — hidden when a file is active */}
+      {!file && (
+        <input
+          type="text"
+          value={urlInput}
+          onChange={(e) => { setUrlInput(e.target.value); setError(null); }}
+          placeholder="Website oder YouTube-Link einfügen…"
+          disabled={phase === "loading"}
+          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+        />
+      )}
+
+      {/* File area */}
+      {file && preview ? (
+        <div className="relative">
+          <img
+            src={preview}
+            alt="Vorschau"
+            className="w-full max-h-48 object-contain rounded-lg bg-gray-100"
+          />
+          <button
+            type="button"
+            onClick={clearFile}
+            disabled={phase === "loading"}
+            className="absolute top-2 right-2 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-gray-500 hover:text-red-500 text-base leading-none disabled:opacity-40"
+          >
+            ×
+          </button>
+          <p className="text-xs text-gray-500 truncate mt-1.5">📎 {file.name}</p>
+        </div>
+      ) : (
+        <div>
+          <div className="flex items-center gap-2 my-1">
+            <div className="flex-1 h-px bg-gray-200" />
+            <span className="text-xs text-gray-400">oder</span>
+            <div className="flex-1 h-px bg-gray-200" />
+          </div>
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={phase === "loading"}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+          >
+            <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+            </svg>
+            Foto hochladen
+          </button>
+        </div>
+      )}
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+        onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }}
+        className="sr-only"
+      />
+
+      <button
+        type="submit"
+        disabled={!canSubmit}
+        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {phase === "loading" ? "Wird analysiert…" : "Rezept importieren"}
+      </button>
+
+      {phase === "loading" && activeType && (
+        <p className="text-xs text-gray-400">{LOADING_HINT[activeType]}</p>
+      )}
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      {phase !== "loading" && (
+        <p className="text-xs text-gray-400 text-center">
+          Website, YouTube-Link oder Foto eines Rezepts
+        </p>
+      )}
+    </form>
+  );
+}

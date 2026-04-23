@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
-import { parseRecipeFromText } from "@/lib/claude";
+import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 const VIDEO_ID_RE =
   /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
@@ -61,9 +64,10 @@ export async function POST(request: NextRequest) {
       .join("\n\n");
 
     const parsed = await parseRecipeFromText(combined, "youtube", videoId);
+    const reviewed = await reviewAndImproveRecipe(parsed);
 
     return NextResponse.json({
-      data: { recipe: parsed, sourceTitle: channelName },
+      data: { recipe: reviewed, sourceTitle: channelName },
       error: null,
     });
   } catch (error) {

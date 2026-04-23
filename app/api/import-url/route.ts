@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
-import { parseRecipeFromText } from "@/lib/claude";
+import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string): string[] {
   const images: string[] = [];
@@ -80,9 +83,10 @@ export async function POST(request: NextRequest) {
     const text = $("body").text().replace(/\s+/g, " ").trim();
 
     const parsed = await parseRecipeFromText(text, "url", url);
+    const reviewed = await reviewAndImproveRecipe(parsed);
 
     return NextResponse.json({
-      data: { recipe: parsed, sourceTitle: pageTitle || parsed.title, stepImages },
+      data: { recipe: reviewed, sourceTitle: pageTitle || reviewed.title, stepImages },
       error: null,
     });
   } catch (error) {

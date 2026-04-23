@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import heicConvert from "heic-convert";
-import { parseRecipeFromImage } from "@/lib/claude";
+import { parseRecipeFromImage, reviewAndImproveRecipe } from "@/lib/claude";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -50,9 +50,10 @@ export async function POST(request: NextRequest) {
 
     const base64 = buffer.toString("base64");
     const parsed = await parseRecipeFromImage(base64, finalMediaType, fileName);
+    const reviewed = await reviewAndImproveRecipe(parsed);
 
     return NextResponse.json({
-      data: { recipe: parsed, sourceTitle: fileName },
+      data: { recipe: reviewed, sourceTitle: fileName },
       error: null,
     });
   } catch (error) {

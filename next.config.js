@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ["heic-convert"],
+  experimental: {
+    serverComponentsExternalPackages: ["heic-convert"],
+  },
 };
 
 module.exports = nextConfig;

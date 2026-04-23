@@ -2,7 +2,15 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import type { Recipe } from "@/types/recipe";
+import type { ParsedRecipe } from "@/types/recipe";
+import RecipeReviewForm from "@/components/RecipeReviewForm";
+
+type Phase = "input" | "loading" | "review" | "success";
+
+interface ParseResult {
+  recipe: ParsedRecipe;
+  sourceTitle: string;
+}
 
 const MAX_SIDE = 1920;
 
@@ -47,15 +55,15 @@ export default function ImportPhoto() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<Phase>("input");
+  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files?.[0] ?? null;
     setFile(selected);
     setError(null);
-    setSuccess(false);
 
     if (!selected) { setPreview(null); return; }
 
@@ -68,45 +76,114 @@ export default function ImportPhoto() {
     e.preventDefault();
     if (!file) return;
 
-    setLoading(true);
+    setPhase("loading");
     setError(null);
-    setSuccess(false);
 
     try {
       let fileToUpload: File = file;
       try { fileToUpload = await compressImage(file); } catch { /* use original on compression error */ }
+
       const formData = new FormData();
       formData.append("photo", fileToUpload);
 
       const res = await fetch("/api/import-photo", { method: "POST", body: formData });
-      const json = (await res.json()) as { data: Recipe | null; error: string | null };
+      const json = (await res.json()) as { data: ParseResult | null; error: string | null };
+
+      if (json.error || !json.data) {
+        setError(json.error ?? "Import fehlgeschlagen");
+        setPhase("input");
+      } else {
+        setParseResult(json.data);
+        setPhase("review");
+      }
+    } catch {
+      setError("Netzwerkfehler. Bitte erneut versuchen.");
+      setPhase("input");
+    }
+  }
+
+  async function handleSave(recipe: ParsedRecipe) {
+    if (!parseResult) return;
+    setSaving(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/recipes/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipe, sourceTitle: parseResult.sourceTitle }),
+      });
+      const json = (await res.json()) as { data: unknown; error: string | null };
 
       if (json.error) {
         setError(json.error);
       } else {
-        setSuccess(true);
-        setFile(null);
-        setPreview(null);
-        if (inputRef.current) inputRef.current.value = "";
+        setPhase("success");
         router.refresh();
       }
     } catch {
       setError("Netzwerkfehler. Bitte erneut versuchen.");
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
+  }
+
+  function handleDiscard() {
+    setParseResult(null);
+    setError(null);
+    setPhase("input");
+  }
+
+  if (phase === "success") {
+    return (
+      <div className="flex flex-col gap-3">
+        <p className="text-sm text-green-600">Rezept erfolgreich gespeichert!</p>
+        <button
+          type="button"
+          onClick={() => {
+            setFile(null);
+            setPreview(null);
+            setPhase("input");
+            if (inputRef.current) inputRef.current.value = "";
+          }}
+          className="self-start text-xs text-purple-600 hover:underline"
+        >
+          Weiteres Foto importieren
+        </button>
+      </div>
+    );
+  }
+
+  if (phase === "review" && parseResult) {
+    return (
+      <div className="flex flex-col gap-4">
+        {preview && (
+          <img
+            src={preview}
+            alt="Vorschau"
+            className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
+          />
+        )}
+        <RecipeReviewForm
+          initial={parseResult.recipe}
+          saving={saving}
+          error={error}
+          onSave={handleSave}
+          onDiscard={handleDiscard}
+        />
+      </div>
+    );
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 max-w-xl">
-      {/* Drop zone */}
       <div
         role="button"
         tabIndex={0}
-        onClick={() => !loading && inputRef.current?.click()}
-        onKeyDown={(e) => e.key === "Enter" && !loading && inputRef.current?.click()}
+        onClick={() => phase !== "loading" && inputRef.current?.click()}
+        onKeyDown={(e) => e.key === "Enter" && phase !== "loading" && inputRef.current?.click()}
         className={`border-2 border-dashed rounded-lg overflow-hidden transition-colors ${
-          loading
+          phase === "loading"
             ? "opacity-50 cursor-not-allowed border-gray-200"
             : "cursor-pointer hover:border-purple-400 " +
               (preview ? "border-gray-300" : "border-gray-200")
@@ -144,30 +221,29 @@ export default function ImportPhoto() {
           type="file"
           accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
           onChange={handleFileChange}
-          disabled={loading}
+          disabled={phase === "loading"}
           className="sr-only"
         />
       </div>
 
-      {file && !success && (
+      {file && (
         <p className="text-xs text-gray-500 truncate">📎 {file.name}</p>
       )}
 
       <button
         type="submit"
-        disabled={!file || loading}
+        disabled={!file || phase === "loading"}
         className="px-4 py-2 bg-purple-600 text-white text-sm font-medium rounded-md hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? "Wird analysiert…" : "Importieren"}
+        {phase === "loading" ? "Wird analysiert…" : "Importieren"}
       </button>
 
-      {loading && (
+      {phase === "loading" && (
         <p className="text-xs text-gray-400">
           Claude liest das Rezeptfoto — das kann einige Sekunden dauern…
         </p>
       )}
       {error && <p className="text-sm text-red-600">{error}</p>}
-      {success && <p className="text-sm text-green-600">Rezept erfolgreich importiert!</p>}
     </form>
   );
 }

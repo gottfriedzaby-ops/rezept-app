@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { parseRecipeFromText } from "@/lib/claude";
-import { supabaseAdmin } from "@/lib/supabase";
-import type { Recipe } from "@/types/recipe";
 
 function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string): string[] {
   const images: string[] = [];
@@ -22,7 +20,6 @@ function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string):
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function srcOf(el: any): string | undefined {
     const $el = $(el);
-    // Handle lazy-loaded images
     return (
       $el.attr("src") ||
       $el.attr("data-src") ||
@@ -34,21 +31,18 @@ function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string):
     );
   }
 
-  // Priority: images inside step/instruction containers
   $(
     '[class*="step"], [class*="instruction"], [class*="direction"], [class*="method"], [id*="step"], [id*="instruction"]'
   )
     .find("img")
     .each((_, el) => tryAdd(srcOf(el)));
 
-  // Fallback: all content images (skip explicitly small ones — likely icons)
   if (images.length === 0) {
     $("img").each((_, el) => {
       const $el = $(el);
       const width = parseInt($el.attr("width") ?? "0");
       const height = parseInt($el.attr("height") ?? "0");
       if ((width > 0 && width < 150) || (height > 0 && height < 150)) return;
-      // Require srcset OR explicit large size — avoids mystery tiny images
       if (!$el.attr("srcset") && width < 150 && height < 150) return;
       tryAdd(srcOf(el));
     });
@@ -59,8 +53,7 @@ function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string):
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { url } = body as { url: string };
+    const { url } = (await request.json()) as { url: string };
 
     if (!url) {
       return NextResponse.json({ data: null, error: "url is required" }, { status: 400 });
@@ -80,54 +73,18 @@ export async function POST(request: NextRequest) {
     const $ = cheerio.load(html);
     const pageTitle = $("title").text().trim();
 
-    // Remove non-content noise before extracting images
     $("script, style").remove();
     const stepImages = extractStepImages($, url);
 
-    // Strip layout chrome then extract text
     $("nav, header, footer, aside, iframe").remove();
     const text = $("body").text().replace(/\s+/g, " ").trim();
 
-    const { data: existing } = await supabaseAdmin
-      .from("recipes")
-      .select("id")
-      .eq("source_value", url)
-      .maybeSingle();
-
-    if (existing) {
-      return NextResponse.json(
-        { data: null, error: "Ein Rezept von dieser URL existiert bereits" },
-        { status: 409 }
-      );
-    }
-
     const parsed = await parseRecipeFromText(text, "url", url);
 
-    const { data: insertData, error: dbError } = await supabaseAdmin
-      .from("recipes")
-      .insert({
-        title: parsed.title,
-        servings: parsed.servings,
-        prep_time: parsed.prepTime,
-        cook_time: parsed.cookTime,
-        ingredients: parsed.ingredients,
-        steps: parsed.steps,
-        tags: parsed.tags,
-        source_type: "url",
-        source_value: url,
-        source_title: pageTitle || parsed.title,
-        description: null,
-        image_url: null,
-        step_images: stepImages,
-      })
-      .select()
-      .single();
-
-    const recipe = insertData as Recipe | null;
-
-    if (dbError) throw dbError;
-
-    return NextResponse.json({ data: recipe, error: null });
+    return NextResponse.json({
+      data: { recipe: parsed, sourceTitle: pageTitle || parsed.title, stepImages },
+      error: null,
+    });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
     return NextResponse.json({ data: null, error: message }, { status: 500 });

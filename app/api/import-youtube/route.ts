@@ -14,6 +14,15 @@ function extractVideoId(url: string): string | null {
   return match ? match[1] : null;
 }
 
+async function getThumbnail(videoId: string): Promise<string> {
+  const maxres = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`;
+  try {
+    const res = await fetch(maxres, { method: "HEAD", cache: "no-store" });
+    if (res.ok) return maxres;
+  } catch { /* fall through */ }
+  return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { url } = (await request.json()) as { url: string };
@@ -30,10 +39,14 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) throw new Error("YOUTUBE_API_KEY ist nicht gesetzt");
 
-    const metaRes = await fetch(
-      `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=${apiKey}`,
-      { cache: "no-store" }
-    );
+    const [metaRes, imageUrl] = await Promise.all([
+      fetch(
+        `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&part=snippet&key=${apiKey}`,
+        { cache: "no-store" }
+      ),
+      getThumbnail(videoId),
+    ]);
+
     if (!metaRes.ok) throw new Error(`YouTube API Fehler: ${metaRes.status}`);
 
     const meta = (await metaRes.json()) as {
@@ -67,7 +80,7 @@ export async function POST(request: NextRequest) {
     const reviewed = await reviewAndImproveRecipe(parsed);
 
     return NextResponse.json({
-      data: { recipe: reviewed, sourceTitle: channelName },
+      data: { recipe: reviewed, sourceTitle: channelName, imageUrl },
       error: null,
     });
   } catch (error) {

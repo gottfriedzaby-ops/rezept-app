@@ -8,11 +8,12 @@ interface ConfirmBody {
   recipe: ParsedRecipe;
   sourceTitle?: string | null;
   stepImages?: string[];
+  imageUrl?: string | null;
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { recipe, sourceTitle, stepImages = [] } = (await request.json()) as ConfirmBody;
+    const { recipe, sourceTitle, stepImages = [], imageUrl } = (await request.json()) as ConfirmBody;
 
     if (!recipe) {
       return NextResponse.json({ data: null, error: "recipe is required" }, { status: 400 });
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
         source_value: recipe.source.value,
         source_title: sourceTitle ?? null,
         description: null,
-        image_url: null,
+        image_url: imageUrl ?? null,
         step_images: stepImages,
       })
       .select()

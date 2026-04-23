@@ -5,7 +5,46 @@ import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-function extractStepImages($: ReturnType<typeof cheerio.load>, pageUrl: string): string[] {
+type $Type = ReturnType<typeof cheerio.load>;
+
+function extractCoverImage($: $Type, pageUrl: string): string | null {
+  const resolve = (src: string | undefined): string | null => {
+    if (!src || src.startsWith("data:")) return null;
+    try { return new URL(src, pageUrl).href; } catch { return null; }
+  };
+
+  // 1. og:image
+  const og = resolve($('meta[property="og:image"]').attr("content"));
+  if (og) return og;
+
+  // 2. twitter:image
+  const tw = resolve(
+    $('meta[name="twitter:image"]').attr("content") ||
+    $('meta[name="twitter:image:src"]').attr("content")
+  );
+  if (tw) return tw;
+
+  // 3. Largest img by explicit dimensions
+  let bestSrc = "";
+  let bestArea = 0;
+  $("img").each((_, el) => {
+    const $el = $(el);
+    const w = parseInt($el.attr("width") ?? "0");
+    const h = parseInt($el.attr("height") ?? "0");
+    const area = w * h;
+    if (area > bestArea) {
+      const src =
+        $el.attr("src") || $el.attr("data-src") || $el.attr("data-lazy-src");
+      if (src && !src.startsWith("data:") && !/logo|icon|avatar|banner|spinner|\.svg/i.test(src)) {
+        bestArea = area;
+        bestSrc = src;
+      }
+    }
+  });
+  return resolve(bestSrc) ?? null;
+}
+
+function extractStepImages($: $Type, pageUrl: string): string[] {
   const images: string[] = [];
   const seen = new Set<string>();
 
@@ -76,6 +115,9 @@ export async function POST(request: NextRequest) {
     const $ = cheerio.load(html);
     const pageTitle = $("title").text().trim();
 
+    // Extract cover image before any DOM stripping
+    const imageUrl = extractCoverImage($, url);
+
     $("script, style").remove();
     const stepImages = extractStepImages($, url);
 
@@ -86,7 +128,7 @@ export async function POST(request: NextRequest) {
     const reviewed = await reviewAndImproveRecipe(parsed);
 
     return NextResponse.json({
-      data: { recipe: reviewed, sourceTitle: pageTitle || reviewed.title, stepImages },
+      data: { recipe: reviewed, sourceTitle: pageTitle || reviewed.title, stepImages, imageUrl },
       error: null,
     });
   } catch (error) {

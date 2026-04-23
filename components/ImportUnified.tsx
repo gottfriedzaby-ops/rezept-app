@@ -12,6 +12,7 @@ interface ParseResult {
   recipe: ParsedRecipe;
   sourceTitle: string;
   stepImages?: string[];
+  imageUrl?: string | null;
 }
 
 const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
@@ -157,6 +158,7 @@ export default function ImportUnified() {
           recipe,
           sourceTitle: parseResult.sourceTitle,
           stepImages: parseResult.stepImages ?? [],
+          imageUrl: parseResult.imageUrl ?? null,
         }),
       });
       const json = (await res.json()) as { data: unknown; error: string | null };

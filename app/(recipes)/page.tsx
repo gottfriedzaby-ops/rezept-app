@@ -6,31 +6,41 @@ import RecipeList from "@/components/RecipeList";
 export const dynamic = "force-dynamic";
 
 export default async function RecipesPage() {
-  const { data: recipes, error } = await supabaseAdmin
+  const { data: recipes } = await supabaseAdmin
     .from("recipes")
     .select("*")
     .order("created_at", { ascending: false })
     .returns<Recipe[]>();
 
-  console.log("[RecipesPage] count:", recipes?.length ?? 0, "error:", error?.message ?? null);
-
   return (
-    <main className="min-h-screen p-8 max-w-3xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Meine Rezepte</h1>
+    <div className="min-h-screen bg-surface-primary">
+      <div className="max-w-[1200px] mx-auto px-8 py-16">
 
-      <section className="mb-10">
-        <h2 className="text-lg font-semibold mb-3">Rezept importieren</h2>
-        <ImportTabs />
-      </section>
+        <header className="mb-16">
+          <h1 className="font-serif text-5xl font-medium text-ink-primary tracking-[-0.02em] leading-tight">
+            Meine Rezepte
+          </h1>
+        </header>
 
-      <section>
-        <h2 className="text-lg font-semibold mb-3">Alle Rezepte</h2>
-        {!recipes || recipes.length === 0 ? (
-          <p className="text-sm text-gray-500">Noch keine Rezepte. Importiere das erste!</p>
-        ) : (
-          <RecipeList recipes={recipes} />
-        )}
-      </section>
-    </main>
+        <section className="mb-16">
+          <p className="label-overline mb-8">Rezept importieren</p>
+          <div className="max-w-lg">
+            <ImportTabs />
+          </div>
+        </section>
+
+        <section>
+          <p className="label-overline mb-8">Alle Rezepte</p>
+          {!recipes || recipes.length === 0 ? (
+            <p className="text-ink-secondary">
+              Noch keine Rezepte. Importiere das erste!
+            </p>
+          ) : (
+            <RecipeList recipes={recipes} />
+          )}
+        </section>
+
+      </div>
+    </div>
   );
 }

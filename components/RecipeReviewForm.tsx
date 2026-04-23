@@ -60,25 +60,18 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
     setSteps((prev) => prev.filter((_, i) => i !== idx));
   }
 
-  const inputCls =
-    "w-full px-3 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const fieldCls = "input-field";
+  const smallFieldCls = "w-full px-3 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors";
+  const removeBtnCls = "text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none disabled:opacity-40";
 
   return (
-    <div className="flex flex-col gap-5 border border-gray-200 rounded-xl p-5 bg-gray-50">
-      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-        Rezept überprüfen &amp; bearbeiten
-      </p>
+    <div className="flex flex-col gap-6 p-6 bg-surface-secondary border border-stone rounded">
+      <p className="label-overline">Rezept überprüfen</p>
 
       {/* Title */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">Titel</label>
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          disabled={saving}
-          className={inputCls}
-        />
+        <label className="block text-xs text-ink-tertiary mb-1.5">Titel</label>
+        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} className={fieldCls} />
       </div>
 
       {/* Meta row */}
@@ -89,66 +82,25 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
           { label: "Kochen (Min.)", value: cookTime, set: setCookTime },
         ].map(({ label, value, set }) => (
           <div key={label}>
-            <label className="block text-xs font-medium text-gray-600 mb-1">{label}</label>
-            <input
-              type="number"
-              value={value}
-              onChange={(e) => set(e.target.value)}
-              min={0}
-              disabled={saving}
-              className={inputCls}
-            />
+            <label className="block text-xs text-ink-tertiary mb-1.5">{label}</label>
+            <input type="number" value={value} onChange={(e) => set(e.target.value)} min={0} disabled={saving} className={smallFieldCls} />
           </div>
         ))}
       </div>
 
       {/* Ingredients */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-2">Zutaten</label>
-        <div className="flex flex-col gap-1.5">
+        <label className="block text-xs text-ink-tertiary mb-2">Zutaten</label>
+        <div className="flex flex-col gap-2">
           {ingredients.map((ing, idx) => (
             <div key={idx} className="flex gap-2 items-center">
-              <input
-                type="number"
-                value={ing.amount}
-                onChange={(e) => updateIngredient(idx, "amount", e.target.value)}
-                placeholder="Menge"
-                min={0}
-                disabled={saving}
-                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={ing.unit}
-                onChange={(e) => updateIngredient(idx, "unit", e.target.value)}
-                placeholder="Einheit"
-                disabled={saving}
-                className="w-20 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="text"
-                value={ing.name}
-                onChange={(e) => updateIngredient(idx, "name", e.target.value)}
-                placeholder="Zutat"
-                disabled={saving}
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <button
-                type="button"
-                onClick={() => removeIngredient(idx)}
-                disabled={saving}
-                className="text-gray-400 hover:text-red-500 text-lg leading-none disabled:opacity-40"
-              >
-                ×
-              </button>
+              <input type="number" value={ing.amount} onChange={(e) => updateIngredient(idx, "amount", e.target.value)} placeholder="Menge" min={0} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+              <input type="text" value={ing.unit} onChange={(e) => updateIngredient(idx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+              <input type="text" value={ing.name} onChange={(e) => updateIngredient(idx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+              <button type="button" onClick={() => removeIngredient(idx)} disabled={saving} className={removeBtnCls}>×</button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => setIngredients((prev) => [...prev, { amount: "", unit: "", name: "" }])}
-            disabled={saving}
-            className="self-start text-xs text-blue-600 hover:underline mt-1 disabled:opacity-40"
-          >
+          <button type="button" onClick={() => setIngredients((p) => [...p, { amount: "", unit: "", name: "" }])} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
             + Zutat hinzufügen
           </button>
         </div>
@@ -156,34 +108,16 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Steps */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-2">Schritte</label>
+        <label className="block text-xs text-ink-tertiary mb-2">Schritte</label>
         <div className="flex flex-col gap-2">
           {steps.map((step, idx) => (
             <div key={idx} className="flex gap-2 items-start">
-              <span className="text-xs text-gray-400 mt-2 w-5 shrink-0 text-right">{idx + 1}.</span>
-              <textarea
-                value={step.text}
-                onChange={(e) => updateStep(idx, e.target.value)}
-                rows={2}
-                disabled={saving}
-                className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 resize-y"
-              />
-              <button
-                type="button"
-                onClick={() => removeStep(idx)}
-                disabled={saving}
-                className="text-gray-400 hover:text-red-500 text-lg leading-none mt-1.5 disabled:opacity-40"
-              >
-                ×
-              </button>
+              <span className="text-xs text-ink-tertiary mt-2 w-5 shrink-0 text-right tabular-nums">{idx + 1}.</span>
+              <textarea value={step.text} onChange={(e) => updateStep(idx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
+              <button type="button" onClick={() => removeStep(idx)} disabled={saving} className={`${removeBtnCls} mt-1.5`}>×</button>
             </div>
           ))}
-          <button
-            type="button"
-            onClick={() => setSteps((prev) => [...prev, { text: "", timerSeconds: null }])}
-            disabled={saving}
-            className="self-start text-xs text-blue-600 hover:underline mt-1 disabled:opacity-40"
-          >
+          <button type="button" onClick={() => setSteps((p) => [...p, { text: "", timerSeconds: null }])} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
             + Schritt hinzufügen
           </button>
         </div>
@@ -191,37 +125,19 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Tags */}
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">
-          Tags <span className="font-normal text-gray-400">(kommagetrennt)</span>
+        <label className="block text-xs text-ink-tertiary mb-1.5">
+          Tags <span className="text-ink-tertiary/60">(kommagetrennt)</span>
         </label>
-        <input
-          type="text"
-          value={tagsInput}
-          onChange={(e) => setTagsInput(e.target.value)}
-          placeholder="pasta, vegetarisch, schnell"
-          disabled={saving}
-          className={inputCls}
-        />
+        <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="pasta, vegetarisch, schnell" disabled={saving} className={fieldCls} />
       </div>
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
+      {error && <p className="text-sm text-red-700">{error}</p>}
 
-      {/* Actions */}
-      <div className="flex gap-3">
-        <button
-          type="button"
-          onClick={handleSave}
-          disabled={saving || !title.trim()}
-          className="px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-md hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+      <div className="flex gap-3 pt-2">
+        <button type="button" onClick={handleSave} disabled={saving || !title.trim()} className="btn-primary">
           {saving ? "Wird gespeichert…" : "Speichern"}
         </button>
-        <button
-          type="button"
-          onClick={onDiscard}
-          disabled={saving}
-          className="px-4 py-2 text-sm font-medium text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
+        <button type="button" onClick={onDiscard} disabled={saving} className="btn-ghost">
           Verwerfen
         </button>
       </div>

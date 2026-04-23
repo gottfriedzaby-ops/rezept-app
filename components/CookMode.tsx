@@ -4,8 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
 
-// ── helpers ──────────────────────────────────────────────────────────────────
-
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
@@ -38,8 +36,6 @@ function playBeep() {
   }
 }
 
-// ── component ─────────────────────────────────────────────────────────────────
-
 interface Props {
   recipe: Recipe;
   initialServings: number;
@@ -50,16 +46,14 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number | null>(
-    steps[0]?.timerSeconds ?? null
-  );
+  const [timeLeft, setTimeLeft] = useState<number | null>(steps[0]?.timerSeconds ?? null);
   const [timerRunning, setTimerRunning] = useState(false);
 
   const currentStep = steps[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === steps.length - 1;
 
-  // ── Wake Lock ──────────────────────────────────────────────────────────────
+  // Wake Lock
   useEffect(() => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let sentinel: any = null;
@@ -78,12 +72,8 @@ export default function CookMode({ recipe, initialServings }: Props) {
     };
 
     acquire();
-
-    const onVisChange = () => {
-      if (document.visibilityState === "visible") acquire();
-    };
+    const onVisChange = () => { if (document.visibilityState === "visible") acquire(); };
     document.addEventListener("visibilitychange", onVisChange);
-
     return () => {
       mounted = false;
       document.removeEventListener("visibilitychange", onVisChange);
@@ -91,25 +81,18 @@ export default function CookMode({ recipe, initialServings }: Props) {
     };
   }, []);
 
-  // ── Reset timer whenever the step changes ──────────────────────────────────
   useEffect(() => {
     setTimerRunning(false);
     setTimeLeft(steps[stepIndex]?.timerSeconds ?? null);
   }, [stepIndex, steps]);
 
-  // ── Countdown — one setTimeout per tick ───────────────────────────────────
   useEffect(() => {
     if (!timerRunning || timeLeft === null || timeLeft <= 0) return;
-
     const id = setTimeout(() => {
       const next = timeLeft - 1;
       setTimeLeft(next);
-      if (next === 0) {
-        setTimerRunning(false);
-        playBeep();
-      }
+      if (next === 0) { setTimerRunning(false); playBeep(); }
     }, 1000);
-
     return () => clearTimeout(id);
   }, [timerRunning, timeLeft]);
 
@@ -118,59 +101,59 @@ export default function CookMode({ recipe, initialServings }: Props) {
     setTimeLeft(currentStep?.timerSeconds ?? null);
   }, [currentStep]);
 
-  // ── render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col bg-white">
+    <div className="min-h-screen flex flex-col bg-surface-primary">
 
-      {/* ── Header ── */}
-      <header className="flex items-center justify-between px-5 py-4 border-b shrink-0">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-stone shrink-0">
         <Link
           href={`/${recipe.id}`}
-          className="h-16 flex items-center gap-2 text-gray-500 hover:text-gray-900 pr-4"
+          className="h-12 flex items-center text-sm text-ink-tertiary hover:text-ink-primary transition-colors"
         >
-          ✕ Beenden
+          ← Beenden
         </Link>
         <div className="text-center">
-          <p className="text-xs text-gray-400 uppercase tracking-wide">{recipe.title}</p>
-          <p className="text-lg font-semibold tabular-nums">
+          <p className="text-xs text-ink-tertiary uppercase tracking-widest mb-0.5 hidden sm:block truncate max-w-[240px]">
+            {recipe.title}
+          </p>
+          <p className="text-lg font-medium text-ink-primary tabular-nums">
             {stepIndex + 1} / {steps.length}
           </p>
         </div>
-        {/* spacer to keep counter centred */}
-        <div className="w-24" />
+        <div className="w-20" />
       </header>
 
-      {/* ── Step content ── */}
-      <main className="flex-1 overflow-y-auto px-6 py-8 flex flex-col gap-8">
+      {/* Step content */}
+      <main className="flex-1 overflow-y-auto px-6 py-10 max-w-[720px] mx-auto w-full flex flex-col gap-8">
         <p
-          className="text-2xl leading-relaxed font-medium text-gray-900"
-          style={{ fontSize: "clamp(1.5rem, 4vw, 2rem)" }}
+          className="font-serif font-medium text-ink-primary leading-relaxed"
+          style={{ fontSize: "clamp(1.4rem, 4vw, 1.875rem)" }}
         >
           {currentStep.text}
         </p>
 
         {/* Timer */}
         {timeLeft !== null && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-5">
             <span
-              className={`font-mono font-bold tabular-nums ${
-                timeLeft === 0 ? "text-green-600" : "text-gray-800"
+              className={`font-mono font-medium tabular-nums ${
+                timeLeft === 0 ? "text-forest" : "text-ink-primary"
               }`}
               style={{ fontSize: "clamp(3rem, 10vw, 5rem)" }}
             >
-              {timeLeft === 0 ? "Fertig! ✓" : formatTime(timeLeft)}
+              {timeLeft === 0 ? "Fertig ✓" : formatTime(timeLeft)}
             </span>
             <div className="flex gap-3">
               <button
                 onClick={() => setTimerRunning((r) => !r)}
                 disabled={timeLeft === 0}
-                className="h-16 px-8 rounded-xl bg-blue-600 text-white text-lg font-semibold hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed min-w-[130px]"
+                className="h-14 px-8 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
               >
                 {timerRunning ? "Pause" : "Start"}
               </button>
               <button
                 onClick={resetTimer}
-                className="h-16 px-8 rounded-xl border border-gray-300 text-gray-700 text-lg font-semibold hover:bg-gray-50 min-w-[110px]"
+                className="h-14 px-8 rounded border border-stone text-ink-secondary font-medium hover:bg-surface-hover transition-colors min-w-[100px]"
               >
                 Reset
               </button>
@@ -179,41 +162,41 @@ export default function CookMode({ recipe, initialServings }: Props) {
         )}
       </main>
 
-      {/* ── Ingredients accordion ── */}
-      <div className="border-t shrink-0">
+      {/* Ingredients accordion */}
+      <div className="border-t border-stone shrink-0">
         <button
           onClick={() => setShowIngredients((s) => !s)}
-          className="w-full h-16 px-5 flex items-center justify-between text-gray-700 hover:bg-gray-50"
+          className="w-full h-14 px-6 flex items-center justify-between text-ink-secondary hover:bg-surface-hover transition-colors"
         >
-          <span className="font-medium">
+          <span className="text-sm font-medium">
             Zutaten für {initialServings} Portion{initialServings !== 1 ? "en" : ""}
           </span>
-          <span className="text-gray-400 text-lg">{showIngredients ? "▲" : "▼"}</span>
+          <span className="text-ink-tertiary text-sm">{showIngredients ? "▲" : "▼"}</span>
         </button>
 
         {showIngredients && (
-          <ul className="px-5 pb-4 space-y-2 bg-gray-50">
+          <ul className="px-6 pb-5 space-y-3 bg-surface-secondary border-t border-stone">
             {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex gap-3 text-base">
+              <li key={i} className="flex gap-4 text-sm pt-3">
                 {ing.amount > 0 && (
-                  <span className="font-medium tabular-nums min-w-[5rem] shrink-0">
+                  <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
                     {formatAmount(ing.amount, initialServings)}
                     {ing.unit ? ` ${ing.unit}` : ""}
                   </span>
                 )}
-                <span>{ing.name}</span>
+                <span className="text-ink-secondary">{ing.name}</span>
               </li>
             ))}
           </ul>
         )}
       </div>
 
-      {/* ── Navigation ── */}
-      <nav className="flex gap-3 p-4 border-t shrink-0">
+      {/* Navigation */}
+      <nav className="flex gap-3 p-4 border-t border-stone shrink-0">
         <button
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={isFirst}
-          className="flex-1 h-16 rounded-xl border border-gray-300 text-gray-700 text-lg font-semibold hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 h-14 rounded border border-stone text-ink-secondary font-medium hover:bg-surface-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ← Zurück
         </button>
@@ -221,14 +204,14 @@ export default function CookMode({ recipe, initialServings }: Props) {
         {isLast ? (
           <Link
             href={`/${recipe.id}`}
-            className="flex-1 h-16 rounded-xl bg-green-600 text-white text-lg font-semibold hover:bg-green-700 flex items-center justify-center"
+            className="flex-1 h-14 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors flex items-center justify-center"
           >
-            Fertig! 🎉
+            Fertig!
           </Link>
         ) : (
           <button
             onClick={() => setStepIndex((i) => i + 1)}
-            className="flex-1 h-16 rounded-xl bg-gray-900 text-white text-lg font-semibold hover:bg-gray-800"
+            className="flex-1 h-14 rounded bg-ink-primary text-white font-medium hover:bg-ink-secondary transition-colors"
           >
             Weiter →
           </button>

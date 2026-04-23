@@ -1,8 +1,20 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  weight: ["400", "500"],
+  display: "swap",
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  weight: ["400", "500"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Rezept-App",
@@ -11,12 +23,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="de">
-      <body className={inter.className}>{children}</body>
+    <html lang="de" className={`${inter.variable} ${fraunces.variable}`}>
+      <body className="font-sans antialiased bg-surface-primary text-ink-primary">
+        {children}
+      </body>
     </html>
   );
 }

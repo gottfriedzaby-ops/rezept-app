@@ -1,3 +1,52 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  --bg-primary: #FAFAF7;
+  --bg-secondary: #F3F1EC;
+  --bg-accent: #E8E4DC;
+  --text-primary: #1C1C1A;
+  --text-secondary: #6B6B66;
+  --text-tertiary: #A0A09A;
+  --border: #E8E4DC;
+  --accent: #2D5F3F;
+  --accent-deep: #1F4A2E;
+  --accent-soft: #E8EEE9;
+}
+
+@layer base {
+  html {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    line-height: 1.6;
+  }
+
+  ::selection {
+    background-color: var(--accent-soft);
+    color: var(--text-primary);
+  }
+}
+
+@layer components {
+  .label-overline {
+    @apply text-xs font-medium uppercase tracking-widest text-ink-tertiary;
+  }
+
+  .btn-primary {
+    @apply bg-forest text-white text-sm font-medium px-5 py-2.5 rounded hover:bg-forest-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply border border-stone text-ink-secondary text-sm font-medium px-5 py-2.5 rounded hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors;
+  }
+}

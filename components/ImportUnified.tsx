@@ -58,8 +58,8 @@ async function compressImage(file: File): Promise<File> {
 
 const LOADING_HINT: Record<ImportType, string> = {
   url: "Seite wird geladen und analysiert…",
-  youtube: "Transkript wird abgerufen und verarbeitet — das kann etwas dauern…",
-  photo: "Claude liest das Rezeptfoto — das kann einige Sekunden dauern…",
+  youtube: "Transkript wird abgerufen — das kann etwas dauern…",
+  photo: "Claude liest das Rezeptfoto…",
 };
 
 export default function ImportUnified() {
@@ -94,16 +94,8 @@ export default function ImportUnified() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(true);
-  }
-
-  function handleDragLeave(e: React.DragEvent) {
-    e.preventDefault();
-    setIsDragging(false);
-  }
-
+  function handleDragOver(e: React.DragEvent) { e.preventDefault(); setIsDragging(true); }
+  function handleDragLeave(e: React.DragEvent) { e.preventDefault(); setIsDragging(false); }
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
@@ -199,14 +191,10 @@ export default function ImportUnified() {
 
   if (phase === "success") {
     return (
-      <div className="flex flex-col gap-3">
-        <p className="text-sm text-green-600">Rezept erfolgreich gespeichert!</p>
-        <button
-          type="button"
-          onClick={handleReset}
-          className="self-start text-xs text-blue-600 hover:underline"
-        >
-          Weiteres Rezept importieren
+      <div className="flex flex-col gap-4 py-2">
+        <p className="text-sm text-forest font-medium">Rezept gespeichert.</p>
+        <button type="button" onClick={handleReset} className="self-start text-sm text-ink-tertiary hover:text-ink-primary transition-colors">
+          Weiteres Rezept importieren →
         </button>
       </div>
     );
@@ -216,11 +204,7 @@ export default function ImportUnified() {
     return (
       <div className="flex flex-col gap-4">
         {preview && (
-          <img
-            src={preview}
-            alt="Vorschau"
-            className="w-full max-h-40 object-contain rounded-lg bg-gray-100"
-          />
+          <img src={preview} alt="Vorschau" className="w-full max-h-40 object-contain rounded bg-surface-secondary" />
         )}
         <RecipeReviewForm
           initial={parseResult.recipe}
@@ -239,11 +223,11 @@ export default function ImportUnified() {
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`flex flex-col gap-3 max-w-xl rounded-xl p-1 transition-colors ${
-        isDragging ? "outline outline-2 outline-blue-400 bg-blue-50" : ""
+      className={`flex flex-col gap-4 transition-colors rounded ${
+        isDragging ? "outline outline-2 outline-forest/30 bg-forest-soft" : ""
       }`}
     >
-      {/* URL input — hidden when a file is active */}
+      {/* URL input — hidden when file is active */}
       {!file && (
         <input
           type="text"
@@ -251,40 +235,36 @@ export default function ImportUnified() {
           onChange={(e) => { setUrlInput(e.target.value); setError(null); }}
           placeholder="Website oder YouTube-Link einfügen…"
           disabled={phase === "loading"}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+          className="input-field disabled:opacity-50"
         />
       )}
 
       {/* File area */}
       {file && preview ? (
         <div className="relative">
-          <img
-            src={preview}
-            alt="Vorschau"
-            className="w-full max-h-48 object-contain rounded-lg bg-gray-100"
-          />
+          <img src={preview} alt="Vorschau" className="w-full max-h-48 object-contain rounded bg-surface-secondary" />
           <button
             type="button"
             onClick={clearFile}
             disabled={phase === "loading"}
-            className="absolute top-2 right-2 bg-white rounded-full w-6 h-6 flex items-center justify-center shadow text-gray-500 hover:text-red-500 text-base leading-none disabled:opacity-40"
+            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-white rounded border border-stone text-ink-secondary hover:text-ink-primary text-base leading-none shadow-sm disabled:opacity-40"
           >
             ×
           </button>
-          <p className="text-xs text-gray-500 truncate mt-1.5">📎 {file.name}</p>
+          <p className="text-xs text-ink-tertiary truncate mt-2">{file.name}</p>
         </div>
       ) : (
         <div>
-          <div className="flex items-center gap-2 my-1">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">oder</span>
-            <div className="flex-1 h-px bg-gray-200" />
+          <div className="flex items-center gap-3 my-1">
+            <div className="flex-1 h-px bg-stone" />
+            <span className="text-xs text-ink-tertiary">oder</span>
+            <div className="flex-1 h-px bg-stone" />
           </div>
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={phase === "loading"}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-lg text-sm text-gray-500 hover:border-blue-400 hover:text-blue-600 transition-colors disabled:opacity-50"
+            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3.5 border border-dashed border-stone rounded text-sm text-ink-tertiary hover:border-ink-secondary hover:text-ink-secondary transition-colors disabled:opacity-50"
           >
             <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
@@ -302,22 +282,16 @@ export default function ImportUnified() {
         className="sr-only"
       />
 
-      <button
-        type="submit"
-        disabled={!canSubmit}
-        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-      >
+      <button type="submit" disabled={!canSubmit} className="btn-primary w-full py-3">
         {phase === "loading" ? "Wird analysiert…" : "Rezept importieren"}
       </button>
 
       {phase === "loading" && activeType && (
-        <p className="text-xs text-gray-400">{LOADING_HINT[activeType]}</p>
+        <p className="text-xs text-ink-tertiary">{LOADING_HINT[activeType]}</p>
       )}
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
+      {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
-        <p className="text-xs text-gray-400 text-center">
+        <p className="text-xs text-ink-tertiary text-center">
           Website, YouTube-Link oder Foto eines Rezepts
         </p>
       )}

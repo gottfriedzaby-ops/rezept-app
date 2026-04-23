@@ -39,40 +39,38 @@ export default function RecipeList({ recipes }: Props) {
 
   return (
     <div>
-      <div className="relative mb-4">
+      {/* Search */}
+      <div className="relative mb-6 max-w-sm">
         <svg
-          className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+          className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-tertiary pointer-events-none"
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
           strokeWidth={2}
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
         </svg>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Rezepte suchen…"
-          className="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          placeholder="Suchen…"
+          className="input-field pl-9"
         />
       </div>
 
+      {/* Tag filters */}
       {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-5">
+        <div className="flex flex-wrap gap-2 mb-8">
           {allTags.map((tag) => (
             <button
               key={tag}
               onClick={() => toggleTag(tag)}
-              className={`text-xs px-3 py-1 rounded-full border transition-colors ${
+              className={`text-xs px-3 py-1 rounded border transition-colors ${
                 activeTags.has(tag)
-                  ? "bg-blue-600 text-white border-blue-600"
-                  : "bg-gray-100 text-gray-600 border-gray-200 hover:border-gray-400"
+                  ? "bg-forest text-white border-forest"
+                  : "bg-transparent text-ink-secondary border-stone hover:bg-surface-hover"
               }`}
             >
               {tag}
@@ -81,15 +79,21 @@ export default function RecipeList({ recipes }: Props) {
         </div>
       )}
 
+      {/* Recipe list */}
       {filtered.length === 0 ? (
-        <p className="text-sm text-gray-500">Keine Rezepte gefunden.</p>
+        <p className="text-ink-tertiary text-sm">Keine Rezepte gefunden.</p>
       ) : (
-        <ul className="divide-y divide-gray-200">
+        <ul className="divide-y divide-stone">
           {filtered.map((recipe) => (
-            <li key={recipe.id} className="py-4">
-              <Link href={`/${recipe.id}`} className="group">
-                <p className="font-medium group-hover:text-blue-600">{recipe.title}</p>
-                <p className="text-sm text-gray-500 mt-0.5">
+            <li key={recipe.id}>
+              <Link
+                href={`/${recipe.id}`}
+                className="group flex flex-col gap-1.5 py-5 hover:bg-surface-hover -mx-4 px-4 rounded transition-colors"
+              >
+                <span className="font-serif text-xl font-medium text-ink-primary tracking-[-0.01em] group-hover:text-forest transition-colors">
+                  {recipe.title}
+                </span>
+                <span className="text-sm text-ink-tertiary">
                   {[
                     recipe.servings ? `${recipe.servings} Portionen` : null,
                     recipe.prep_time ? `${recipe.prep_time} Min. Vorbereitung` : null,
@@ -97,21 +101,11 @@ export default function RecipeList({ recipes }: Props) {
                   ]
                     .filter(Boolean)
                     .join(" · ")}
-                </p>
+                </span>
                 {recipe.tags.length > 0 && (
-                  <div className="flex gap-1 mt-2 flex-wrap">
-                    {recipe.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {recipe.source_title && (
-                  <p className="text-xs text-gray-400 mt-1">{recipe.source_title}</p>
+                  <span className="text-xs text-ink-tertiary">
+                    {recipe.tags.join(", ")}
+                  </span>
                 )}
               </Link>
             </li>

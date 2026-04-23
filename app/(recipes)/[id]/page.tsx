@@ -23,41 +23,54 @@ export default async function RecipeDetailPage({
   const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
 
   return (
-    <main className="min-h-screen p-8 max-w-2xl mx-auto">
-      <Link href="/" className="text-sm text-blue-600 hover:underline mb-6 inline-block">
-        ← Alle Rezepte
-      </Link>
+    <div className="min-h-screen bg-surface-primary">
+      <div className="max-w-[720px] mx-auto px-8 py-16">
 
-      <h1 className="text-3xl font-bold mb-2">{recipe.title}</h1>
-
-      {recipe.source_type === "url" && (
-        <a
-          href={recipe.source_value}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-sm text-blue-600 hover:underline mb-4 inline-block"
+        <Link
+          href="/"
+          className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-12"
         >
-          {recipe.source_title ?? recipe.source_value}
-        </a>
-      )}
+          ← Alle Rezepte
+        </Link>
 
-      <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600 mt-4">
-        {recipe.prep_time ? <span>Vorbereitung: {recipe.prep_time} Min.</span> : null}
-        {recipe.cook_time ? <span>Kochen: {recipe.cook_time} Min.</span> : null}
-        {totalTime > 0 ? <span className="font-medium">Gesamt: {totalTime} Min.</span> : null}
-      </div>
+        <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em] leading-tight mb-6">
+          {recipe.title}
+        </h1>
 
-      {recipe.tags.length > 0 && (
-        <div className="flex gap-1 mt-4 flex-wrap">
-          {recipe.tags.map((tag) => (
-            <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
-              {tag}
-            </span>
-          ))}
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-ink-secondary mb-4">
+          {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
+          {recipe.cook_time ? <span>Kochen {recipe.cook_time} Min.</span> : null}
+          {totalTime > 0 ? <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span> : null}
+          {recipe.servings ? <span>{recipe.servings} Portionen</span> : null}
         </div>
-      )}
 
-      <RecipeDetail recipe={recipe} />
-    </main>
+        {recipe.tags.length > 0 && (
+          <div className="flex gap-1.5 flex-wrap mb-4">
+            {recipe.tags.map((tag) => (
+              <span
+                key={tag}
+                className="text-xs text-ink-secondary border border-stone px-2.5 py-0.5 rounded"
+              >
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {recipe.source_type === "url" && (
+          <a
+            href={recipe.source_value}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
+          >
+            {recipe.source_title ?? recipe.source_value}
+          </a>
+        )}
+
+        <RecipeDetail recipe={recipe} />
+
+      </div>
+    </div>
   );
 }

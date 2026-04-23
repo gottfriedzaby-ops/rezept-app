@@ -23,7 +23,7 @@ export default function RecipeList({ recipes }: Props) {
     return recipes.filter((r) => {
       const matchesQuery = q === "" || r.title.toLowerCase().includes(q);
       const matchesTags =
-        activeTags.size === 0 || [...activeTags].every((t) => r.tags.includes(t));
+        activeTags.size === 0 || Array.from(activeTags).every((t) => r.tags.includes(t));
       return matchesQuery && matchesTags;
     });
   }, [recipes, query, activeTags]);

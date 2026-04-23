@@ -19,6 +19,20 @@ const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
 const URL_RE = /^https?:\/\//i;
 const MAX_SIDE = 1920;
 
+async function safeParseJson(res: Response): Promise<{ data: ParseResult | null; error: string | null }> {
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.includes("application/json")) {
+    const body = await res.text().catch(() => "");
+    console.error("[safeParseJson] non-JSON response", res.status, body.slice(0, 200));
+    return { data: null, error: `Server-Fehler (${res.status})` };
+  }
+  try {
+    return await res.json();
+  } catch {
+    return { data: null, error: "Ungültige Server-Antwort" };
+  }
+}
+
 function detectType(url: string, file: File | null): ImportType | null {
   if (file) return "photo";
   const t = url.trim();
@@ -121,7 +135,7 @@ export default function ImportUnified() {
         const formData = new FormData();
         formData.append("photo", fileToUpload);
         const res = await fetch("/api/import-photo", { method: "POST", body: formData });
-        json = await res.json();
+        json = await safeParseJson(res);
       } else {
         const endpoint = inputType === "youtube" ? "/api/import-youtube" : "/api/import-url";
         const res = await fetch(endpoint, {
@@ -129,7 +143,7 @@ export default function ImportUnified() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: urlInput.trim() }),
         });
-        json = await res.json();
+        json = await safeParseJson(res);
       }
 
       if (json.error || !json.data) {

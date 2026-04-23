@@ -50,6 +50,8 @@ export async function POST(request: NextRequest) {
     const mimeType = photo.type;
     const isHeic = HEIC_TYPES.has(mimeType) || /\.heic$/i.test(fileName);
 
+    console.log("[import-photo] received:", fileName, mimeType, `${photo.size} bytes`, "isHeic:", isHeic);
+
     if (!SUPPORTED.has(mimeType as ImageMediaType) && !isHeic) {
       return NextResponse.json(
         { data: null, error: "Nur JPEG, PNG, WEBP und HEIC werden unterstützt" },
@@ -67,7 +69,9 @@ export async function POST(request: NextRequest) {
         const converted = await heicConvert({ buffer: arrayBuffer, format: "JPEG", quality: 0.9 });
         buffer = Buffer.from(converted);
         finalMediaType = "image/jpeg";
-      } catch {
+        console.log("[import-photo] HEIC converted, buffer size:", buffer.length);
+      } catch (heicError) {
+        console.error("[import-photo] HEIC conversion failed:", heicError);
         return NextResponse.json(
           { data: null, error: "HEIC-Konvertierung fehlgeschlagen. Bitte als JPEG exportieren." },
           { status: 400 }
@@ -77,16 +81,22 @@ export async function POST(request: NextRequest) {
 
     // Upload photo to Supabase Storage (the uploaded photo IS the cover image)
     const imageUrl = await uploadToStorage(buffer, fileName, finalMediaType);
+    console.log("[import-photo] storage upload result:", imageUrl ?? "skipped/failed");
 
+    console.log("[import-photo] calling Claude vision, buffer size:", buffer.length);
     const base64 = buffer.toString("base64");
     const parsed = await parseRecipeFromImage(base64, finalMediaType, fileName);
+    console.log("[import-photo] parsed title:", parsed.title);
+
     const reviewed = await reviewAndImproveRecipe(parsed);
+    console.log("[import-photo] review complete, returning response");
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: fileName, imageUrl },
       error: null,
     });
   } catch (error) {
+    console.error("[import-photo] unhandled error:", error);
     const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
     return NextResponse.json({ data: null, error: message }, { status: 500 });
   }

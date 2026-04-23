@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-
-export const config = { api: { bodyParser: { sizeLimit: "10mb" } } };
 import heicConvert from "heic-convert";
 import { parseRecipeFromImage } from "@/lib/claude";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
+
+export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 

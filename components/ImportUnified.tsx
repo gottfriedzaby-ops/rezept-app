@@ -134,7 +134,7 @@ export default function ImportUnified() {
     setDuplicateTitle(null);
 
     try {
-      let json: { data: ParseResult | null; error: string | null };
+      let json: ImportApiResponse;
 
       if (inputType === "photo" && file) {
         let fileToUpload = file;
@@ -186,7 +186,7 @@ export default function ImportUnified() {
           imageUrl: parseResult.imageUrl ?? null,
         }),
       });
-      const json = (await res.json()) as { data: unknown; error: string | null };
+      const json = (await res.json()) as ImportApiResponse;
 
       if (json.error === "duplicate" && json.existingRecipeId) {
         setDuplicateId(json.existingRecipeId);

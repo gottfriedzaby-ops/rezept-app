@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
 import RecipeCover from "@/components/RecipeCover";
+import RecipeActions from "@/components/RecipeActions";
 import { getTagColor } from "@/lib/tag-colors";
 
 export const dynamic = "force-dynamic";
@@ -43,9 +44,12 @@ export default async function RecipeDetailPage({
           ← Alle Rezepte
         </Link>
 
-        <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em] leading-tight mb-5">
-          {recipe.title}
-        </h1>
+        <div className="flex items-start justify-between gap-4 mb-5">
+          <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em] leading-tight">
+            {recipe.title}
+          </h1>
+          <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />
+        </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
           {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}

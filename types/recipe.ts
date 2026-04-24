@@ -29,6 +29,7 @@ export interface Recipe {
   source_title: string | null;
   image_url: string | null;
   step_images: string[] | null;
+  favorite: boolean;
 }
 
 export interface ImportJob {

@@ -13,6 +13,40 @@ interface Props {
 export default function RecipeList({ recipes }: Props) {
   const [query, setQuery] = useState("");
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
+    () => new Set(recipes.filter((r) => r.favorite).map((r) => r.id))
+  );
+
+  async function toggleFavorite(id: string) {
+    const next = !favoriteIds.has(id);
+    setFavoriteIds((prev) => {
+      const s = new Set(prev);
+      if (next) s.add(id); else s.delete(id);
+      return s;
+    });
+    try {
+      const res = await fetch(`/api/recipes/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ favorite: next }),
+      });
+      if (!res.ok) {
+        // revert
+        setFavoriteIds((prev) => {
+          const s = new Set(prev);
+          if (next) s.delete(id); else s.add(id);
+          return s;
+        });
+      }
+    } catch {
+      setFavoriteIds((prev) => {
+        const s = new Set(prev);
+        if (next) s.delete(id); else s.add(id);
+        return s;
+      });
+    }
+  }
 
   const allTags = useMemo(() => {
     const seen = new Set<string>();
@@ -26,9 +60,10 @@ export default function RecipeList({ recipes }: Props) {
       const matchesQuery = q === "" || r.title.toLowerCase().includes(q);
       const matchesTags =
         activeTags.size === 0 || Array.from(activeTags).every((t) => r.tags.includes(t));
-      return matchesQuery && matchesTags;
+      const matchesFavorites = !showFavoritesOnly || favoriteIds.has(r.id);
+      return matchesQuery && matchesTags && matchesFavorites;
     });
-  }, [recipes, query, activeTags]);
+  }, [recipes, query, activeTags, showFavoritesOnly, favoriteIds]);
 
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
@@ -62,10 +97,24 @@ export default function RecipeList({ recipes }: Props) {
         />
       </div>
 
-      {/* Tag filters */}
-      {allTags.length > 0 && (
-        <div className="flex flex-wrap gap-2 mb-8">
-          {allTags.map((tag) => {
+      {/* Filter bar */}
+      <div className="flex flex-wrap gap-2 mb-8">
+        {/* Favorites toggle */}
+        <button
+          onClick={() => setShowFavoritesOnly((v) => !v)}
+          className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-colors ${
+            showFavoritesOnly
+              ? "bg-amber-400 text-white border-amber-400"
+              : "bg-amber-50 text-amber-600 border-amber-200 hover:opacity-75"
+          }`}
+        >
+          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
+          </svg>
+          Favoriten
+        </button>
+
+        {allTags.map((tag) => {
             const { bg, text } = getTagColor(tag);
             const active = activeTags.has(tag);
             return (
@@ -81,8 +130,7 @@ export default function RecipeList({ recipes }: Props) {
               </button>
             );
           })}
-        </div>
-      )}
+      </div>
 
       {/* Grid */}
       {filtered.length === 0 ? (
@@ -92,7 +140,18 @@ export default function RecipeList({ recipes }: Props) {
           {filtered.map((recipe) => {
             const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
             return (
-              <li key={recipe.id}>
+              <li key={recipe.id} className="relative">
+                <button
+                  type="button"
+                  onClick={() => toggleFavorite(recipe.id)}
+                  aria-label={favoriteIds.has(recipe.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                  className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-white/80 hover:bg-white transition-colors shadow-sm"
+                >
+                  <svg viewBox="0 0 16 16" className="w-4 h-4" fill={favoriteIds.has(recipe.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}
+                    style={{ color: favoriteIds.has(recipe.id) ? "#FBBF24" : "#A0A09A" }}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
+                  </svg>
+                </button>
                 <Link
                   href={`/${recipe.id}`}
                   className="group block border border-stone rounded overflow-hidden bg-white hover:border-ink-tertiary transition-colors"

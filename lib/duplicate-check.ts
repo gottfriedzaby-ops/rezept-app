@@ -39,6 +39,40 @@ function titleSimilarity(a: string, b: string): number {
   return intersection / union;
 }
 
+// Fast URL-only check — run this before any expensive processing to short-circuit
+// duplicate imports without triggering Claude API calls.
+export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | null> {
+  // Exact match
+  const { data: exact } = await supabaseAdmin
+    .from("recipes")
+    .select("id, title")
+    .eq("source_value", url)
+    .maybeSingle();
+  if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
+
+  // Normalised URL match (handles trailing slashes, UTM params, http vs https)
+  if (url.startsWith("http")) {
+    const normalizedSource = normalizeUrl(url);
+    let hostname = "";
+    try { hostname = new URL(url).hostname; } catch { /* skip */ }
+    if (hostname) {
+      const { data: candidates } = await supabaseAdmin
+        .from("recipes")
+        .select("id, title, source_value")
+        .ilike("source_value", `%${hostname}%`);
+      if (candidates) {
+        for (const row of candidates) {
+          if (normalizeUrl(row.source_value) === normalizedSource) {
+            return { existingRecipeId: row.id, existingTitle: row.title };
+          }
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
 export async function findDuplicateRecipe(
   title: string,
   sourceValue: string

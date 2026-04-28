@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 import type { JsonLdRecipeData } from "@/lib/claude";
-import { findDuplicateRecipe } from "@/lib/duplicate-check";
+import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
+import { buildKnownAmountsPreamble, UNICODE_FRACTIONS } from "@/lib/amounts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 type $Type = ReturnType<typeof cheerio.load>;
+
+const GOOGLEBOT_UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
+const BROWSER_UA =
+  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
 // Images whose URL or alt text suggest non-food product content
 const STEP_IMAGE_EXCLUSION_PATTERN =
@@ -104,60 +109,22 @@ function extractCoverImage(
   );
   if (tw) return tw;
 
-  // 4. Largest img by explicit dimensions
-  let bestSrc = "";
-  let bestArea = 0;
+  // 4. First sufficiently large img — recipe cover is almost always the first prominent image;
+  // related-recipe thumbnails appear later in the page.
+  let found: string | null = null;
   $("img").each((_, el) => {
+    if (found) return false as unknown as void; // break
     const $el = $(el);
     const w = parseInt($el.attr("width") ?? "0");
     const h = parseInt($el.attr("height") ?? "0");
-    const area = w * h;
-    if (area > bestArea) {
-      const src =
-        $el.attr("src") || $el.attr("data-src") || $el.attr("data-lazy-src");
-      if (src && !src.startsWith("data:") && !/logo|icon|avatar|banner|spinner|\.svg/i.test(src)) {
-        bestArea = area;
-        bestSrc = src;
-      }
-    }
+    const hasSrcset = !!$el.attr("srcset");
+    if (!hasSrcset && w < 300 && h < 300) return;
+    const src = $el.attr("src") || $el.attr("data-src") || $el.attr("data-lazy-src");
+    if (!src || src.startsWith("data:")) return;
+    if (/logo|icon|avatar|banner|spinner|\.svg/i.test(src)) return;
+    found = src;
   });
-  return resolve(bestSrc) ?? null;
-}
-
-// Fraction characters → decimal numbers
-const UNICODE_FRACTIONS: Record<string, number> = {
-  "½": 0.5, "¼": 0.25, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125,
-};
-
-// Deterministically extract metric amounts from parenthetical annotations like
-// "4½ cups (500 grams)", "2 scant teaspoons (10 grams)", "½ of ¼ tsp (½ gram)".
-// Returns a formatted preamble to prepend to the Claude prompt so the model never
-// has to guess at amounts that the source already states explicitly.
-function buildKnownAmountsPreamble(text: string): string {
-  // Match (NUMBER UNIT) or (FRACTION UNIT) inside parentheses
-  const re = /\(([½¼¾⅓⅔⅛]|\d+(?:\.\d+)?)\s*(grams?|g\b|ml\b|millilitres?|litres?|l\b|kg\b)\)/gi;
-  const lines: string[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    const rawAmt = m[1];
-    const rawUnit = m[2].toLowerCase();
-    const unit = /^g/.test(rawUnit) ? "g" : /^ml|^mill/.test(rawUnit) ? "ml" : /^kg/.test(rawUnit) ? "kg" : "l";
-    const amount = UNICODE_FRACTIONS[rawAmt] ?? parseFloat(rawAmt);
-    if (!isNaN(amount) && amount > 0) {
-      // Include up to 80 chars of context before the parenthesis so Claude can
-      // match the amount to the correct ingredient name.
-      const ctxStart = Math.max(0, m.index - 80);
-      const ctx = text.slice(ctxStart, m.index).replace(/\s+/g, " ").trim();
-      lines.push(`- ${amount} ${unit}  (context: "${ctx}")`);
-    }
-  }
-  if (lines.length === 0) return "";
-  return (
-    "KNOWN METRIC AMOUNTS — use these exact values for ingredient amounts; " +
-    "do NOT re-derive them from cup/tsp/oz measurements:\n" +
-    lines.join("\n") +
-    "\n\n"
-  );
+  return resolve(found ?? "") ?? null;
 }
 
 // Recursively flatten a Contentful Rich Text JSON node tree into plain text.
@@ -223,17 +190,6 @@ function extractStepImages($: $Type, pageUrl: string): string[] {
     .find("img")
     .each((_, el) => tryAdd(srcOf(el), $(el).attr("alt")));
 
-  if (images.length === 0) {
-    $("img").each((_, el) => {
-      const $el = $(el);
-      const width = parseInt($el.attr("width") ?? "0");
-      const height = parseInt($el.attr("height") ?? "0");
-      if ((width > 0 && width < 150) || (height > 0 && height < 150)) return;
-      if (!$el.attr("srcset") && width < 150 && height < 150) return;
-      tryAdd(srcOf(el), $el.attr("alt"));
-    });
-  }
-
   // Only return step images if at least one URL looks food-related
   const hasFoodImage = images.some((u) => FOOD_POSITIVE_PATTERN.test(u));
   return hasFoodImage ? images.slice(0, 10) : [];
@@ -247,9 +203,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "url is required" }, { status: 400 });
     }
 
-    const response = await fetch(url, {
-      headers: { "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" },
-    });
+    // Fast duplicate check before any expensive processing
+    const earlyDuplicate = await checkUrlDuplicate(url);
+    if (earlyDuplicate) {
+      return NextResponse.json(
+        { data: null, error: "duplicate", ...earlyDuplicate },
+        { status: 409 }
+      );
+    }
+
+    let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
+    // Cloudflare and similar WAFs block known crawler UAs with 403/406.
+    // Retry once with a browser UA before giving up.
+    if (!response.ok && (response.status === 403 || response.status === 406)) {
+      response = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+    }
     if (!response.ok) {
       return NextResponse.json(
         { data: null, error: "Seite konnte nicht geladen werden" },

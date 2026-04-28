@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { YoutubeTranscript } from "youtube-transcript";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
-import { findDuplicateRecipe } from "@/lib/duplicate-check";
+import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
+import { buildKnownAmountsPreamble, buildInlineAmountsPreamble } from "@/lib/amounts";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -37,6 +38,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "Ungültige YouTube-URL" }, { status: 400 });
     }
 
+    // Fast duplicate check before any expensive processing
+    const earlyDuplicate = await checkUrlDuplicate(videoId);
+    if (earlyDuplicate) {
+      return NextResponse.json(
+        { data: null, error: "duplicate", ...earlyDuplicate },
+        { status: 409 }
+      );
+    }
+
     const apiKey = process.env.YOUTUBE_API_KEY;
     if (!apiKey) throw new Error("YOUTUBE_API_KEY ist nicht gesetzt");
 
@@ -68,10 +78,15 @@ export async function POST(request: NextRequest) {
       // No captions available — proceed with title + description only
     }
 
+    const desc = description ?? "";
+    // Two complementary extractors: parenthetical metric "(500 g)" and inline "300ml Kirschbier"
+    const knownAmounts =
+      buildInlineAmountsPreamble(desc) + buildKnownAmountsPreamble(desc);
     const combined = [
+      knownAmounts || undefined,
       `Titel: ${videoTitle}`,
       `Kanal: ${channelName}`,
-      description && `Beschreibung:\n${description.slice(0, 3000)}`,
+      description && `Beschreibung:\n${description.slice(0, 6000)}`,
       transcriptText && `Transkript:\n${transcriptText}`,
     ]
       .filter(Boolean)

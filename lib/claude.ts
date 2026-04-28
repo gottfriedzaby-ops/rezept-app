@@ -32,6 +32,7 @@ const RULES = `
 - Translate ALL text fields (title, ingredient names, step texts, tags) into German, regardless of the source language
 - Unicode fraction characters represent exact values: ½=0.5, ¼=0.25, ¾=0.75, ⅓≈0.333, ⅔≈0.667, ⅛=0.125 — apply these when they appear in amounts (e.g. "½ gram" = 0.5 g, "¼ tsp" = 0.25 tsp)
 - Convert ALL measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). HIGHEST PRIORITY EXCEPTION: when the source provides an explicit metric value alongside a non-metric one — whether in parentheses like "2 tsp (10 g)", as a fraction like "(½ gram)", or any other form — use ONLY the stated metric value; do NOT independently convert the non-metric unit
+- German cooking abbreviations: EL (Esslöffel) = 15 ml, TL (Teelöffel) = 5 ml, Prise = 0.5 g — apply these conversions whenever they appear in ingredient amounts
 - Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100)
 - The "servings" field must reflect the recipe's actual yield (number of portions the total amounts produce)
 - scalable: set to false when the recipe requires a whole indivisible unit that cannot reasonably be prepared in a smaller fraction (e.g. a whole roast, whole fish, a full cake baked as one). Set to true for all other recipes (pasta, pizza, soups, doughs, etc.)
@@ -142,14 +143,18 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   const improved = parseClaudeJson(block.text) as ParsedRecipe;
   improved.source = recipe.source;
   improved.tags = normalizeTags(improved.tags);
-  // Restore parse-pass amounts — the review pass must not override them regardless
-  // of what it "thinks" the amounts should be (it re-derives from cup/tsp text).
+  // Restore parse-pass amounts by ingredient name — index-based matching fails when
+  // the review pass reorders ingredients (e.g. YouTube imports with many items).
   improved.servings = recipe.servings;
-  improved.ingredients = improved.ingredients.map((ing, i) =>
-    recipe.ingredients[i]
-      ? { ...ing, amount: recipe.ingredients[i].amount, unit: recipe.ingredients[i].unit }
-      : ing
-  );
+  improved.ingredients = improved.ingredients.map((ing) => {
+    const src = recipe.ingredients.find(
+      (pi) =>
+        pi.name.toLowerCase() === ing.name.toLowerCase() ||
+        pi.name.toLowerCase().includes(ing.name.toLowerCase()) ||
+        ing.name.toLowerCase().includes(pi.name.toLowerCase())
+    );
+    return src ? { ...ing, amount: src.amount, unit: src.unit } : ing;
+  });
   // Convert total amounts → per-serving for storage; all callers expect per-serving
   if (improved.servings > 0) {
     improved.ingredients = improved.ingredients.map((ing) => ({

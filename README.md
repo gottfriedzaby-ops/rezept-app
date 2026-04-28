@@ -11,12 +11,12 @@ Built with Next.js 14, Supabase, and the Anthropic Claude API. Deployed on Verce
 - **Import from URL** — paste any recipe website link; the app scrapes the page, extracts the recipe text, and parses it into structured data
 - **Import from YouTube** — paste a video link; the app fetches the transcript, description, and channel metadata and derives the recipe
 - **Import from photo** — upload a JPEG, PNG, WEBP, or HEIC image of a handwritten or printed recipe; Claude reads the text via vision
-- **AI review pass** — every imported recipe goes through a second Claude call that checks ingredient completeness, realistic amounts, step order, units, and German language consistency
+- **AI review pass** — every imported recipe goes through a second Claude call that checks ingredient completeness, realistic amounts, step order, and German language consistency using home-kitchen vocabulary
 - **Review before saving** — a pre-save form lets you correct the parsed data; ingredient amounts are shown as totals (e.g. for 4 servings) and divided back to per-serving on save
-- **Cover images** — extracted from og:image for URLs, YouTube thumbnails for videos, and uploaded to Supabase Storage for photos; tag-based gradient fallbacks when no image is available
+- **Cover images** — extracted in priority order: JSON-LD image, og:image, twitter:image, largest img; YouTube thumbnails for videos; uploaded to Supabase Storage for photos; tag-based gradient fallbacks when no image is available
 - **Tag normalisation** — a synonym map canonicalises tags to lowercase German (e.g. "vegetarian" → "vegetarisch", "Italian" → "italienisch") and deduplicates
 - **Duplicate detection** — checks exact source match, normalised URL match (strips UTM params, trailing slashes), and fuzzy title similarity (Jaccard ≥ 85%) before allowing a save
-- **Scaling** — recipe detail page scales all ingredient amounts dynamically by serving count
+- **Scaling** — recipe detail page scales all ingredient amounts dynamically by serving count; non-scalable recipes (whole roast, full cake, …) lock the counter at the original yield
 - **Cook mode** — step-by-step cooking view with per-step countdown timers, an audio beep on completion, and screen wake lock
 - **Search and tag filtering** — client-side filtering on the recipe list; no page reload required
 
@@ -122,15 +122,22 @@ User input (URL / video / photo)
         │
         ▼
   Fetch raw content
-  (scrape HTML / YouTube transcript / base64 image)
+  URL: Googlebot UA → full HTML; extract JSON-LD, Contentful rich-text
+       attributes, cover image, step images, and parenthetical metric
+       amounts (e.g. "4½ cups (500 grams)") as structured ground truth
+  YouTube: transcript + description + channel metadata
+  Photo: base64 encoded image
         │
         ▼
   Claude call 1 — parse
-  Returns structured ParsedRecipe JSON
+  JSON-LD structured data takes priority; known metric amounts injected
+  as prompt preamble so amounts are never re-derived from cup/tsp text.
+  Returns structured ParsedRecipe JSON with total ingredient amounts.
         │
         ▼
   Claude call 2 — review
-  Checks completeness, amounts, units, German language, tags
+  Checks completeness, step order, German home-kitchen vocabulary, tags.
+  Code guard restores parse-pass amounts — review cannot override them.
         │
         ▼
   Duplicate check

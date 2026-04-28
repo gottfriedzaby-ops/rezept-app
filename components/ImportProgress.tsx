@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from "react";
 
-type ImportType = "url" | "youtube" | "photo";
+type ImportType = "url" | "youtube" | "photo" | "instagram";
 
 const FIRST_STAGE: Record<ImportType, string> = {
   url: "Website wird abgerufen…",
   youtube: "Transkript wird abgerufen…",
   photo: "Foto wird verarbeitet…",
+  instagram: "Caption wird abgerufen…",
 };
 
 const LATER_STAGES = [

@@ -10,7 +10,7 @@ export interface Step {
   timerSeconds: number | null;
 }
 
-export type SourceType = "url" | "photo" | "youtube" | "manual";
+export type SourceType = "url" | "photo" | "youtube" | "instagram" | "manual";
 
 export interface Recipe {
   id: string;

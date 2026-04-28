@@ -99,6 +99,17 @@ export default async function RecipeDetailPage({
           </a>
         )}
 
+        {recipe.source_type === "instagram" && (
+          <a
+            href={`https://www.instagram.com/p/${recipe.source_value}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
+          >
+            {recipe.source_title ? `Instagram · @${recipe.source_title}` : "Instagram"}
+          </a>
+        )}
+
         <RecipeDetail recipe={recipe} />
       </div>
     </div>

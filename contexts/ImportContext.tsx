@@ -4,7 +4,7 @@ import { createContext, useContext, useState } from "react";
 import type { ParsedRecipe } from "@/types/recipe";
 
 type Phase = "idle" | "loading" | "review" | "success";
-type ImportType = "url" | "youtube" | "photo";
+type ImportType = "url" | "youtube" | "photo" | "instagram";
 
 export interface ParseResult {
   recipe: ParsedRecipe;

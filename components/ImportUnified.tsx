@@ -7,7 +7,7 @@ import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
 import { useImport } from "@/contexts/ImportContext";
 
-type ImportType = "url" | "youtube" | "photo";
+type ImportType = "url" | "youtube" | "photo" | "instagram";
 
 interface ImportApiResponse {
   data: {
@@ -21,6 +21,7 @@ interface ImportApiResponse {
   existingTitle?: string;
 }
 
+const INSTAGRAM_RE = /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv)\//i;
 const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
 const URL_RE = /^https?:\/\//i;
 const MAX_SIDE = 1920;
@@ -42,6 +43,7 @@ async function safeParseJson(res: Response): Promise<ImportApiResponse> {
 function detectType(url: string, file: File | null): ImportType | null {
   if (file) return "photo";
   const t = url.trim();
+  if (INSTAGRAM_RE.test(t)) return "instagram";
   if (YOUTUBE_RE.test(t)) return "youtube";
   if (URL_RE.test(t)) return "url";
   return null;
@@ -144,7 +146,10 @@ export default function ImportUnified() {
         const res = await fetch("/api/import-photo", { method: "POST", body: formData });
         json = await safeParseJson(res);
       } else {
-        const endpoint = inputType === "youtube" ? "/api/import-youtube" : "/api/import-url";
+        const endpoint =
+          inputType === "youtube" ? "/api/import-youtube" :
+          inputType === "instagram" ? "/api/import-instagram" :
+          "/api/import-url";
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },

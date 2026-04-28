@@ -89,11 +89,17 @@ function extractCoverImage(
   // 1. JSON-LD image (most authoritative — directly describes the recipe's food photo)
   if (jsonLd?.image) {
     const img = jsonLd.image;
-    const src =
-      typeof img === "string" ? img :
-      Array.isArray(img) ? img[0] :
-      typeof img === "object" && img.url ? img.url :
-      undefined;
+    let src: string | undefined;
+    if (typeof img === "string") {
+      src = img;
+    } else if (Array.isArray(img)) {
+      const first = img[0];
+      // Elements may be plain strings or ImageObject-like { url: "..." }
+      if (typeof first === "string") src = first;
+      else if (first && typeof first === "object") src = (first as Record<string, unknown>).url as string | undefined;
+    } else if (typeof img === "object" && img !== null) {
+      src = img.url;
+    }
     const resolved = resolve(src);
     if (resolved) return resolved;
   }

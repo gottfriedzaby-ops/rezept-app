@@ -51,10 +51,16 @@ export async function POST(request: NextRequest) {
 
     const oembedRes = await fetch(oembedUrl.toString(), { cache: "no-store" });
     if (!oembedRes.ok) {
-      return NextResponse.json(
-        { data: null, error: "Instagram-Post konnte nicht geladen werden" },
-        { status: 400 }
-      );
+      let metaError = "";
+      try {
+        const body = await oembedRes.json() as { error?: { message?: string; code?: number; type?: string } };
+        metaError = body?.error?.message ?? "";
+      } catch { /* ignore */ }
+      console.error("[import-instagram] oEmbed API error", oembedRes.status, metaError);
+      const userMessage = metaError
+        ? `Instagram-Fehler: ${metaError}`
+        : `Instagram-Post konnte nicht geladen werden (HTTP ${oembedRes.status})`;
+      return NextResponse.json({ data: null, error: userMessage }, { status: 400 });
     }
 
     const oembed = (await oembedRes.json()) as OembedResponse;

@@ -88,6 +88,17 @@ export default async function RecipeDetailPage({
           </a>
         )}
 
+        {recipe.source_type === "youtube" && (
+          <a
+            href={`https://www.youtube.com/watch?v=${recipe.source_value}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
+          >
+            {recipe.source_title ? `YouTube · ${recipe.source_title}` : "YouTube"}
+          </a>
+        )}
+
         <RecipeDetail recipe={recipe} />
       </div>
     </div>

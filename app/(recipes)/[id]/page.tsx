@@ -84,7 +84,7 @@ export default async function RecipeDetailPage({
             rel="noopener noreferrer"
             className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
           >
-            {recipe.source_title ?? recipe.source_value}
+            {(recipe.source_title ?? recipe.source_value).slice(0, 120)}
           </a>
         )}
 

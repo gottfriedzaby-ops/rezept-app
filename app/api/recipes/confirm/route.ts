@@ -44,6 +44,7 @@ export async function POST(request: NextRequest) {
         description: null,
         image_url: imageUrl ?? null,
         step_images: stepImages,
+        scalable: recipe.scalable ?? true,
       })
       .select()
       .single();

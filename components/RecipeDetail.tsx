@@ -13,6 +13,7 @@ function formatAmount(amountPerServing: number, servings: number): string {
 
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const [servings, setServings] = useState(recipe.servings ?? 1);
+  const minServings = recipe.scalable === false ? (recipe.servings ?? 1) : 1;
 
   return (
     <>
@@ -22,8 +23,9 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
           <span className="label-overline">Portionen</span>
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setServings((s) => Math.max(1, s - 1))}
-              className="w-8 h-8 rounded border border-stone flex items-center justify-center text-ink-secondary hover:bg-surface-hover transition-colors text-base leading-none"
+              onClick={() => setServings((s) => Math.max(minServings, s - 1))}
+              disabled={servings <= minServings}
+              className="w-8 h-8 rounded border border-stone flex items-center justify-center text-ink-secondary hover:bg-surface-hover transition-colors text-base leading-none disabled:opacity-30 disabled:cursor-not-allowed"
               aria-label="Weniger Portionen"
             >
               −
@@ -40,6 +42,12 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
             </button>
           </div>
         </div>
+
+        {recipe.scalable === false && servings <= minServings && (
+          <p className="text-xs text-ink-tertiary mb-4">
+            Dieses Rezept ist für {minServings} Portion{minServings !== 1 ? "en" : ""} ausgelegt und kann nicht weiter reduziert werden.
+          </p>
+        )}
 
         <Link
           href={`/${recipe.id}/cook?servings=${servings}`}

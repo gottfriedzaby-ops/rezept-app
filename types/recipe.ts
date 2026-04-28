@@ -30,6 +30,7 @@ export interface Recipe {
   image_url: string | null;
   step_images: string[] | null;
   favorite: boolean;
+  scalable: boolean | null;
 }
 
 export interface ImportJob {
@@ -51,4 +52,5 @@ export interface ParsedRecipe {
   steps: Step[];
   tags: string[];
   source: { type: SourceType; value: string };
+  scalable?: boolean;
 }

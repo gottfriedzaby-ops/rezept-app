@@ -5,19 +5,17 @@ import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
+import { useImport } from "@/contexts/ImportContext";
 
-type Phase = "input" | "loading" | "review" | "success";
 type ImportType = "url" | "youtube" | "photo";
 
-interface ParseResult {
-  recipe: ParsedRecipe;
-  sourceTitle: string;
-  stepImages?: string[];
-  imageUrl?: string | null;
-}
-
 interface ImportApiResponse {
-  data: ParseResult | null;
+  data: {
+    recipe: ParsedRecipe;
+    sourceTitle: string;
+    stepImages?: string[];
+    imageUrl?: string | null;
+  } | null;
   error: string | null;
   existingRecipeId?: string;
   existingTitle?: string;
@@ -84,17 +82,19 @@ export default function ImportUnified() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // UI-local state (doesn't need to survive navigation)
   const [urlInput, setUrlInput] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [phase, setPhase] = useState<Phase>("input");
-  const [activeType, setActiveType] = useState<ImportType | null>(null);
-  const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [duplicateId, setDuplicateId] = useState<string | null>(null);
-  const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
+
+  // Global import state (survives navigation)
+  const {
+    phase, activeType, parseResult, error, duplicateId, duplicateTitle,
+    setPhase, setActiveType, setParseResult, setError,
+    setDuplicateId, setDuplicateTitle, reset,
+  } = useImport();
 
   const inputType = detectType(urlInput, file);
   const canSubmit = inputType !== null && phase !== "loading";
@@ -156,17 +156,17 @@ export default function ImportUnified() {
       if (json.error === "duplicate" && json.existingRecipeId) {
         setDuplicateId(json.existingRecipeId);
         setDuplicateTitle(json.existingTitle ?? null);
-        setPhase("input");
+        setPhase("idle");
       } else if (json.error || !json.data) {
         setError(json.error ?? "Import fehlgeschlagen");
-        setPhase("input");
+        setPhase("idle");
       } else {
         setParseResult(json.data);
         setPhase("review");
       }
     } catch {
       setError("Netzwerkfehler. Bitte erneut versuchen.");
-      setPhase("input");
+      setPhase("idle");
     }
   }
 
@@ -191,7 +191,7 @@ export default function ImportUnified() {
       if (json.error === "duplicate" && json.existingRecipeId) {
         setDuplicateId(json.existingRecipeId);
         setDuplicateTitle(json.existingTitle ?? null);
-        setPhase("input");
+        setPhase("idle");
         setParseResult(null);
       } else if (json.error) {
         setError(json.error);
@@ -211,18 +211,13 @@ export default function ImportUnified() {
     setError(null);
     setDuplicateId(null);
     setDuplicateTitle(null);
-    setPhase("input");
+    setPhase("idle");
   }
 
   function handleReset() {
     setUrlInput("");
     clearFile();
-    setParseResult(null);
-    setError(null);
-    setDuplicateId(null);
-    setDuplicateTitle(null);
-    setActiveType(null);
-    setPhase("input");
+    reset();
   }
 
   if (phase === "loading" && activeType) {

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import "./globals.css";
+import { ImportProvider } from "@/contexts/ImportContext";
+import ImportStatusPill from "@/components/ImportStatusPill";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -27,7 +29,10 @@ export default function RootLayout({
   return (
     <html lang="de" className={`${inter.variable} ${fraunces.variable}`}>
       <body className="font-sans antialiased bg-surface-primary text-ink-primary">
-        {children}
+        <ImportProvider>
+          {children}
+          <ImportStatusPill />
+        </ImportProvider>
       </body>
     </html>
   );

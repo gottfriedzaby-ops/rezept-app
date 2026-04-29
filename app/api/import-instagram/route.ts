@@ -37,8 +37,9 @@ async function fetchPostData(shortcode: string): Promise<{ caption: string; imag
   const imageUrl = $('meta[property="og:image"]').attr("content") ?? null;
 
   const rawTitle = $('meta[property="og:title"]').attr("content") ?? "";
-  // og:title format: "Display Name on Instagram: ..."
-  const author = rawTitle.replace(/ on Instagram.*/i, "").trim() || null;
+  // og:title format: "Display Name on Instagram: ..." (may be multiline — use [\s\S]* not .*)
+  const authorMatch = rawTitle.match(/^([\s\S]+?)\s+on Instagram/i);
+  const author = authorMatch ? authorMatch[1].trim() : null;
 
   return { caption, imageUrl, author };
 }

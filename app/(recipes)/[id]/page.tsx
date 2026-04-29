@@ -5,6 +5,7 @@ import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
+import PdfExportButton from "@/components/PdfExportButton";
 import { getTagColor } from "@/lib/tag-colors";
 import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 
@@ -49,7 +50,10 @@ export default async function RecipeDetailPage({
           <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em] leading-tight">
             {recipe.title}
           </h1>
-          <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />
+          <div className="flex items-center gap-0 -mr-1">
+            <PdfExportButton recipe={recipe} />
+            <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />
+          </div>
         </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">

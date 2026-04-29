@@ -74,9 +74,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Pre-filter: common "recipe not in caption" signals
+    const NO_RECIPE_SIGNALS = /link in (my )?bio|type .{1,20} in (the )?comments?|send .{1,20} (to )?(your )?dm|recipe in (the )?comments?|check (the )?bio|find it (in|through|via)/i;
+    if (NO_RECIPE_SIGNALS.test(caption)) {
+      return NextResponse.json(
+        { data: null, error: "Kein Rezept in der Bildunterschrift gefunden — der Post verweist auf Bio oder Kommentare" },
+        { status: 422 }
+      );
+    }
+
     const parsed = await parseRecipeFromText(caption, "instagram", shortcode);
 
-    if (parsed.ingredients.length === 0 && parsed.steps.length === 0) {
+    // Require at least 3 ingredients and 2 steps to guard against Claude hallucinating
+    // a recipe from a dish name alone
+    if (parsed.ingredients.length < 3 || parsed.steps.length < 2) {
       return NextResponse.json(
         { data: null, error: "Kein Rezept in der Bildunterschrift gefunden" },
         { status: 422 }

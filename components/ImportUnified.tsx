@@ -277,7 +277,7 @@ export default function ImportUnified() {
           type="text"
           value={urlInput}
           onChange={(e) => { setUrlInput(e.target.value); setError(null); }}
-          placeholder="Website oder YouTube-Link einfügen…"
+          placeholder="Website, YouTube- oder Instagram-Link einfügen…"
           disabled={phase === "loading"}
           className="input-field disabled:opacity-50"
         />
@@ -344,7 +344,7 @@ export default function ImportUnified() {
       {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
         <p className="text-xs text-ink-tertiary text-center">
-          Website, YouTube-Link oder Foto eines Rezepts
+          Website, YouTube-, Instagram-Link oder Foto eines Rezepts
         </p>
       )}
     </form>

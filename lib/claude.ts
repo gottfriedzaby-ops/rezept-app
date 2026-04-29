@@ -183,6 +183,45 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   return improved;
 }
 
+export async function parseRecipeFromImages(
+  imageUrls: string[],
+  sourceValue: string
+): Promise<ParsedRecipe> {
+  const multi = imageUrls.length > 1;
+  const content = [
+    ...imageUrls.map((url) => ({
+      type: "image" as const,
+      source: { type: "url" as const, url },
+    })),
+    {
+      type: "text" as const,
+      text: `Read all recipe text visible in ${multi ? `these ${imageUrls.length} images` : "this image"} and extract the${multi ? " complete" : ""} recipe.${multi ? ` The images may show different parts of the same recipe (e.g. ingredients list, steps, different pages). Combine all information into one complete recipe.` : ""} Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
+    },
+  ];
+
+  const message = await client.messages.create({
+    model: "claude-sonnet-4-6",
+    max_tokens: 4096,
+    messages: [{ role: "user", content }],
+  });
+
+  const block = message.content[0];
+  if (block.type !== "text") throw new Error("Unexpected Claude response type");
+
+  const parsed = parseClaudeJson(block.text) as ParsedRecipe;
+  parsed.tags = normalizeTags(parsed.tags);
+  if (parsed.servings > 0) {
+    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+      ...section,
+      ingredients: section.ingredients.map((ing) => ({
+        ...ing,
+        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
+      })),
+    }));
+  }
+  return parsed;
+}
+
 export async function parseRecipeFromImage(
   base64: string,
   mediaType: ImageMediaType,

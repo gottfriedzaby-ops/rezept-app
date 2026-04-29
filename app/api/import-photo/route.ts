@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import heicConvert from "heic-convert";
-import { parseRecipeFromImage, reviewAndImproveRecipe } from "@/lib/claude";
+import { parseRecipeFromImage, parseRecipeFromImages, reviewAndImproveRecipe } from "@/lib/claude";
 import { supabaseAdmin } from "@/lib/supabase";
 import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
@@ -23,7 +23,7 @@ async function uploadToStorage(
     const path = `${Date.now()}-${base}.${ext}`;
 
     const { data, error } = await supabaseAdmin.storage
-      .from("recipe-images") // bucket must exist in Supabase with public access enabled
+      .from("recipe-images")
       .upload(path, buffer, { contentType: mimeType, upsert: false });
 
     if (error || !data) return null;
@@ -40,6 +40,42 @@ async function uploadToStorage(
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get("content-type") ?? "";
+
+    // ── New path: JSON body with pre-uploaded Supabase Storage URLs ──────────
+    if (contentType.includes("application/json")) {
+      const { urls, fileNames } = (await request.json()) as {
+        urls: string[];
+        fileNames: string[];
+      };
+
+      if (!urls || urls.length === 0) {
+        return NextResponse.json({ data: null, error: "urls ist erforderlich" }, { status: 400 });
+      }
+
+      const sourceValue = fileNames?.[0] ?? "photo";
+      const parsed = await parseRecipeFromImages(urls, sourceValue);
+      const reviewed = await reviewAndImproveRecipe(parsed);
+
+      const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue);
+      if (duplicate) {
+        return NextResponse.json(
+          { data: null, error: "duplicate", ...duplicate },
+          { status: 409 }
+        );
+      }
+
+      return NextResponse.json({
+        data: {
+          recipe: reviewed,
+          sourceTitle: fileNames?.[0] ?? null,
+          imageUrl: urls[0] ?? null,
+        },
+        error: null,
+      });
+    }
+
+    // ── Legacy path: FormData with single photo field ─────────────────────────
     const formData = await request.formData();
     const photo = formData.get("photo") as File | null;
 
@@ -66,7 +102,6 @@ export async function POST(request: NextRequest) {
 
     if (isHeic) {
       try {
-        // Pass the raw ArrayBuffer — heicConvert expects ArrayBufferLike, not Buffer
         const converted = await heicConvert({ buffer: arrayBuffer, format: "JPEG", quality: 0.9 });
         buffer = Buffer.from(converted);
         finalMediaType = "image/jpeg";
@@ -80,7 +115,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Upload photo to Supabase Storage (the uploaded photo IS the cover image)
     const imageUrl = await uploadToStorage(buffer, fileName, finalMediaType);
     console.log("[import-photo] storage upload result:", imageUrl ?? "skipped/failed");
 

@@ -9,19 +9,19 @@ export const maxDuration = 60;
 const SHORTCODE_RE =
   /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv)\/([A-Za-z0-9_-]+)/i;
 
-const BROWSER_UA =
-  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+const GOOGLEBOT_UA =
+  "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)";
 
 function extractShortcode(url: string): string | null {
   const m = url.match(SHORTCODE_RE);
   return m ? m[1] : null;
 }
 
-async function fetchCaption(shortcode: string): Promise<{ caption: string; imageUrl: string | null; author: string | null }> {
-  // Instagram's public embed page — no API key or app review needed
-  const embedUrl = `https://www.instagram.com/p/${shortcode}/embed/captioned/`;
-  const res = await fetch(embedUrl, {
-    headers: { "User-Agent": BROWSER_UA },
+async function fetchPostData(shortcode: string): Promise<{ caption: string; imageUrl: string | null; author: string | null }> {
+  // Instagram serves full og:description (up to ~2500 chars) to Googlebot — no API key needed
+  const postUrl = `https://www.instagram.com/p/${shortcode}/`;
+  const res = await fetch(postUrl, {
+    headers: { "User-Agent": GOOGLEBOT_UA },
     cache: "no-store",
   });
 
@@ -30,48 +30,17 @@ async function fetchCaption(shortcode: string): Promise<{ caption: string; image
   const html = await res.text();
   const $ = cheerio.load(html);
 
-  // Caption selectors — Instagram changes class names; try several
-  const caption =
-    $(".Caption").text().trim() ||
-    $(".caption").text().trim() ||
-    $("[class*='Caption']").first().text().trim() ||
-    $("article .comment").first().text().trim() ||
-    extractCaptionFromScript($) ||
-    "";
+  const rawDescription = $('meta[property="og:description"]').attr("content") ?? "";
+  // Strip the "X likes, Y comments - username on Date: " prefix Instagram adds
+  const caption = rawDescription.replace(/^[\d,.]+ likes[^:]*:\s*"?/i, "").replace(/"$/, "").trim();
 
-  const imageUrl =
-    $('meta[property="og:image"]').attr("content") ??
-    $('meta[name="twitter:image"]').attr("content") ??
-    null;
+  const imageUrl = $('meta[property="og:image"]').attr("content") ?? null;
 
-  const author =
-    $('meta[property="og:title"]').attr("content")?.replace(/ on Instagram.*/, "").trim() ??
-    null;
+  const rawTitle = $('meta[property="og:title"]').attr("content") ?? "";
+  // og:title format: "Display Name on Instagram: ..."
+  const author = rawTitle.replace(/ on Instagram.*/i, "").trim() || null;
 
-  return { caption, imageUrl: imageUrl ?? null, author };
-}
-
-// Try to extract caption from embedded JSON in <script> tags
-function extractCaptionFromScript($: ReturnType<typeof cheerio.load>): string {
-  let found = "";
-  $("script").each((_, el) => {
-    if (found) return;
-    const src = $(el).html() ?? "";
-
-    // Pattern 1: "text":"caption text here"
-    const m1 = src.match(/"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (m1 && m1[1].length > 20) {
-      found = m1[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-      return;
-    }
-
-    // Pattern 2: window.__additionalDataLoaded
-    const m2 = src.match(/window\.__additionalDataLoaded\s*\(.+?"text"\s*:\s*"((?:[^"\\]|\\.)*)"/);
-    if (m2 && m2[1].length > 20) {
-      found = m2[1].replace(/\\n/g, "\n").replace(/\\"/g, '"').replace(/\\\\/g, "\\");
-    }
-  });
-  return found;
+  return { caption, imageUrl, author };
 }
 
 export async function POST(request: NextRequest) {
@@ -95,7 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { caption, imageUrl, author } = await fetchCaption(shortcode);
+    const { caption, imageUrl, author } = await fetchPostData(shortcode);
 
     if (!caption) {
       return NextResponse.json(

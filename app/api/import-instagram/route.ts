@@ -87,7 +87,9 @@ export async function POST(request: NextRequest) {
 
     // Require at least 3 ingredients and 2 steps to guard against Claude hallucinating
     // a recipe from a dish name alone
-    if (parsed.ingredients.length < 3 || parsed.steps.length < 2) {
+    const totalIngredients = parsed.sections.reduce((n, s) => n + s.ingredients.length, 0);
+    const totalSteps = parsed.sections.reduce((n, s) => n + s.steps.length, 0);
+    if (totalIngredients < 3 || totalSteps < 2) {
       return NextResponse.json(
         { data: null, error: "Kein Rezept in der Bildunterschrift gefunden" },
         { status: 422 }

@@ -10,6 +10,14 @@ export interface Step {
   timerSeconds: number | null;
 }
 
+export type RecipeType = "kochen" | "backen" | "grillen" | "zubereiten";
+
+export interface RecipeSection {
+  title: string | null;
+  ingredients: Ingredient[];
+  steps: Step[];
+}
+
 export type SourceType = "url" | "photo" | "youtube" | "instagram" | "manual";
 
 export interface Recipe {
@@ -21,8 +29,10 @@ export interface Recipe {
   servings: number | null;
   prep_time: number | null;
   cook_time: number | null;
+  recipe_type: RecipeType;
   ingredients: Ingredient[];
   steps: Step[];
+  sections: RecipeSection[] | null;
   tags: string[];
   source_type: SourceType;
   source_value: string;
@@ -48,9 +58,15 @@ export interface ParsedRecipe {
   servings: number;
   prepTime: number;
   cookTime: number;
-  ingredients: Ingredient[];
-  steps: Step[];
+  recipe_type: RecipeType;
+  sections: RecipeSection[];
   tags: string[];
   source: { type: SourceType; value: string };
   scalable?: boolean;
+}
+
+/** Returns a normalized sections array from any Recipe, including pre-migration ones. */
+export function getRecipeSections(recipe: Recipe): RecipeSection[] {
+  if (recipe.sections && recipe.sections.length > 0) return recipe.sections;
+  return [{ title: null, ingredients: recipe.ingredients, steps: recipe.steps }];
 }

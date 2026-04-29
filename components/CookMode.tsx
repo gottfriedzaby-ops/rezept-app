@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import type { Recipe } from "@/types/recipe";
+import type { Recipe, Step } from "@/types/recipe";
+import { getRecipeSections } from "@/types/recipe";
+import { ctaLabelFor } from "@/lib/recipeTypeLabels";
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -36,22 +38,36 @@ function playBeep() {
   }
 }
 
+interface CookStep {
+  step: Step;
+  sectionTitle: string | null;
+}
+
 interface Props {
   recipe: Recipe;
   initialServings: number;
 }
 
 export default function CookMode({ recipe, initialServings }: Props) {
-  const steps = recipe.steps;
+  const sections = getRecipeSections(recipe);
+  const multiSection = sections.length > 1 || sections[0]?.title !== null;
+
+  // Flatten all steps across sections, keeping track of which section each belongs to
+  const cookSteps: CookStep[] = sections.flatMap((section) =>
+    section.steps.map((step) => ({ step, sectionTitle: section.title }))
+  );
+
+  // Flat ingredient list across all sections for the accordion
+  const allIngredients = sections.flatMap((s) => s.ingredients);
 
   const [stepIndex, setStepIndex] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number | null>(steps[0]?.timerSeconds ?? null);
+  const [timeLeft, setTimeLeft] = useState<number | null>(cookSteps[0]?.step.timerSeconds ?? null);
   const [timerRunning, setTimerRunning] = useState(false);
 
-  const currentStep = steps[stepIndex];
+  const currentCookStep = cookSteps[stepIndex];
   const isFirst = stepIndex === 0;
-  const isLast = stepIndex === steps.length - 1;
+  const isLast = stepIndex === cookSteps.length - 1;
 
   // Wake Lock
   useEffect(() => {
@@ -83,8 +99,8 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
   useEffect(() => {
     setTimerRunning(false);
-    setTimeLeft(steps[stepIndex]?.timerSeconds ?? null);
-  }, [stepIndex, steps]);
+    setTimeLeft(cookSteps[stepIndex]?.step.timerSeconds ?? null);
+  }, [stepIndex, cookSteps]);
 
   useEffect(() => {
     if (!timerRunning || timeLeft === null || timeLeft <= 0) return;
@@ -98,8 +114,8 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
   const resetTimer = useCallback(() => {
     setTimerRunning(false);
-    setTimeLeft(currentStep?.timerSeconds ?? null);
-  }, [currentStep]);
+    setTimeLeft(currentCookStep?.step.timerSeconds ?? null);
+  }, [currentCookStep]);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
@@ -117,7 +133,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
             {recipe.title}
           </p>
           <p className="text-lg font-medium text-ink-primary tabular-nums">
-            {stepIndex + 1} / {steps.length}
+            {stepIndex + 1} / {cookSteps.length}
           </p>
         </div>
         <div className="w-20" />
@@ -125,11 +141,16 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
       {/* Step content */}
       <main className="flex-1 overflow-y-auto px-6 py-10 max-w-[720px] mx-auto w-full flex flex-col gap-8">
+        {/* Section label — shown above step text for multi-section recipes */}
+        {multiSection && currentCookStep.sectionTitle && (
+          <p className="label-overline text-forest">{currentCookStep.sectionTitle}</p>
+        )}
+
         <p
           className="font-serif font-medium text-ink-primary leading-relaxed"
           style={{ fontSize: "clamp(1.4rem, 4vw, 1.875rem)" }}
         >
-          {currentStep.text}
+          {currentCookStep.step.text}
         </p>
 
         {/* Timer */}
@@ -175,19 +196,47 @@ export default function CookMode({ recipe, initialServings }: Props) {
         </button>
 
         {showIngredients && (
-          <ul className="px-6 pb-5 space-y-3 bg-surface-secondary border-t border-stone">
-            {recipe.ingredients.map((ing, i) => (
-              <li key={i} className="flex gap-4 text-sm pt-3">
-                {ing.amount > 0 && (
-                  <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                    {formatAmount(ing.amount, initialServings)}
-                    {ing.unit ? ` ${ing.unit}` : ""}
-                  </span>
-                )}
-                <span className="text-ink-secondary">{ing.name}</span>
-              </li>
-            ))}
-          </ul>
+          <div className="px-6 pb-5 bg-surface-secondary border-t border-stone">
+            {multiSection
+              ? sections.map((section, sIdx) => (
+                  <div key={sIdx}>
+                    {section.title && (
+                      <p className="text-xs font-medium text-ink-tertiary uppercase tracking-wider pt-4 pb-2">
+                        {section.title}
+                      </p>
+                    )}
+                    <ul className="space-y-3">
+                      {section.ingredients.map((ing, i) => (
+                        <li key={i} className="flex gap-4 text-sm pt-1">
+                          {ing.amount > 0 && (
+                            <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
+                              {formatAmount(ing.amount, initialServings)}
+                              {ing.unit ? ` ${ing.unit}` : ""}
+                            </span>
+                          )}
+                          <span className="text-ink-secondary">{ing.name}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))
+              : (
+                <ul className="space-y-3">
+                  {allIngredients.map((ing, i) => (
+                    <li key={i} className="flex gap-4 text-sm pt-3">
+                      {ing.amount > 0 && (
+                        <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
+                          {formatAmount(ing.amount, initialServings)}
+                          {ing.unit ? ` ${ing.unit}` : ""}
+                        </span>
+                      )}
+                      <span className="text-ink-secondary">{ing.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              )
+            }
+          </div>
         )}
       </div>
 

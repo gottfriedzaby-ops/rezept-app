@@ -28,6 +28,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Flatten sections → ingredients and steps for backward-compat DB columns
+    const sections = recipe.sections ?? [];
+    const allIngredients = sections.flatMap((s) => s.ingredients);
+    const allSteps = sections
+      .flatMap((s) => s.steps)
+      .map((s, i) => ({ ...s, order: i + 1 }));
+
     const { data: insertData, error: dbError } = await supabaseAdmin
       .from("recipes")
       .insert({
@@ -35,8 +42,10 @@ export async function POST(request: NextRequest) {
         servings: recipe.servings,
         prep_time: recipe.prepTime,
         cook_time: recipe.cookTime,
-        ingredients: recipe.ingredients,
-        steps: recipe.steps,
+        recipe_type: recipe.recipe_type ?? "kochen",
+        sections,
+        ingredients: allIngredients,
+        steps: allSteps,
         tags: recipe.tags,
         source_type: recipe.source.type,
         source_value: recipe.source.value,

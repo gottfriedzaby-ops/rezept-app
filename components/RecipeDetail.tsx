@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { Recipe } from "@/types/recipe";
+import { getRecipeSections } from "@/types/recipe";
+import { ctaLabelFor } from "@/lib/recipeTypeLabels";
 
 function formatAmount(amountPerServing: number, servings: number): string {
   const total = amountPerServing * servings;
@@ -14,6 +16,10 @@ function formatAmount(amountPerServing: number, servings: number): string {
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const [servings, setServings] = useState(recipe.servings ?? 1);
   const minServings = recipe.scalable === false ? (recipe.servings ?? 1) : 1;
+
+  const sections = getRecipeSections(recipe);
+  const showSectionHeaders = sections.length > 1 || sections[0]?.title !== null;
+  const ctaLabel = ctaLabelFor(recipe.recipe_type ?? "kochen");
 
   return (
     <>
@@ -53,62 +59,81 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
           href={`/${recipe.id}/cook?servings=${servings}`}
           className="flex items-center justify-center w-full py-4 bg-forest text-white font-medium rounded hover:bg-forest-deep transition-colors"
         >
-          Jetzt kochen →
+          {ctaLabel} →
         </Link>
       </div>
 
-      {/* Ingredients */}
-      <section className="mt-12">
-        <h2 className="label-overline mb-6">Zutaten</h2>
-        <ul className="space-y-3">
-          {recipe.ingredients.map((ing, i) => (
-            <li key={i} className="flex gap-4 text-sm">
-              {ing.amount > 0 && (
-                <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                  {formatAmount(ing.amount, servings)}
-                  {ing.unit ? ` ${ing.unit}` : ""}
-                </span>
-              )}
-              <span className="text-ink-secondary">{ing.name}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {/* Sections — ingredients + steps per section */}
+      {sections.map((section, sIdx) => (
+        <div key={sIdx}>
+          {/* Section header — only shown for multi-section or named sections */}
+          {showSectionHeaders && section.title && (
+            <h3 className="font-serif text-lg font-medium text-ink-primary mt-12 mb-2 pb-2 border-b border-stone">
+              {section.title}
+            </h3>
+          )}
 
-      {/* Steps */}
-      <section className="mt-12">
-        <h2 className="label-overline mb-6">Zubereitung</h2>
-        <ol className="space-y-8">
-          {recipe.steps.map((step, i) => {
-            const imgUrl = recipe.step_images?.[i];
-            return (
-              <li key={step.order} className="flex gap-6">
-                <span className="font-medium text-ink-tertiary text-sm mt-0.5 w-5 shrink-0 tabular-nums">
-                  {step.order}.
-                </span>
-                <div className="flex-1">
-                  <p className="text-ink-primary leading-relaxed">
-                    {step.text}
-                    {step.timerSeconds ? (
-                      <span className="ml-2 text-xs text-ink-tertiary">
-                        ({Math.round(step.timerSeconds / 60)} Min.)
-                      </span>
-                    ) : null}
-                  </p>
-                  {imgUrl && (
-                    <img
-                      src={imgUrl}
-                      alt={`Schritt ${step.order}`}
-                      className="mt-4 rounded max-w-sm w-full object-cover"
-                      loading="lazy"
-                    />
+          {/* Ingredients */}
+          <section className={showSectionHeaders && section.title ? "mt-6" : "mt-12"}>
+            {(!showSectionHeaders || sIdx === 0) && (
+              <h2 className="label-overline mb-6">Zutaten</h2>
+            )}
+            <ul className="space-y-3">
+              {section.ingredients.map((ing, i) => (
+                <li key={i} className="flex gap-4 text-sm">
+                  {ing.amount > 0 && (
+                    <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
+                      {formatAmount(ing.amount, servings)}
+                      {ing.unit ? ` ${ing.unit}` : ""}
+                    </span>
                   )}
-                </div>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+                  <span className="text-ink-secondary">{ing.name}</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+
+          {/* Steps */}
+          <section className="mt-8">
+            {(!showSectionHeaders || sIdx === 0) && (
+              <h2 className="label-overline mb-6">Zubereitung</h2>
+            )}
+            <ol className="space-y-8">
+              {section.steps.map((step, i) => {
+                const globalStepIndex = sections
+                  .slice(0, sIdx)
+                  .reduce((acc, s) => acc + s.steps.length, 0) + i;
+                const imgUrl = recipe.step_images?.[globalStepIndex];
+                return (
+                  <li key={step.order} className="flex gap-6">
+                    <span className="font-medium text-ink-tertiary text-sm mt-0.5 w-5 shrink-0 tabular-nums">
+                      {step.order}.
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-ink-primary leading-relaxed">
+                        {step.text}
+                        {step.timerSeconds ? (
+                          <span className="ml-2 text-xs text-ink-tertiary">
+                            ({Math.round(step.timerSeconds / 60)} Min.)
+                          </span>
+                        ) : null}
+                      </p>
+                      {imgUrl && (
+                        <img
+                          src={imgUrl}
+                          alt={`Schritt ${step.order}`}
+                          className="mt-4 rounded max-w-sm w-full object-cover"
+                          loading="lazy"
+                        />
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
+          </section>
+        </div>
+      ))}
     </>
   );
 }

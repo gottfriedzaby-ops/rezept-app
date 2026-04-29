@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ParsedRecipe, SourceType } from "@/types/recipe";
+import type { ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
 
 export interface JsonLdRecipeData {
@@ -16,14 +16,20 @@ const client = new Anthropic();
 
 const RECIPE_SCHEMA = `{
   "title": "string",
+  "recipe_type": "kochen | backen | grillen | zubereiten",
   "servings": number,
   "prepTime": number (minutes),
   "cookTime": number (minutes),
-  "ingredients": [{ "amount": number, "unit": "string", "name": "string" }],
-  "steps": [{ "order": number, "text": "string", "timerSeconds": number | null }],
+  "sections": [
+    {
+      "title": "string | null",
+      "ingredients": [{ "amount": number, "unit": "string", "name": "string" }],
+      "steps": [{ "order": number, "text": "string", "timerSeconds": number | null }]
+    }
+  ],
   "tags": ["string"],
   "scalable": boolean,
-  "source": { "type": "url" | "photo" | "youtube" | "manual", "value": "string" }
+  "source": { "type": "url" | "photo" | "youtube" | "instagram" | "manual", "value": "string" }
 }`;
 
 const RULES = `
@@ -39,6 +45,8 @@ const RULES = `
 - timerSeconds: null if the step has no specific time, otherwise the duration in seconds
 - If a numeric field is unknown use 0; infer tags from ingredients and title
 - tags: always lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never capitalised
+- recipe_type: classify as "backen" for oven-baked goods requiring precise temperature/timing (bread, cakes, cookies, quiche), "grillen" for open-flame or griddle cooking (BBQ, Grillgemüse), "zubereiten" for no-heat assembly recipes (salads, smoothies, overnight oats, sandwiches), "kochen" for everything else. Default to "kochen" when uncertain
+- sections: if the recipe has distinct named components (e.g. "Für die Soße", "Für den Teig", "Für die Füllung"), create one section object per component with a non-null title. If no distinct components exist, return a single section with title: null. Never split arbitrarily — only create multiple sections when the original recipe explicitly names separate parts with their own ingredient lists and steps
 `.trim();
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -143,25 +151,34 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   const improved = parseClaudeJson(block.text) as ParsedRecipe;
   improved.source = recipe.source;
   improved.tags = normalizeTags(improved.tags);
-  // Restore parse-pass amounts by ingredient name — index-based matching fails when
-  // the review pass reorders ingredients (e.g. YouTube imports with many items).
   improved.servings = recipe.servings;
-  improved.ingredients = improved.ingredients.map((ing) => {
-    const src = recipe.ingredients.find(
-      (pi) =>
-        pi.name.toLowerCase() === ing.name.toLowerCase() ||
-        pi.name.toLowerCase().includes(ing.name.toLowerCase()) ||
-        ing.name.toLowerCase().includes(pi.name.toLowerCase())
-    );
-    return src ? { ...ing, amount: src.amount, unit: src.unit } : ing;
-  });
-  // Convert total amounts → per-serving for storage; all callers expect per-serving
-  if (improved.servings > 0) {
-    improved.ingredients = improved.ingredients.map((ing) => ({
-      ...ing,
-      amount: Math.round((ing.amount / improved.servings) * 100) / 100,
-    }));
+
+  // Build a flat lookup of parse-pass per-serving amounts by ingredient name.
+  // Restore amounts by name — index-based matching fails when the review pass reorders.
+  const srcAmounts = new Map<string, { amount: number; unit: string }>();
+  for (const section of recipe.sections) {
+    for (const ing of section.ingredients) {
+      srcAmounts.set(ing.name.toLowerCase(), { amount: ing.amount, unit: ing.unit });
+    }
   }
+
+  // Restore amounts across all sections (already per-serving from parse pass)
+  improved.sections = (improved.sections ?? []).map((section: RecipeSection) => ({
+    ...section,
+    ingredients: section.ingredients.map((ing) => {
+      const src =
+        srcAmounts.get(ing.name.toLowerCase()) ??
+        Array.from(srcAmounts.entries()).find(
+          ([k]) => k.includes(ing.name.toLowerCase()) || ing.name.toLowerCase().includes(k)
+        )?.[1];
+      if (src) return { ...ing, amount: src.amount, unit: src.unit };
+      // New ingredient added by review — convert total → per-serving
+      return improved.servings > 0
+        ? { ...ing, amount: Math.round((ing.amount / improved.servings) * 100) / 100 }
+        : ing;
+    }),
+  }));
+
   return improved;
 }
 
@@ -196,9 +213,12 @@ export async function parseRecipeFromImage(
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
   if (parsed.servings > 0) {
-    parsed.ingredients = parsed.ingredients.map((ing) => ({
-      ...ing,
-      amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
+    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+      ...section,
+      ingredients: section.ingredients.map((ing) => ({
+        ...ing,
+        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
+      })),
     }));
   }
   return parsed;
@@ -253,5 +273,14 @@ export async function parseRecipeFromText(
 
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
+  if (parsed.servings > 0) {
+    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+      ...section,
+      ingredients: section.ingredients.map((ing) => ({
+        ...ing,
+        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
+      })),
+    }));
+  }
   return parsed;
 }

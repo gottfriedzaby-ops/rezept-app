@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import type { RecipeSection, Step } from "@/types/recipe";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const {
       title, description, servings, prep_time, cook_time,
-      ingredients, steps, tags, image_url, favorite,
+      sections, recipe_type, ingredients, steps, tags, image_url, favorite,
     } = body;
 
     const update: Record<string, unknown> = {};
@@ -19,8 +20,19 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (servings !== undefined)    update.servings = servings;
     if (prep_time !== undefined)   update.prep_time = prep_time;
     if (cook_time !== undefined)   update.cook_time = cook_time;
-    if (ingredients !== undefined) update.ingredients = ingredients;
-    if (steps !== undefined)       update.steps = steps;
+    if (recipe_type !== undefined) update.recipe_type = recipe_type;
+    if (sections !== undefined) {
+      update.sections = sections;
+      // Keep flat columns in sync for backward compat
+      update.ingredients = (sections as RecipeSection[]).flatMap((s) => s.ingredients);
+      update.steps = (sections as RecipeSection[])
+        .flatMap((s) => s.steps)
+        .map((s: Step, i: number) => ({ ...s, order: i + 1 }));
+    } else {
+      // Legacy path: direct ingredient/step updates (e.g. from old clients)
+      if (ingredients !== undefined) update.ingredients = ingredients;
+      if (steps !== undefined)       update.steps = steps;
+    }
     if (tags !== undefined)        update.tags = tags;
     if (image_url !== undefined)   update.image_url = image_url;
     if (favorite !== undefined)    update.favorite = favorite;

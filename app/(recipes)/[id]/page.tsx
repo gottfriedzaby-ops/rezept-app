@@ -6,6 +6,7 @@ import RecipeDetail from "@/components/RecipeDetail";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
 import { getTagColor } from "@/lib/tag-colors";
+import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 
 export const dynamic = "force-dynamic";
 
@@ -53,29 +54,37 @@ export default async function RecipeDetailPage({
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
           {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
-          {recipe.cook_time ? <span>Kochen {recipe.cook_time} Min.</span> : null}
+          {recipe.cook_time ? (
+            <span>{cookTimeLabelFor(recipe.recipe_type ?? "kochen")} {recipe.cook_time} Min.</span>
+          ) : null}
           {totalTime > 0 ? (
             <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span>
           ) : null}
           {recipe.servings ? <span>{recipe.servings} Portionen</span> : null}
         </div>
 
-        {recipe.tags.length > 0 && (
-          <div className="flex gap-1.5 flex-wrap mb-4">
-            {recipe.tags.map((tag) => {
-              const { bg, text } = getTagColor(tag);
-              return (
-                <span
-                  key={tag}
-                  style={{ backgroundColor: bg, color: text }}
-                  className="text-xs px-2.5 py-0.5 rounded"
-                >
-                  {tag}
-                </span>
-              );
-            })}
-          </div>
-        )}
+        <div className="flex gap-1.5 flex-wrap mb-4">
+          {(() => {
+            const badge = recipeTypeBadgeFor(recipe.recipe_type ?? "kochen");
+            return (
+              <span className="text-xs px-2.5 py-0.5 rounded bg-surface-secondary text-ink-secondary border border-stone">
+                {badge.emoji} {badge.label}
+              </span>
+            );
+          })()}
+          {recipe.tags.map((tag) => {
+            const { bg, text } = getTagColor(tag);
+            return (
+              <span
+                key={tag}
+                style={{ backgroundColor: bg, color: text }}
+                className="text-xs px-2.5 py-0.5 rounded"
+              >
+                {tag}
+              </span>
+            );
+          })}
+        </div>
 
         {recipe.source_type === "url" && (
           <a

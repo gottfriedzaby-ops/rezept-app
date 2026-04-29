@@ -150,6 +150,7 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
 
   const improved = parseClaudeJson(block.text) as ParsedRecipe;
   improved.source = recipe.source;
+  improved.recipe_type = recipe.recipe_type;
   improved.tags = normalizeTags(improved.tags);
   improved.servings = recipe.servings;
 

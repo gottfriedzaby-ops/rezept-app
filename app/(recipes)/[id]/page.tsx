@@ -6,8 +6,10 @@ import RecipeDetail from "@/components/RecipeDetail";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
 import PdfExportButton from "@/components/PdfExportButton";
+import RecipeExportMenu from "@/components/RecipeExportMenu";
 import { getTagColor } from "@/lib/tag-colors";
 import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
+import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +31,10 @@ export default async function RecipeDetailPage({
 
   return (
     <div className="min-h-screen bg-surface-primary">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(toSchemaOrgRecipe(recipe)) }}
+      />
       {/* Hero cover — full width */}
       <RecipeCover
         imageUrl={recipe.image_url}
@@ -51,6 +57,7 @@ export default async function RecipeDetailPage({
             {recipe.title}
           </h1>
           <div className="flex items-center gap-0 -mr-1">
+            <RecipeExportMenu recipe={recipe} />
             <PdfExportButton recipe={recipe} />
             <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />
           </div>

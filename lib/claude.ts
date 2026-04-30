@@ -47,6 +47,8 @@ const RULES = `
 - tags: always lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never capitalised
 - recipe_type: classify as "backen" for oven-baked goods requiring precise temperature/timing (bread, cakes, cookies, quiche), "grillen" for open-flame or griddle cooking (BBQ, Grillgemüse), "zubereiten" for no-heat assembly recipes (salads, smoothies, overnight oats, sandwiches), "kochen" for everything else. Default to "kochen" when uncertain
 - sections: if the recipe has distinct named components (e.g. "Für die Soße", "Für den Teig", "Für die Füllung"), create one section object per component with a non-null title. If no distinct components exist, return a single section with title: null. Never split arbitrarily — only create multiple sections when the original recipe explicitly names separate parts with their own ingredient lists and steps
+- Copy ingredient names EXACTLY as they appear in the source text. Do NOT substitute, rename, or omit any ingredient based on your knowledge of the dish type. Include every ingredient explicitly listed, even if the combination seems unusual for the recipe (e.g. sausages in lentil soup, bacon in a vegetable stew).
+- Do NOT draw on your training knowledge of how a dish is typically prepared. Extract ONLY what is explicitly written in the provided text — nothing more, nothing less. If an ingredient is not mentioned in the text, do not add it.
 `.trim();
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
@@ -124,12 +126,13 @@ Return ONLY the improved recipe as valid JSON in the exact same schema — no ma
 All double-quote characters inside JSON string values must be escaped as \" — never output raw unescaped " inside a string.
 
 Review checklist:
-1. Ingredients completeness: every ingredient mentioned in steps must appear in the ingredients list and vice versa. Add missing ones; remove unused ones.
+1. Ingredients completeness: every ingredient mentioned in steps must appear in the ingredients list. Add missing ones (amount 0, unit "nach Bedarf"). Remove an ingredient from the list ONLY if it is genuinely never referenced anywhere in the step text. Do NOT add ingredients based on your knowledge of the dish type; do NOT remove ingredients that seem atypical — unusual combinations (e.g. smoked sausages in lentil soup, bacon in a vegetable stew) are intentional and must be preserved exactly.
 2. Realistic amounts: amounts are stored as TOTAL quantities for the complete recipe (for the stated servings count). Verify plausibility against that yield — e.g. 320 g water for 3 pizzas is correct; 500 g salt for any recipe is wrong. Do NOT halve or multiply amounts; only correct clear extraction errors.
 3. Step quality: steps must be in logical cooking order, clearly written, include temperatures in °C, and include timerSeconds wherever a recipe would normally specify a time. If step text mentions non-metric units (cups, oz, °F), add the metric equivalent in parentheses within that step's text.
 4. Ingredient amounts: Do NOT change any ingredient's amount or unit — treat them as authoritative values already extracted from the source. You may add a missing ingredient (one mentioned in steps but absent from the list) with amount 0 and unit "nach Bedarf". Never re-derive amounts from cup/tablespoon/teaspoon measurements in the step text.
 5. German language: every text field — title, ingredient names, step texts, tags — must be in German. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon (e.g. use "große Schüssel" not "Teigtonne", "Pfanne" not "Sautoir", "Topf" not "Marmite").
 6. Tags: provide accurate, useful tags covering cuisine type, meal type (Frühstück, Mittagessen, Abendessen, Dessert, Snack, Beilage), dietary info (vegetarisch, vegan, glutenfrei, laktosefrei), and difficulty (einfach, mittel, aufwändig). Use lowercase German.
+7. Ingredient fidelity: the input recipe JSON is the authoritative source. Preserve every ingredient name exactly as given. Do NOT replace names with synonyms or "more typical" alternatives. Do NOT add ingredients absent from the input just because they are commonly found in this dish type.
 `.trim();
 
 export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<ParsedRecipe> {

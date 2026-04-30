@@ -39,7 +39,7 @@ const RULES = `
 - Unicode fraction characters represent exact values: ½=0.5, ¼=0.25, ¾=0.75, ⅓≈0.333, ⅔≈0.667, ⅛=0.125 — apply these when they appear in amounts (e.g. "½ gram" = 0.5 g, "¼ tsp" = 0.25 tsp)
 - Convert ALL measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). HIGHEST PRIORITY EXCEPTION: when the source provides an explicit metric value alongside a non-metric one — whether in parentheses like "2 tsp (10 g)", as a fraction like "(½ gram)", or any other form — use ONLY the stated metric value; do NOT independently convert the non-metric unit
 - German cooking abbreviations: EL (Esslöffel) = 15 ml, TL (Teelöffel) = 5 ml, Prise = 0.5 g — apply these conversions whenever they appear in ingredient amounts
-- Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100)
+- Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100). If the source lists amounts "per serving" or "for 1 person", multiply each amount by the total number of servings before storing. Never output per-serving amounts — always total amounts for all servings combined
 - The "servings" field must reflect the recipe's actual yield (number of portions the total amounts produce)
 - scalable: set to false when the recipe requires a whole indivisible unit that cannot reasonably be prepared in a smaller fraction (e.g. a whole roast, whole fish, a full cake baked as one). Set to true for all other recipes (pasta, pizza, soups, doughs, etc.)
 - timerSeconds: null if the step has no specific time, otherwise the duration in seconds
@@ -210,15 +210,14 @@ export async function parseRecipeFromImages(
 
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
-  if (parsed.servings > 0) {
-    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
-      ...section,
-      ingredients: section.ingredients.map((ing) => ({
-        ...ing,
-        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
-      })),
-    }));
-  }
+  const sv = Math.max(1, parsed.servings || 1);
+  parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+    ...section,
+    ingredients: section.ingredients.map((ing) => ({
+      ...ing,
+      amount: Math.round((ing.amount / sv) * 100) / 100,
+    })),
+  }));
   return parsed;
 }
 
@@ -252,15 +251,14 @@ export async function parseRecipeFromImage(
 
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
-  if (parsed.servings > 0) {
-    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
-      ...section,
-      ingredients: section.ingredients.map((ing) => ({
-        ...ing,
-        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
-      })),
-    }));
-  }
+  const sv = Math.max(1, parsed.servings || 1);
+  parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+    ...section,
+    ingredients: section.ingredients.map((ing) => ({
+      ...ing,
+      amount: Math.round((ing.amount / sv) * 100) / 100,
+    })),
+  }));
   return parsed;
 }
 
@@ -313,14 +311,13 @@ export async function parseRecipeFromText(
 
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
-  if (parsed.servings > 0) {
-    parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
-      ...section,
-      ingredients: section.ingredients.map((ing) => ({
-        ...ing,
-        amount: Math.round((ing.amount / parsed.servings) * 100) / 100,
-      })),
-    }));
-  }
+  const sv = Math.max(1, parsed.servings || 1);
+  parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+    ...section,
+    ingredients: section.ingredients.map((ing) => ({
+      ...ing,
+      amount: Math.round((ing.amount / sv) * 100) / 100,
+    })),
+  }));
   return parsed;
 }

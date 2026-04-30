@@ -27,7 +27,7 @@ const FOOD_POSITIVE_PATTERN =
 // inside accordion containers and must not be removed along with the UI chrome.
 // Icon/button text is handled upstream by removing <svg> and <button> elements.
 const UI_CHROME_PATTERN =
-  /sidebar|popup|modal|overlay|cookie|banner|breadcrumb|pagination|social|share|newsletter|subscribe|advertisement/i;
+  /related|comment|sidebar|popup|modal|overlay|cookie|banner|breadcrumb|pagination|social|share|newsletter|subscribe|advertisement/i;
 
 // Residual UI artifact strings to remove from extracted text
 const UI_ARTIFACT_PATTERNS: RegExp[] = [

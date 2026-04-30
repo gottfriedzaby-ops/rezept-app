@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import type { Recipe, Step } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
@@ -49,16 +49,21 @@ interface Props {
 }
 
 export default function CookMode({ recipe, initialServings }: Props) {
-  const sections = getRecipeSections(recipe);
+  const sections = useMemo(() => getRecipeSections(recipe), [recipe]);
   const multiSection = sections.length > 1 || sections[0]?.title !== null;
 
-  // Flatten all steps across sections, keeping track of which section each belongs to
-  const cookSteps: CookStep[] = sections.flatMap((section) =>
-    section.steps.map((step) => ({ step, sectionTitle: section.title }))
+  // Stable reference — prevents the [stepIndex, cookSteps] reset-effect from firing on every render
+  const cookSteps: CookStep[] = useMemo(
+    () => sections.flatMap((section) =>
+      section.steps.map((step) => ({ step, sectionTitle: section.title }))
+    ),
+    [sections]
   );
 
-  // Flat ingredient list across all sections for the accordion
-  const allIngredients = sections.flatMap((s) => s.ingredients);
+  const allIngredients = useMemo(
+    () => sections.flatMap((s) => s.ingredients),
+    [sections]
+  );
 
   const [stepIndex, setStepIndex] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);

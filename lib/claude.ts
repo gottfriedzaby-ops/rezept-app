@@ -38,7 +38,7 @@ const RULES = `
 - Translate ALL text fields (title, ingredient names, step texts, tags) into German, regardless of the source language
 - Unicode fraction characters represent exact values: ½=0.5, ¼=0.25, ¾=0.75, ⅓≈0.333, ⅔≈0.667, ⅛=0.125 — apply these when they appear in amounts (e.g. "½ gram" = 0.5 g, "¼ tsp" = 0.25 tsp)
 - Convert ALL measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). HIGHEST PRIORITY EXCEPTION: when the source provides an explicit metric value alongside a non-metric one — whether in parentheses like "2 tsp (10 g)", as a fraction like "(½ gram)", or any other form — use ONLY the stated metric value; do NOT independently convert the non-metric unit
-- German cooking abbreviations: EL (Esslöffel) = 15 ml, TL (Teelöffel) = 5 ml, Prise = 0.5 g — apply these conversions whenever they appear in ingredient amounts
+- German cooking abbreviations: EL (Esslöffel) = 15 ml, TL (Teelöffel) = 5 ml, Prise = 0.5 g — apply these conversions when they appear in the ingredient list/table. Do NOT derive total ingredient amounts from EL/TL mentions inside step instructions — step text often describes a partial amount used in one particular step, not the total recipe quantity
 - Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100). If the source lists amounts "per serving" or "for 1 person", multiply each amount by the total number of servings before storing. Never output per-serving amounts — always total amounts for all servings combined
 - The "servings" field must reflect the recipe's actual yield (number of portions the total amounts produce)
 - scalable: set to false when the recipe requires a whole indivisible unit that cannot reasonably be prepared in a smaller fraction (e.g. a whole roast, whole fish, a full cake baked as one). Set to true for all other recipes (pasta, pizza, soups, doughs, etc.)
@@ -157,24 +157,48 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   improved.tags = normalizeTags(improved.tags);
   improved.servings = recipe.servings;
 
-  // Build a flat lookup of parse-pass per-serving amounts by ingredient name.
-  // Restore amounts by name — index-based matching fails when the review pass reorders.
-  const srcAmounts = new Map<string, { amount: number; unit: string }>();
-  for (const section of recipe.sections) {
+  // Build per-section amount maps from the parse pass results (already per-serving).
+  // A flat global map would let the last section overwrite earlier ones when the same
+  // ingredient appears in multiple sections (e.g. Sonnenblumenöl in both "Chiliöl" and
+  // "Suppe" with different quantities). The section-scoped lookup prevents that collision.
+  const sectionAmountMaps = recipe.sections.map((section) => {
+    const map = new Map<string, { amount: number; unit: string }>();
     for (const ing of section.ingredients) {
-      srcAmounts.set(ing.name.toLowerCase(), { amount: ing.amount, unit: ing.unit });
+      map.set(ing.name.toLowerCase(), { amount: ing.amount, unit: ing.unit });
     }
+    return map;
+  });
+  // Global fallback: first occurrence wins — used for ingredients Claude added to a
+  // different section than the one they came from, or when sections are reordered.
+  const globalAmounts = new Map<string, { amount: number; unit: string }>();
+  for (const sectionMap of sectionAmountMaps) {
+    sectionMap.forEach((val, name) => {
+      if (!globalAmounts.has(name)) globalAmounts.set(name, val);
+    });
   }
 
-  // Restore amounts across all sections (already per-serving from parse pass)
-  improved.sections = (improved.sections ?? []).map((section: RecipeSection) => ({
+  function findAmount(
+    nameLower: string,
+    sectionMap: Map<string, { amount: number; unit: string }> | undefined,
+  ): { amount: number; unit: string } | undefined {
+    return (
+      sectionMap?.get(nameLower) ??
+      Array.from(sectionMap?.entries() ?? []).find(
+        ([k]) => k.includes(nameLower) || nameLower.includes(k)
+      )?.[1] ??
+      globalAmounts.get(nameLower) ??
+      Array.from(globalAmounts.entries()).find(
+        ([k]) => k.includes(nameLower) || nameLower.includes(k)
+      )?.[1]
+    );
+  }
+
+  // Restore amounts across all sections (already per-serving from parse pass).
+  // Use section index to align with the correct per-section amount map.
+  improved.sections = (improved.sections ?? []).map((section: RecipeSection, sIdx: number) => ({
     ...section,
     ingredients: section.ingredients.map((ing) => {
-      const src =
-        srcAmounts.get(ing.name.toLowerCase()) ??
-        Array.from(srcAmounts.entries()).find(
-          ([k]) => k.includes(ing.name.toLowerCase()) || ing.name.toLowerCase().includes(k)
-        )?.[1];
+      const src = findAmount(ing.name.toLowerCase(), sectionAmountMaps[sIdx]);
       if (src) return { ...ing, amount: src.amount, unit: src.unit };
       // New ingredient added by review — convert total → per-serving
       return improved.servings > 0

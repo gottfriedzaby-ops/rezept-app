@@ -256,10 +256,15 @@ export async function POST(request: NextRequest) {
     $(".sr-only, .visually-hidden").remove();
     $('[class*="visually-hidden"]').remove();
 
+    // Never remove <body> or <html> — WordPress often adds state classes like
+    // "cookies-not-set" to <body>, which would match UI_CHROME_PATTERN and wipe
+    // the entire page content, leaving Claude with an empty string to hallucinate from.
     $("[class]").each((_, el) => {
+      if (el.name === "body" || el.name === "html") return;
       if (UI_CHROME_PATTERN.test($(el).attr("class") ?? "")) $(el).remove();
     });
     $("[id]").each((_, el) => {
+      if (el.name === "body" || el.name === "html") return;
       if (UI_CHROME_PATTERN.test($(el).attr("id") ?? "")) $(el).remove();
     });
 

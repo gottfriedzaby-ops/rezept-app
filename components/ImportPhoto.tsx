@@ -291,9 +291,8 @@ export default function ImportPhoto() {
         />
       </div>
 
-      {/* Thumbnail grid + add-more button (shown separately for iOS Safari compat) */}
+      {/* Thumbnail grid — "+" tile at end for iOS Safari (no multi-select in picker) */}
       {images.length > 0 && (
-        <div className="flex flex-col gap-2">
         <div className="grid grid-cols-3 gap-2">
           {images.map((entry, idx) => (
             <div
@@ -339,19 +338,19 @@ export default function ImportPhoto() {
               )}
             </div>
           ))}
-        </div>
-        {images.length < MAX_IMAGES && !loading && (
-          <button
-            type="button"
-            onClick={() => inputRef.current?.click()}
-            className="flex items-center gap-1.5 self-start text-sm text-purple-600 hover:text-purple-700 font-medium py-1"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
-            </svg>
-            Bild hinzufügen ({images.length}/{MAX_IMAGES})
-          </button>
-        )}
+          {images.length < MAX_IMAGES && !loading && (
+            <button
+              type="button"
+              onClick={() => inputRef.current?.click()}
+              className="aspect-square rounded border-2 border-dashed border-gray-200 hover:border-purple-400 bg-gray-50 hover:bg-purple-50 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-purple-500 transition-colors"
+              aria-label="Weiteres Bild hinzufügen"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="text-[10px] font-medium leading-tight text-center">Bild<br/>hinzufügen</span>
+            </button>
+          )}
         </div>
       )}
 

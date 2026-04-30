@@ -245,6 +245,11 @@ export async function POST(request: NextRequest) {
     $("script, style").remove();
     const stepImages = extractStepImages($, url);
 
+    // Extract title anchor before structural elements are removed (h1 may live inside <header>)
+    const ogTitle = $('meta[property="og:title"]').attr("content")?.trim() ?? null;
+    const h1Text = $("h1").first().text().trim() || null;
+    const titleHint = ogTitle || h1Text || null;
+
     // Expanded element removal to eliminate UI chrome from text
     $("nav, header, footer, aside, iframe, noscript, svg, button").remove();
     $('[aria-hidden="true"]').remove();
@@ -259,8 +264,22 @@ export async function POST(request: NextRequest) {
     });
 
     // Combine rich-text attribute content (invisible to body.text()) with visible body text.
+    // Prefer a focused article/main container to reduce cross-recipe noise on pages without JSON-LD.
     const richTextContent = extractRichTextContent($);
-    const rawText = (richTextContent + " " + $("body").text()).replace(/\s+/g, " ").trim();
+    const ARTICLE_SELECTORS = [
+      "article",
+      "main",
+      '[class*="entry-content"]',
+      '[class*="post-content"]',
+      '[class*="recipe-content"]',
+      '[class*="article-content"]',
+    ];
+    let articleText: string | null = null;
+    for (const sel of ARTICLE_SELECTORS) {
+      const t = $(sel).first().text().trim();
+      if (t.length > 200) { articleText = t; break; }
+    }
+    const rawText = (richTextContent + " " + (articleText ?? $("body").text())).replace(/\s+/g, " ").trim();
 
     // Strip residual UI artifact strings
     let cleanedText = rawText;
@@ -274,7 +293,7 @@ export async function POST(request: NextRequest) {
     const knownAmounts = buildKnownAmountsPreamble(richTextContent);
     const textForClaude = knownAmounts + cleanedText;
 
-    const parsed = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined);
+    const parsed = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
     const reviewed = await reviewAndImproveRecipe(parsed);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, url);

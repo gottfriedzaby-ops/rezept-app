@@ -266,7 +266,8 @@ export async function parseRecipeFromText(
   text: string,
   sourceType: SourceType,
   sourceValue: string,
-  jsonLd?: JsonLdRecipeData
+  jsonLd?: JsonLdRecipeData,
+  titleHint?: string
 ): Promise<ParsedRecipe> {
   let content: string;
 
@@ -293,9 +294,13 @@ export async function parseRecipeFromText(
       `STRUCTURED DATA (schema.org/Recipe):\n${structuredData}\n\n` +
       `SUPPLEMENTARY TEXT (use only to fill gaps not in the structured data):\n${text.slice(0, 6000)}`;
   } else {
+    const titleRule = titleHint
+      ? `- You are extracting the recipe titled "${titleHint}". Focus ONLY on this recipe — ignore all other dish names, recipe titles, or cross-links found in the text.\n`
+      : "";
     content =
       `Extract the recipe from the following text and return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\n` +
       `Rules:\n${RULES}\n` +
+      `${titleRule}` +
       `- source.type must be "${sourceType}", source.value must be "${sourceValue}"\n\n` +
       `Text:\n${text.slice(0, 15000)}`;
   }

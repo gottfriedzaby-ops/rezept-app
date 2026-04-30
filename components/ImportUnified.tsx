@@ -21,10 +21,17 @@ interface ImportApiResponse {
   existingTitle?: string;
 }
 
+interface ImageEntry {
+  id: string;
+  file: File;
+  preview: string;
+}
+
+const MAX_IMAGES = 6;
+const MAX_SIDE = 1920;
 const INSTAGRAM_RE = /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv)\//i;
 const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
 const URL_RE = /^https?:\/\//i;
-const MAX_SIDE = 1920;
 
 async function safeParseJson(res: Response): Promise<ImportApiResponse> {
   const ct = res.headers.get("content-type") ?? "";
@@ -40,8 +47,8 @@ async function safeParseJson(res: Response): Promise<ImportApiResponse> {
   }
 }
 
-function detectType(url: string, file: File | null): ImportType | null {
-  if (file) return "photo";
+function detectType(url: string, images: ImageEntry[]): ImportType | null {
+  if (images.length > 0) return "photo";
   const t = url.trim();
   if (INSTAGRAM_RE.test(t)) return "instagram";
   if (YOUTUBE_RE.test(t)) return "youtube";
@@ -86,8 +93,7 @@ export default function ImportUnified() {
 
   // UI-local state (doesn't need to survive navigation)
   const [urlInput, setUrlInput] = useState("");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [images, setImages] = useState<ImageEntry[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -98,21 +104,35 @@ export default function ImportUnified() {
     setDuplicateId, setDuplicateTitle, reset,
   } = useImport();
 
-  const inputType = detectType(urlInput, file);
+  const inputType = detectType(urlInput, images);
   const canSubmit = inputType !== null && phase !== "loading";
 
-  function applyFile(f: File) {
-    setFile(f);
-    setUrlInput("");
+  function addImages(newFiles: FileList | File[]) {
+    const arr = Array.from(newFiles);
+    setImages((prev) => {
+      const toAdd = arr
+        .filter((f) => !prev.some((e) => e.file === f))
+        .slice(0, MAX_IMAGES - prev.length)
+        .map((f) => ({
+          id: `${f.name}-${f.size}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+          file: f,
+          preview: URL.createObjectURL(f),
+        }));
+      return [...prev, ...toAdd];
+    });
     setError(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => setPreview(ev.target?.result as string);
-    reader.readAsDataURL(f);
   }
 
-  function clearFile() {
-    setFile(null);
-    setPreview(null);
+  function removeImage(id: string) {
+    setImages((prev) => {
+      const entry = prev.find((e) => e.id === id);
+      if (entry) URL.revokeObjectURL(entry.preview);
+      return prev.filter((e) => e.id !== id);
+    });
+  }
+
+  function clearImages() {
+    setImages((prev) => { prev.forEach((e) => URL.revokeObjectURL(e.preview)); return []; });
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
@@ -121,8 +141,7 @@ export default function ImportUnified() {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
-    const f = e.dataTransfer.files[0];
-    if (f?.type.startsWith("image/")) applyFile(f);
+    if (e.dataTransfer.files.length > 0) addImages(e.dataTransfer.files);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -138,12 +157,36 @@ export default function ImportUnified() {
     try {
       let json: ImportApiResponse;
 
-      if (inputType === "photo" && file) {
-        let fileToUpload = file;
-        try { fileToUpload = await compressImage(file); } catch { /* use original */ }
-        const formData = new FormData();
-        formData.append("photo", fileToUpload);
-        const res = await fetch("/api/import-photo", { method: "POST", body: formData });
+      if (inputType === "photo" && images.length > 0) {
+        const urls: string[] = [];
+        const fileNames: string[] = [];
+
+        for (const entry of images) {
+          try {
+            let file = entry.file;
+            const isHeic = /image\/heic|image\/heif/i.test(file.type) || /\.heic$/i.test(file.name);
+            if (!isHeic) {
+              try { file = await compressImage(file); } catch { /* use original */ }
+            }
+            const fd = new FormData();
+            fd.append("image", file);
+            const res = await fetch("/api/upload-image", { method: "POST", body: fd });
+            const j = (await res.json()) as { data: { url: string; fileName: string } | null; error: string | null };
+            if (j.data) { urls.push(j.data.url); fileNames.push(j.data.fileName); }
+          } catch { /* skip failed image */ }
+        }
+
+        if (urls.length === 0) {
+          setError("Alle Bilder konnten nicht verarbeitet werden. Bitte erneut versuchen.");
+          setPhase("idle");
+          return;
+        }
+
+        const res = await fetch("/api/import-photo", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ urls, fileNames }),
+        });
         json = await safeParseJson(res);
       } else {
         const endpoint =
@@ -221,7 +264,7 @@ export default function ImportUnified() {
 
   function handleReset() {
     setUrlInput("");
-    clearFile();
+    clearImages();
     reset();
   }
 
@@ -245,10 +288,11 @@ export default function ImportUnified() {
   }
 
   if (phase === "review" && parseResult) {
+    const firstPreview = images[0]?.preview ?? null;
     return (
       <div className="flex flex-col gap-4">
-        {preview && (
-          <img src={preview} alt="Vorschau" className="w-full max-h-40 object-contain rounded bg-surface-secondary" />
+        {firstPreview && (
+          <img src={firstPreview} alt="Vorschau" className="w-full max-h-40 object-contain rounded bg-surface-secondary" />
         )}
         <RecipeReviewForm
           initial={parseResult.recipe}
@@ -271,8 +315,8 @@ export default function ImportUnified() {
         isDragging ? "outline outline-2 outline-forest/30 bg-forest-soft" : ""
       }`}
     >
-      {/* URL input — hidden when file is active */}
-      {!file && (
+      {/* URL input — hidden when images are selected */}
+      {images.length === 0 && (
         <input
           type="text"
           value={urlInput}
@@ -283,19 +327,40 @@ export default function ImportUnified() {
         />
       )}
 
-      {/* File area */}
-      {file && preview ? (
-        <div className="relative">
-          <img src={preview} alt="Vorschau" className="w-full max-h-48 object-contain rounded bg-surface-secondary" />
-          <button
-            type="button"
-            onClick={clearFile}
-            disabled={phase === "loading"}
-            className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center bg-white rounded border border-stone text-ink-secondary hover:text-ink-primary text-base leading-none shadow-sm disabled:opacity-40"
-          >
-            ×
-          </button>
-          <p className="text-xs text-ink-tertiary truncate mt-2">{file.name}</p>
+      {/* Image area */}
+      {images.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2">
+          {images.map((entry, idx) => (
+            <div key={entry.id} className="relative rounded overflow-hidden bg-surface-secondary aspect-square">
+              {idx === 0 && (
+                <span className="absolute top-1 left-1 z-10 text-[10px] bg-black/50 text-white px-1.5 py-0.5 rounded">
+                  Cover
+                </span>
+              )}
+              <img src={entry.preview} alt={entry.file.name} className="w-full h-full object-cover" />
+              <button
+                type="button"
+                onClick={() => removeImage(entry.id)}
+                className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-black/50 text-white text-xs flex items-center justify-center hover:bg-black/75"
+                aria-label={`${entry.file.name} entfernen`}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+          {images.length < MAX_IMAGES && (
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="aspect-square rounded border-2 border-dashed border-purple-300 bg-purple-50 flex flex-col items-center justify-center gap-1 text-purple-500 active:bg-purple-100"
+              aria-label="Weiteres Bild hinzufügen"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+              </svg>
+              <span className="text-[10px] font-semibold leading-tight text-center px-1">Bild<br/>hinzufügen</span>
+            </button>
+          )}
         </div>
       ) : (
         <div>
@@ -322,12 +387,17 @@ export default function ImportUnified() {
         ref={fileInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) applyFile(f); }}
+        multiple
+        onChange={(e) => { if (e.target.files) addImages(e.target.files); }}
         className="sr-only"
       />
 
       <button type="submit" disabled={!canSubmit} className="btn-primary w-full py-3">
-        {phase === "loading" ? "Wird analysiert…" : "Rezept importieren"}
+        {phase === "loading"
+          ? "Wird analysiert…"
+          : images.length > 1
+          ? `Importieren (${images.length} Bilder)`
+          : "Rezept importieren"}
       </button>
 
       {duplicateId && (

@@ -275,11 +275,8 @@ export default function ImportPhoto() {
             <p className="text-xs">Bis zu {MAX_IMAGES} Bilder · JPG · PNG · WEBP · HEIC</p>
           </div>
         ) : (
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span>{images.length} / {MAX_IMAGES} Bild{images.length !== 1 ? "er" : ""}</span>
-            {images.length < MAX_IMAGES && (
-              <span className="text-purple-400">+ weitere hinzufügen</span>
-            )}
+          <div className="text-xs text-gray-400">
+            {images.length} / {MAX_IMAGES} Bild{images.length !== 1 ? "er" : ""}
           </div>
         )}
 
@@ -294,8 +291,9 @@ export default function ImportPhoto() {
         />
       </div>
 
-      {/* Thumbnail grid */}
+      {/* Thumbnail grid + add-more button (shown separately for iOS Safari compat) */}
       {images.length > 0 && (
+        <div className="flex flex-col gap-2">
         <div className="grid grid-cols-3 gap-2">
           {images.map((entry, idx) => (
             <div
@@ -341,6 +339,19 @@ export default function ImportPhoto() {
               )}
             </div>
           ))}
+        </div>
+        {images.length < MAX_IMAGES && !loading && (
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            className="flex items-center gap-1.5 self-start text-sm text-purple-600 hover:text-purple-700 font-medium py-1"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            Bild hinzufügen ({images.length}/{MAX_IMAGES})
+          </button>
+        )}
         </div>
       )}
 

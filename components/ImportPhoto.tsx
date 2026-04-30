@@ -342,13 +342,13 @@ export default function ImportPhoto() {
             <button
               type="button"
               onClick={() => inputRef.current?.click()}
-              className="aspect-square rounded border-2 border-dashed border-gray-200 hover:border-purple-400 bg-gray-50 hover:bg-purple-50 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-purple-500 transition-colors"
+              className="aspect-square rounded border-2 border-dashed border-purple-300 bg-purple-50 flex flex-col items-center justify-center gap-1 text-purple-500 active:bg-purple-100"
               aria-label="Weiteres Bild hinzufügen"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-[10px] font-medium leading-tight text-center">Bild<br/>hinzufügen</span>
+              <span className="text-[10px] font-semibold leading-tight text-center px-1">Bild<br/>hinzufügen</span>
             </button>
           )}
         </div>

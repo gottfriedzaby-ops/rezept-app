@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const { recipe: parsed, meta: parseMeta } = await parseRecipeFromText(combined, "youtube", videoId);
-    const { recipe: reviewed, meta: reviewMeta } = await reviewAndImproveRecipe(parsed);
+    const { recipe: parsed } = await parseRecipeFromText(combined, "youtube", videoId);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, videoId);
     if (duplicate) {
@@ -105,7 +105,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: channelName, imageUrl },
-      claudeLog: [parseMeta, reviewMeta],
       error: null,
     });
   } catch (error) {

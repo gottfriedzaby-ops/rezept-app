@@ -298,8 +298,8 @@ export async function POST(request: NextRequest) {
     const knownAmounts = buildKnownAmountsPreamble(richTextContent);
     const textForClaude = knownAmounts + cleanedText;
 
-    const { recipe: parsed, meta: parseMeta } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
-    const { recipe: reviewed, meta: reviewMeta } = await reviewAndImproveRecipe(parsed);
+    const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, url);
     if (duplicate) {
@@ -311,7 +311,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: pageTitle || reviewed.title, stepImages, imageUrl },
-      claudeLog: [parseMeta, reviewMeta],
       error: null,
     });
   } catch (error) {

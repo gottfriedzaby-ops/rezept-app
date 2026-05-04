@@ -298,8 +298,8 @@ export async function POST(request: NextRequest) {
     const knownAmounts = buildKnownAmountsPreamble(richTextContent);
     const textForClaude = knownAmounts + cleanedText;
 
-    const parsed = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
-    const reviewed = await reviewAndImproveRecipe(parsed);
+    const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, url);
     if (duplicate) {

@@ -2,6 +2,22 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
 
+export interface ClaudeCallMeta {
+  timestamp: string;
+  function: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  durationMs: number;
+  status: "success" | "error";
+  error?: string;
+  prompt: {
+    system?: string;
+    messages: Anthropic.MessageParam[];
+  };
+  result?: string;
+}
+
 export interface JsonLdRecipeData {
   name?: string;
   recipeIngredient?: string[];
@@ -13,6 +29,68 @@ export interface JsonLdRecipeData {
 }
 
 const client = new Anthropic();
+
+type ClaudeFunctionName =
+  | "parseRecipeFromText"
+  | "parseRecipeFromImage"
+  | "parseRecipeFromImages"
+  | "reviewAndImproveRecipe";
+
+// Replace base64 image data with a placeholder so log entries stay readable.
+function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
+  return messages.map((msg) => {
+    if (typeof msg.content === "string") return msg;
+    return {
+      ...msg,
+      content: msg.content.map((block) => {
+        if (
+          block.type === "image" &&
+          block.source.type === "base64"
+        ) {
+          return {
+            ...block,
+            source: { ...block.source, data: "[base64 image data omitted]" },
+          };
+        }
+        return block;
+      }),
+    };
+  });
+}
+
+async function claudeCreate(
+  functionName: ClaudeFunctionName,
+  params: Parameters<typeof client.messages.create>[0]
+): Promise<{ message: Anthropic.Message; meta: ClaudeCallMeta }> {
+  const start = Date.now();
+  try {
+    const message = (await client.messages.create(params)) as Anthropic.Message;
+    const resultBlock = message.content[0];
+    const meta: ClaudeCallMeta = {
+      timestamp: new Date().toISOString(),
+      function: functionName,
+      model: params.model,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+      durationMs: Date.now() - start,
+      status: "success",
+      prompt: {
+        system: typeof params.system === "string" ? params.system : undefined,
+        messages: sanitizeMessages(params.messages as Anthropic.MessageParam[]),
+      },
+      result: resultBlock?.type === "text" ? resultBlock.text : undefined,
+    };
+    return { message, meta };
+  } catch (err) {
+    console.error("[Claude API error]", {
+      function: functionName,
+      model: params.model,
+      durationMs: Date.now() - start,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
 
 const RECIPE_SCHEMA = `{
   "title": "string",
@@ -125,18 +203,20 @@ You are a professional recipe editor. You will receive a parsed recipe as JSON a
 Return ONLY the improved recipe as valid JSON in the exact same schema — no markdown fences, no extra text, no content after the closing brace.
 All double-quote characters inside JSON string values must be escaped as \" — never output raw unescaped " inside a string.
 
+WORKING LANGUAGE: Perform all review steps below (1–6) while keeping every text field in the original source language of the recipe. Do NOT translate anything during the review phase — translation introduces errors and makes it harder to verify correctness. Only after all review steps are complete, apply step 7 (translation into German) as a final pass.
+
 Review checklist:
 1. Ingredients completeness: every ingredient mentioned in steps must appear in the ingredients list. Add missing ones (amount 0, unit "nach Bedarf"). Remove an ingredient from the list ONLY if it is genuinely never referenced anywhere in the step text. Do NOT add ingredients based on your knowledge of the dish type; do NOT remove ingredients that seem atypical — unusual combinations (e.g. smoked sausages in lentil soup, bacon in a vegetable stew) are intentional and must be preserved exactly.
 2. Realistic amounts: amounts are stored as TOTAL quantities for the complete recipe (for the stated servings count). Verify plausibility against that yield — e.g. 320 g water for 3 pizzas is correct; 500 g salt for any recipe is wrong. Do NOT halve or multiply amounts; only correct clear extraction errors.
 3. Step quality: steps must be in logical cooking order, clearly written, include temperatures in °C, and include timerSeconds wherever a recipe would normally specify a time. If step text mentions non-metric units (cups, oz, °F), add the metric equivalent in parentheses within that step's text.
 4. Ingredient amounts: Do NOT change any ingredient's amount or unit — treat them as authoritative values already extracted from the source. You may add a missing ingredient (one mentioned in steps but absent from the list) with amount 0 and unit "nach Bedarf". Never re-derive amounts from cup/tablespoon/teaspoon measurements in the step text.
-5. German language: every text field — title, ingredient names, step texts, tags — must be in German. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon (e.g. use "große Schüssel" not "Teigtonne", "Pfanne" not "Sautoir", "Topf" not "Marmite").
-6. Tags: provide accurate, useful tags covering cuisine type, meal type (Frühstück, Mittagessen, Abendessen, Dessert, Snack, Beilage), dietary info (vegetarisch, vegan, glutenfrei, laktosefrei), and difficulty (einfach, mittel, aufwändig). Use lowercase German.
-7. Ingredient fidelity: the input recipe JSON is the authoritative source. Preserve every ingredient name exactly as given. Do NOT replace names with synonyms or "more typical" alternatives. Do NOT add ingredients absent from the input just because they are commonly found in this dish type.
+5. Ingredient fidelity: the input recipe JSON is the authoritative source. Preserve every ingredient name exactly as given in steps 1–4. Do NOT replace names with synonyms or "more typical" alternatives. Do NOT add ingredients absent from the input just because they are commonly found in this dish type.
+6. Tags: provide accurate, useful tags covering cuisine type, meal type (Frühstück, Mittagessen, Abendessen, Dessert, Snack, Beilage), dietary info (vegetarisch, vegan, glutenfrei, laktosefrei), and difficulty (einfach, mittel, aufwändig). Use lowercase German (tags are always in German regardless of source language).
+7. FINAL STEP — Translation into German: Translate ALL text fields (title, ingredient names, step texts) into German. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon (e.g. use "große Schüssel" not "Teigtonne", "Pfanne" not "Sautoir", "Topf" not "Marmite"). STRICT RULES for this step: (a) translate only — do NOT add, remove, merge, or split any ingredient; the ingredient count after translation must be identical to before; (b) do NOT change any amount or unit during translation; (c) if the recipe is already in German, skip this step entirely and return it unchanged.
 `.trim();
 
-export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<ParsedRecipe> {
-  const message = await client.messages.create({
+export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
+  const { message, meta } = await claudeCreate("reviewAndImproveRecipe", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: REVIEW_SYSTEM,
@@ -156,7 +236,6 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   improved.recipe_type = recipe.recipe_type;
   improved.tags = normalizeTags(improved.tags);
   improved.servings = recipe.servings;
-
   // Build per-section amount maps from the parse pass (amounts already per-serving).
   // Keyed by section title (lowercase) so we survive review-pass reordering.
   // A pure index-based approach breaks when the review pass returns sections in a
@@ -211,13 +290,13 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
     };
   });
 
-  return improved;
+  return { recipe: improved, meta };
 }
 
 export async function parseRecipeFromImages(
   imageUrls: string[],
   sourceValue: string
-): Promise<ParsedRecipe> {
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const multi = imageUrls.length > 1;
   const content = [
     ...imageUrls.map((url) => ({
@@ -230,7 +309,7 @@ export async function parseRecipeFromImages(
     },
   ];
 
-  const message = await client.messages.create({
+  const { message, meta } = await claudeCreate("parseRecipeFromImages", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [{ role: "user", content }],
@@ -249,15 +328,15 @@ export async function parseRecipeFromImages(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }
 
 export async function parseRecipeFromImage(
   base64: string,
   mediaType: ImageMediaType,
   sourceValue: string
-): Promise<ParsedRecipe> {
-  const message = await client.messages.create({
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
+  const { message, meta } = await claudeCreate("parseRecipeFromImage", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [
@@ -290,7 +369,7 @@ export async function parseRecipeFromImage(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }
 
 export async function parseRecipeFromText(
@@ -299,7 +378,7 @@ export async function parseRecipeFromText(
   sourceValue: string,
   jsonLd?: JsonLdRecipeData,
   titleHint?: string
-): Promise<ParsedRecipe> {
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   let content: string;
 
   if (jsonLd) {
@@ -336,7 +415,7 @@ export async function parseRecipeFromText(
       `Text:\n${text.slice(0, 15000)}`;
   }
 
-  const message = await client.messages.create({
+  const { message, meta } = await claudeCreate("parseRecipeFromText", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [{ role: "user", content }],
@@ -355,5 +434,5 @@ export async function parseRecipeFromText(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }

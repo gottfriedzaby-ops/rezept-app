@@ -11,6 +11,11 @@ export interface ClaudeCallMeta {
   durationMs: number;
   status: "success" | "error";
   error?: string;
+  prompt: {
+    system?: string;
+    messages: Anthropic.MessageParam[];
+  };
+  result?: string;
 }
 
 export interface JsonLdRecipeData {
@@ -31,6 +36,28 @@ type ClaudeFunctionName =
   | "parseRecipeFromImages"
   | "reviewAndImproveRecipe";
 
+// Replace base64 image data with a placeholder so log entries stay readable.
+function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
+  return messages.map((msg) => {
+    if (typeof msg.content === "string") return msg;
+    return {
+      ...msg,
+      content: msg.content.map((block) => {
+        if (
+          block.type === "image" &&
+          block.source.type === "base64"
+        ) {
+          return {
+            ...block,
+            source: { ...block.source, data: "[base64 image data omitted]" },
+          };
+        }
+        return block;
+      }),
+    };
+  });
+}
+
 async function claudeCreate(
   functionName: ClaudeFunctionName,
   params: Parameters<typeof client.messages.create>[0]
@@ -38,6 +65,7 @@ async function claudeCreate(
   const start = Date.now();
   try {
     const message = (await client.messages.create(params)) as Anthropic.Message;
+    const resultBlock = message.content[0];
     const meta: ClaudeCallMeta = {
       timestamp: new Date().toISOString(),
       function: functionName,
@@ -46,6 +74,11 @@ async function claudeCreate(
       outputTokens: message.usage.output_tokens,
       durationMs: Date.now() - start,
       status: "success",
+      prompt: {
+        system: typeof params.system === "string" ? params.system : undefined,
+        messages: sanitizeMessages(params.messages as Anthropic.MessageParam[]),
+      },
+      result: resultBlock?.type === "text" ? resultBlock.text : undefined,
     };
     return { message, meta };
   } catch (err) {

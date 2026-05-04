@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsed = await parseRecipeFromText(caption, "instagram", shortcode);
+    const { recipe: parsed, meta: parseMeta } = await parseRecipeFromText(caption, "instagram", shortcode);
 
     // Require at least 3 ingredients and 2 steps to guard against Claude hallucinating
     // a recipe from a dish name alone
@@ -96,7 +96,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const reviewed = await reviewAndImproveRecipe(parsed);
+    const { recipe: reviewed, meta: reviewMeta } = await reviewAndImproveRecipe(parsed);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, shortcode);
     if (duplicate) {
@@ -112,6 +112,7 @@ export async function POST(request: NextRequest) {
         sourceTitle: author,
         imageUrl,
       },
+      claudeLog: [parseMeta, reviewMeta],
       error: null,
     });
   } catch (error) {

@@ -2,6 +2,17 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
 
+export interface ClaudeCallMeta {
+  timestamp: string;
+  function: string;
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  durationMs: number;
+  status: "success" | "error";
+  error?: string;
+}
+
 export interface JsonLdRecipeData {
   name?: string;
   recipeIngredient?: string[];
@@ -13,6 +24,40 @@ export interface JsonLdRecipeData {
 }
 
 const client = new Anthropic();
+
+type ClaudeFunctionName =
+  | "parseRecipeFromText"
+  | "parseRecipeFromImage"
+  | "parseRecipeFromImages"
+  | "reviewAndImproveRecipe";
+
+async function claudeCreate(
+  functionName: ClaudeFunctionName,
+  params: Parameters<typeof client.messages.create>[0]
+): Promise<{ message: Awaited<ReturnType<typeof client.messages.create>>; meta: ClaudeCallMeta }> {
+  const start = Date.now();
+  try {
+    const message = await client.messages.create(params);
+    const meta: ClaudeCallMeta = {
+      timestamp: new Date().toISOString(),
+      function: functionName,
+      model: params.model,
+      inputTokens: message.usage.input_tokens,
+      outputTokens: message.usage.output_tokens,
+      durationMs: Date.now() - start,
+      status: "success",
+    };
+    return { message, meta };
+  } catch (err) {
+    console.error("[Claude API error]", {
+      function: functionName,
+      model: params.model,
+      durationMs: Date.now() - start,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
+}
 
 const RECIPE_SCHEMA = `{
   "title": "string",
@@ -135,8 +180,8 @@ Review checklist:
 7. Ingredient fidelity: the input recipe JSON is the authoritative source. Preserve every ingredient name exactly as given. Do NOT replace names with synonyms or "more typical" alternatives. Do NOT add ingredients absent from the input just because they are commonly found in this dish type.
 `.trim();
 
-export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<ParsedRecipe> {
-  const message = await client.messages.create({
+export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
+  const { message, meta } = await claudeCreate("reviewAndImproveRecipe", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     system: REVIEW_SYSTEM,
@@ -156,7 +201,6 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
   improved.recipe_type = recipe.recipe_type;
   improved.tags = normalizeTags(improved.tags);
   improved.servings = recipe.servings;
-
   // Build per-section amount maps from the parse pass (amounts already per-serving).
   // Keyed by section title (lowercase) so we survive review-pass reordering.
   // A pure index-based approach breaks when the review pass returns sections in a
@@ -211,13 +255,13 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<Pars
     };
   });
 
-  return improved;
+  return { recipe: improved, meta };
 }
 
 export async function parseRecipeFromImages(
   imageUrls: string[],
   sourceValue: string
-): Promise<ParsedRecipe> {
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const multi = imageUrls.length > 1;
   const content = [
     ...imageUrls.map((url) => ({
@@ -230,7 +274,7 @@ export async function parseRecipeFromImages(
     },
   ];
 
-  const message = await client.messages.create({
+  const { message, meta } = await claudeCreate("parseRecipeFromImages", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [{ role: "user", content }],
@@ -249,15 +293,15 @@ export async function parseRecipeFromImages(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }
 
 export async function parseRecipeFromImage(
   base64: string,
   mediaType: ImageMediaType,
   sourceValue: string
-): Promise<ParsedRecipe> {
-  const message = await client.messages.create({
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
+  const { message, meta } = await claudeCreate("parseRecipeFromImage", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [
@@ -290,7 +334,7 @@ export async function parseRecipeFromImage(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }
 
 export async function parseRecipeFromText(
@@ -299,7 +343,7 @@ export async function parseRecipeFromText(
   sourceValue: string,
   jsonLd?: JsonLdRecipeData,
   titleHint?: string
-): Promise<ParsedRecipe> {
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   let content: string;
 
   if (jsonLd) {
@@ -336,7 +380,7 @@ export async function parseRecipeFromText(
       `Text:\n${text.slice(0, 15000)}`;
   }
 
-  const message = await client.messages.create({
+  const { message, meta } = await claudeCreate("parseRecipeFromText", {
     model: "claude-sonnet-4-6",
     max_tokens: 4096,
     messages: [{ role: "user", content }],
@@ -355,5 +399,5 @@ export async function parseRecipeFromText(
       amount: Math.round((ing.amount / sv) * 100) / 100,
     })),
   }));
-  return parsed;
+  return { recipe: parsed, meta };
 }

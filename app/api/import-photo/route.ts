@@ -54,8 +54,8 @@ export async function POST(request: NextRequest) {
       }
 
       const sourceValue = fileNames?.[0] ?? "photo";
-      const parsed = await parseRecipeFromImages(urls, sourceValue);
-      const reviewed = await reviewAndImproveRecipe(parsed);
+      const { recipe: parsed, meta: parseMeta } = await parseRecipeFromImages(urls, sourceValue);
+      const { recipe: reviewed, meta: reviewMeta } = await reviewAndImproveRecipe(parsed);
 
       const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue);
       if (duplicate) {
@@ -71,6 +71,7 @@ export async function POST(request: NextRequest) {
           sourceTitle: fileNames?.[0] ?? null,
           imageUrl: urls[0] ?? null,
         },
+        claudeLog: [parseMeta, reviewMeta],
         error: null,
       });
     }
@@ -120,10 +121,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[import-photo] calling Claude vision, buffer size:", buffer.length);
     const base64 = buffer.toString("base64");
-    const parsed = await parseRecipeFromImage(base64, finalMediaType, fileName);
+    const { recipe: parsed, meta: parseMeta } = await parseRecipeFromImage(base64, finalMediaType, fileName);
     console.log("[import-photo] parsed title:", parsed.title);
 
-    const reviewed = await reviewAndImproveRecipe(parsed);
+    const { recipe: reviewed, meta: reviewMeta } = await reviewAndImproveRecipe(parsed);
     console.log("[import-photo] review complete, returning response");
 
     const duplicate = await findDuplicateRecipe(reviewed.title, fileName);
@@ -136,6 +137,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       data: { recipe: reviewed, sourceTitle: fileName, imageUrl },
+      claudeLog: [parseMeta, reviewMeta],
       error: null,
     });
   } catch (error) {

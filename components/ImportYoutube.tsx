@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
+import type { ClaudeCallMeta } from "@/lib/claude";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 
 type Phase = "input" | "loading" | "review" | "success";
@@ -31,12 +32,13 @@ export default function ImportYoutube() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url }),
       });
-      const json = (await res.json()) as { data: ParseResult | null; error: string | null };
+      const json = (await res.json()) as { data: ParseResult | null; error: string | null; claudeLog?: ClaudeCallMeta[] };
 
       if (json.error || !json.data) {
         setError(json.error ?? "Import fehlgeschlagen");
         setPhase("input");
       } else {
+        if (json.claudeLog) console.log("[Claude API]", json.claudeLog);
         setParseResult(json.data);
         setPhase("review");
       }

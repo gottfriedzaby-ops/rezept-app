@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
+import type { ClaudeCallMeta } from "@/lib/claude";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 
 const MAX_IMAGES = 6;
@@ -164,12 +165,13 @@ export default function ImportPhoto() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ urls, fileNames }),
       });
-      const json = (await res.json()) as { data: ParseResult | null; error: string | null };
+      const json = (await res.json()) as { data: ParseResult | null; error: string | null; claudeLog?: ClaudeCallMeta[] };
 
       if (json.error || !json.data) {
         setError(json.error ?? "Import fehlgeschlagen");
         setPhase("input");
       } else {
+        if (json.claudeLog) console.log("[Claude API]", json.claudeLog);
         setParseResult(json.data);
         setPhase("review");
       }

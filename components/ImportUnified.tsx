@@ -3,6 +3,7 @@
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
+import type { ClaudeCallMeta } from "@/lib/claude";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
 import { useImport } from "@/contexts/ImportContext";
@@ -19,6 +20,7 @@ interface ImportApiResponse {
   error: string | null;
   existingRecipeId?: string;
   existingTitle?: string;
+  claudeLog?: ClaudeCallMeta[];
 }
 
 interface ImageEntry {
@@ -209,6 +211,7 @@ export default function ImportUnified() {
         setError(json.error ?? "Import fehlgeschlagen");
         setPhase("idle");
       } else {
+        if (json.claudeLog) console.log("[Claude API]", json.claudeLog);
         setParseResult(json.data);
         setPhase("review");
       }

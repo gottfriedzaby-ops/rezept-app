@@ -8,13 +8,16 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 interface Props {
   recipeId: string;
   initialFavorite: boolean;
+  readOnly?: boolean;
 }
 
-export default function RecipeActions({ recipeId, initialFavorite }: Props) {
+export default function RecipeActions({ recipeId, initialFavorite, readOnly = false }: Props) {
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  if (readOnly) return null;
 
   async function toggleFavorite() {
     const next = !isFavorite;

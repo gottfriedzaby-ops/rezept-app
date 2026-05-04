@@ -1,8 +1,23 @@
 {
-  "enabledPlugins": {
-    "supabase@claude-plugins-official": true,
-    "frontend-design@claude-plugins-official": true,
-    "typescript-lsp@claude-plugins-official": true,
-    "github@claude-plugins-official": true
-  }
+    "permissions": {
+      "defaultMode": "auto"
+    },
+    "enabledPlugins": {
+      "supabase@claude-plugins-official": true,
+      "frontend-design@claude-plugins-official": true,
+      "typescript-lsp@claude-plugins-official": true,
+      "github@claude-plugins-official": true,
+      "vercel@claude-plugins-official": true,
+      "standards@trendium-marketplace": true
+    },
+    "extraKnownMarketplaces": {
+      "trendium-marketplace": {
+        "source": {
+          "source": "github",
+          "repo": "Trendium-Labs/trendium-tool-claude-code"
+        }
+      }
+    },
+    "theme": "auto",
+    "skipAutoPermissionPrompt": true
 }

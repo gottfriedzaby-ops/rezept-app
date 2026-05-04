@@ -125,7 +125,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
 
-      {/* Header */}
       <header className="flex items-center justify-between px-6 py-4 border-b border-stone shrink-0">
         <Link
           href={`/${recipe.id}`}
@@ -144,7 +143,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
         <div className="w-20" />
       </header>
 
-      {/* Step content */}
       <main className="flex-1 overflow-y-auto px-6 py-10 max-w-[720px] mx-auto w-full flex flex-col gap-8">
         {/* Section label — shown above step text for multi-section recipes */}
         {multiSection && currentCookStep.sectionTitle && (
@@ -158,7 +156,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
           {currentCookStep.step.text}
         </p>
 
-        {/* Timer */}
         {timeLeft !== null && (
           <div className="flex flex-col gap-5">
             <span
@@ -188,7 +185,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
         )}
       </main>
 
-      {/* Ingredients accordion */}
       <div className="border-t border-stone shrink-0">
         <button
           onClick={() => setShowIngredients((s) => !s)}
@@ -245,7 +241,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
         )}
       </div>
 
-      {/* Navigation */}
       <nav className="flex gap-3 p-4 border-t border-stone shrink-0">
         <button
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}

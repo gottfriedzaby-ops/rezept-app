@@ -73,7 +73,6 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
             </h3>
           )}
 
-          {/* Ingredients */}
           <section className={showSectionHeaders && section.title ? "mt-6" : "mt-12"}>
             {(!showSectionHeaders || sIdx === 0) && (
               <h2 className="label-overline mb-6">Zutaten</h2>
@@ -93,7 +92,6 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
             </ul>
           </section>
 
-          {/* Steps */}
           <section className="mt-8">
             {(!showSectionHeaders || sIdx === 0) && (
               <h2 className="label-overline mb-6">Zubereitung</h2>

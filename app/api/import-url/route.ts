@@ -133,9 +133,7 @@ function extractCoverImage(
   return resolve(found ?? "") ?? null;
 }
 
-// Recursively flatten a Contentful Rich Text JSON node tree into plain text.
-// Contentful stores recipe content in `rich-text` attributes as JSON like:
-// { "type": "root", "children": [{ "type": "paragraph", "children": [{ "type": "text", "value": "…" }] }] }
+// Contentful rich-text format: { "type": "root", "children": [{ "type": "paragraph", "children": [{ "type": "text", "value": "…" }] }] }
 function flattenRichTextNode(node: unknown): string {
   if (!node || typeof node !== "object") return "";
   const obj = node as Record<string, unknown>;
@@ -145,10 +143,7 @@ function flattenRichTextNode(node: unknown): string {
   return "";
 }
 
-// Extract text from all [rich-text] attribute nodes in the DOM.
-// Cheerio decodes HTML entities in attribute values automatically, so we get clean JSON.
-// This captures ingredient amounts and step text that would otherwise be invisible to
-// $("body").text() because they're only in data attributes (not visible text nodes).
+// Content in [rich-text] data attributes is invisible to $("body").text() — must be extracted separately.
 function extractRichTextContent($: $Type): string {
   const parts: string[] = [];
   $("[rich-text]").each((_, el) => {
@@ -209,7 +204,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "url is required" }, { status: 400 });
     }
 
-    // Fast duplicate check before any expensive processing
     const earlyDuplicate = await checkUrlDuplicate(url);
     if (earlyDuplicate) {
       return NextResponse.json(
@@ -233,24 +227,20 @@ export async function POST(request: NextRequest) {
     const html = await response.text();
 
     const $ = cheerio.load(html);
-    // Use head > title to avoid picking up SVG <title> elements throughout the page
+    // head > title avoids picking up SVG <title> elements scattered through the page
     const pageTitle = ($("head > title").first().text() || $("title").first().text()).trim();
 
-    // Extract JSON-LD structured data before any DOM stripping
     const jsonLd = extractJsonLd($);
-
-    // Extract cover image before any DOM stripping
     const imageUrl = extractCoverImage($, url, jsonLd);
 
     $("script, style").remove();
     const stepImages = extractStepImages($, url);
 
-    // Extract title anchor before structural elements are removed (h1 may live inside <header>)
+    // og:title / h1 extracted before structural removal — h1 may live inside <header>
     const ogTitle = $('meta[property="og:title"]').attr("content")?.trim() ?? null;
     const h1Text = $("h1").first().text().trim() || null;
     const titleHint = ogTitle || h1Text || null;
 
-    // Expanded element removal to eliminate UI chrome from text
     $("nav, header, footer, aside, iframe, noscript, svg, button").remove();
     $('[aria-hidden="true"]').remove();
     $(".sr-only, .visually-hidden").remove();
@@ -286,15 +276,12 @@ export async function POST(request: NextRequest) {
     }
     const rawText = (richTextContent + " " + (articleText ?? $("body").text())).replace(/\s+/g, " ").trim();
 
-    // Strip residual UI artifact strings
     let cleanedText = rawText;
     for (const pattern of UI_ARTIFACT_PATTERNS) {
       cleanedText = cleanedText.replace(pattern, " ");
     }
     cleanedText = cleanedText.replace(/\s+/g, " ").trim();
 
-    // Deterministically extract parenthetical metric amounts (e.g. "2 tsp (10 grams)")
-    // and prepend them as a structured hint so Claude never has to guess these values.
     const knownAmounts = buildKnownAmountsPreamble(richTextContent);
     const textForClaude = knownAmounts + cleanedText;
 

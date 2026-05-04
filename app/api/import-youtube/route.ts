@@ -38,7 +38,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "Ungültige YouTube-URL" }, { status: 400 });
     }
 
-    // Fast duplicate check before any expensive processing
     const earlyDuplicate = await checkUrlDuplicate(videoId);
     if (earlyDuplicate) {
       return NextResponse.json(
@@ -79,7 +78,6 @@ export async function POST(request: NextRequest) {
     }
 
     const desc = description ?? "";
-    // Two complementary extractors: parenthetical metric "(500 g)" and inline "300ml Kirschbier"
     const knownAmounts =
       buildInlineAmountsPreamble(desc) + buildKnownAmountsPreamble(desc);
     const combined = [

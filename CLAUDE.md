@@ -94,9 +94,14 @@ YOUTUBE_API_KEY=
 ```
 
 ## Was noch NICHT implementiert ist
-- Authentifizierung (kommt in Phase 2)
 - Mehrsprachigkeit
-- Meal Planning</pre>
+- Meal Planning
+
+## Bereits implementiert (war als Phase 2 geplant)
+- Authentifizierung (E-Mail-Login, Registrierung, Passwort-Reset, Session-Middleware)
+
+## Datenmigrations-Entscheidungen
+- Beim Rollout von Multi-User werden alle vor der Auth-Einführung importierten Rezepte gelöscht. Jeder Nutzer startet mit einer leeren Datenbank.</pre>
 </div>
 
 <div class="doc" id="doc-schema">

@@ -34,10 +34,10 @@ type ClaudeFunctionName =
 async function claudeCreate(
   functionName: ClaudeFunctionName,
   params: Parameters<typeof client.messages.create>[0]
-): Promise<{ message: Awaited<ReturnType<typeof client.messages.create>>; meta: ClaudeCallMeta }> {
+): Promise<{ message: Anthropic.Message; meta: ClaudeCallMeta }> {
   const start = Date.now();
   try {
-    const message = await client.messages.create(params);
+    const message = (await client.messages.create(params)) as Anthropic.Message;
     const meta: ClaudeCallMeta = {
       timestamp: new Date().toISOString(),
       function: functionName,

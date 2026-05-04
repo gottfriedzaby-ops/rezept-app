@@ -1,6 +1,6 @@
 # Requirements: Rezept-App
 
-**Status:** Draft
+**Status:** In Review
 **Author:** Requirements Engineer
 **Date:** 2026-05-04
 **Version:** 1.0
@@ -30,7 +30,7 @@ This document is the project-wide functional requirements overview. Per-feature 
 
 ### 3.1 Recipe Import — Common Pipeline
 
-- **FR-01** The system must accept import requests from at least four source types: `url`, `youtube`, `photo`, `instagram`. A `manual` source type must also be supported for recipes the user types directly.
+- **FR-01** The system must accept import requests from at least four source types: `url`, `youtube`, `photo`, `instagram`. A `manual` source type must also be supported for recipes the user types directly. For manual entries, `source_value` must be set to the literal string `manual` by default (satisfying BR-02 without requiring the user to supply a custom provenance string).
 - **FR-02** The import pipeline must execute in this order: (1) fetch raw content, (2) Claude parse pass producing a structured `ParsedRecipe`, (3) Claude review pass that verifies completeness, ingredient realism, step ordering, and German language consistency, (4) duplicate check, (5) user review form, (6) persistence on confirm.
 - **FR-03** Every successfully imported recipe must be persisted with: title, ingredients (JSONB, per-serving amounts), steps (JSONB, with optional `timerSeconds`), tags, source type, source value, optional source title, optional cover image URL, recipe type, servings, prep time, cook time, and a scalable flag.
 - **FR-04** The Claude review pass must not be allowed to overwrite ground-truth ingredient amounts that were extracted from structured source data (e.g. JSON-LD or parenthetical metric amounts). A code-side guard must restore those amounts after the review pass.
@@ -111,7 +111,7 @@ This document is the project-wide functional requirements overview. Per-feature 
 ### 3.12 Sharing
 
 - **FR-110** The system must support generating shareable, read-only links to a recipe or collection via tokenised public URLs (`/shared/[token]`).
-- **FR-111** Share tokens must be revocable by the owning user.
+- **FR-111** Share tokens must be revocable by the owning user. Tokens do not expire automatically; they remain valid until explicitly revoked.
 
 ### 3.13 User Settings
 
@@ -180,13 +180,13 @@ This document is the project-wide functional requirements overview. Per-feature 
 
 The following items need stakeholder input to be fully specified. They are listed here as a backlog; per-feature documents under `/docs/requirements/` carry their own per-feature open questions.
 
-- **OQ-01** Should the `manual` source type require a free-text "Quelle" string (e.g. "Oma's Kochbuch") to satisfy BR-02, or is the literal string `manual` acceptable as a placeholder?
+- **OQ-01** ~~Should the `manual` source type require a free-text "Quelle" string (e.g. "Oma's Kochbuch") to satisfy BR-02, or is the literal string `manual` acceptable as a placeholder?~~ **Resolved:** The literal string `manual` is acceptable and is set automatically. See FR-01.
 - **OQ-02** Should the duplicate-check Jaccard threshold of 0.85 be user-configurable or a fixed system constant?
 - **OQ-03** When a YouTube transcript is unavailable, should the system attempt to import using the description and channel metadata only, or hard-fail and ask the user to switch sources?
-- **OQ-04** For multi-user mode, should every existing recipe be migrated to a single owner account, or should an admin assignment step be required?
-- **OQ-05** Should shareable links expire by default, or only when the owner revokes them?
+- **OQ-04** ~~For multi-user mode, should every existing recipe be migrated to a single owner account, or should an admin assignment step be required?~~ **Resolved:** All pre-auth recipes will be deleted when multi-user mode rolls out. Every user starts with a clean database.
+- **OQ-05** ~~Should shareable links expire by default, or only when the owner revokes them?~~ **Resolved:** Tokens are permanent until manually revoked by the owner. See FR-111.
 - **OQ-06** Is there a per-user import quota, or is rate limiting purely platform-driven (Vercel + Anthropic)?
-- **OQ-07** The CLAUDE.md file currently states authentication is "not yet implemented" but the codebase contains login, register, password-reset, auth callback, and middleware session handling. Confirm authentication is implemented and update CLAUDE.md, or clarify which auth functionality is still pending.
+- **OQ-07** ~~The CLAUDE.md file currently states authentication is "not yet implemented" but the codebase contains login, register, password-reset, auth callback, and middleware session handling.~~ **Resolved:** Authentication is fully implemented. CLAUDE.md updated.
 
 ## 8. Glossary
 

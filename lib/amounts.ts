@@ -1,10 +1,5 @@
-// Deterministically extract amounts from recipe description lines formatted as
-// "AMOUNT UNIT ingredient" — the standard German YouTube recipe description format,
-// e.g. "300ml Kirschbier", "2 EL Honig", "1 TL Worcestersauce".
-// Converts EL/TL/Prise to metric, then injects the results as ground truth so Claude
-// never picks conflicting values from the transcript.
+// Injects extracted amounts as ground truth so Claude never overrides them with its own estimates.
 export function buildInlineAmountsPreamble(text: string): string {
-  // Matches lines: optional leading whitespace, number, unit, ingredient name
   const re =
     /^[ \t]*(\d+(?:[.,]\d+)?)\s*(ml|l\b|g\b|kg\b|EL\b|TL\b|Prise\b)\s+(.+)$/gim;
   const lines: string[] = [];
@@ -33,15 +28,11 @@ export function buildInlineAmountsPreamble(text: string): string {
   );
 }
 
-// Unicode fraction characters → decimal numbers
 export const UNICODE_FRACTIONS: Record<string, number> = {
   "½": 0.5, "¼": 0.25, "¾": 0.75, "⅓": 1 / 3, "⅔": 2 / 3, "⅛": 0.125,
 };
 
-// Deterministically extract metric amounts from parenthetical annotations like
-// "4½ cups (500 grams)", "2 scant teaspoons (10 grams)", "½ of ¼ tsp (½ gram)".
-// Returns a formatted preamble to prepend to the Claude prompt so the model never
-// has to guess at amounts that the source already states explicitly.
+// Injects parenthetical metric amounts as ground truth so Claude doesn't re-derive them from imperial measurements.
 export function buildKnownAmountsPreamble(text: string): string {
   const re = /\(([½¼¾⅓⅔⅛]|\d+(?:\.\d+)?)\s*(grams?|g\b|ml\b|millilitres?|litres?|l\b|kg\b)\)/gi;
   const lines: string[] = [];

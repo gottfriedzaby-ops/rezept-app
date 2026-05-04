@@ -65,7 +65,6 @@ export interface ParsedRecipe {
   scalable?: boolean;
 }
 
-/** Returns a normalized sections array from any Recipe, including pre-migration ones. */
 export function getRecipeSections(recipe: Recipe): RecipeSection[] {
   if (recipe.sections && recipe.sections.length > 0) return recipe.sections;
   return [{ title: null, ingredients: recipe.ingredients, steps: recipe.steps }];

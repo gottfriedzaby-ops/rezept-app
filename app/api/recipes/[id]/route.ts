@@ -64,7 +64,6 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       .eq("id", params.id)
       .single();
 
-    // Remove image from Supabase Storage if it was uploaded there
     if (recipe?.image_url) {
       const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/recipe-images/`;
       if (recipe.image_url.startsWith(storagePrefix)) {

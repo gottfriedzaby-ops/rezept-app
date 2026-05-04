@@ -9,7 +9,6 @@ function normalizeUrl(raw: string): string {
   try {
     const u = new URL(raw.toLowerCase());
     u.pathname = u.pathname.replace(/\/+$/, "") || "/";
-    // Strip common tracking and session params
     const trackingParams = [
       "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content",
       "ref", "fbclid", "gclid", "mc_cid", "mc_eid", "igshid", "s",
@@ -42,7 +41,6 @@ function titleSimilarity(a: string, b: string): number {
 // Fast URL-only check — run this before any expensive processing to short-circuit
 // duplicate imports without triggering Claude API calls.
 export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | null> {
-  // Exact match
   const { data: exact } = await supabaseAdmin
     .from("recipes")
     .select("id, title")
@@ -50,7 +48,6 @@ export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | 
     .maybeSingle();
   if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
 
-  // Normalised URL match (handles trailing slashes, UTM params, http vs https)
   if (url.startsWith("http")) {
     const normalizedSource = normalizeUrl(url);
     let hostname = "";
@@ -77,7 +74,6 @@ export async function findDuplicateRecipe(
   title: string,
   sourceValue: string
 ): Promise<DuplicateResult | null> {
-  // 1. Exact source_value match
   const { data: exact } = await supabaseAdmin
     .from("recipes")
     .select("id, title")
@@ -85,7 +81,6 @@ export async function findDuplicateRecipe(
     .maybeSingle();
   if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
 
-  // 2. Normalised URL match — catches trailing slash, utm params, http vs https
   if (sourceValue.startsWith("http")) {
     const normalizedSource = normalizeUrl(sourceValue);
     let hostname = "";

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
+import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -46,6 +47,14 @@ async function fetchPostData(shortcode: string): Promise<{ caption: string; imag
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimit = await checkDailyImportLimit();
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { data: null, error: rateLimitErrorMessage(rateLimit) },
+        { status: rateLimit.userId ? 429 : 401 }
+      );
+    }
+
     const { url } = (await request.json()) as { url: string };
 
     if (!url) {

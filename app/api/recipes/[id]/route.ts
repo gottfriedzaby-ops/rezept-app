@@ -1,13 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { RecipeSection, Step } from "@/types/recipe";
 
 export const dynamic = "force-dynamic";
 
 type Params = { params: { id: string } };
 
+async function getUser() {
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  return user;
+}
+
 export async function PATCH(request: NextRequest, { params }: Params) {
   try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ data: null, error: "Nicht angemeldet" }, { status: 401 });
+    }
+
     const body = await request.json();
     const {
       title, description, servings, prep_time, cook_time,
@@ -58,6 +70,11 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
 export async function DELETE(_request: NextRequest, { params }: Params) {
   try {
+    const user = await getUser();
+    if (!user) {
+      return NextResponse.json({ data: null, error: "Nicht angemeldet" }, { status: 401 });
+    }
+
     const { data: recipe } = await supabaseAdmin
       .from("recipes")
       .select("image_url")

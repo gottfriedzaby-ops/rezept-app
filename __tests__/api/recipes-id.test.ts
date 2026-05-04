@@ -10,6 +10,14 @@ jest.mock("@/lib/supabase", () => ({
   },
 }));
 
+jest.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: jest.fn().mockResolvedValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
+    },
+  }),
+}));
+
 import { supabaseAdmin } from "@/lib/supabase";
 
 const fromMock = supabaseAdmin.from as jest.Mock;

@@ -8,9 +8,11 @@ import { getTagColor } from "@/lib/tag-colors";
 
 interface Props {
   recipes: Recipe[];
+  readOnly?: boolean;
+  shareToken?: string;
 }
 
-export default function RecipeList({ recipes }: Props) {
+export default function RecipeList({ recipes, readOnly = false, shareToken }: Props) {
   const [query, setQuery] = useState("");
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -99,20 +101,22 @@ export default function RecipeList({ recipes }: Props) {
 
       {/* Filter bar */}
       <div className="flex flex-wrap gap-2 mb-8">
-        {/* Favorites toggle */}
-        <button
-          onClick={() => setShowFavoritesOnly((v) => !v)}
-          className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-colors ${
-            showFavoritesOnly
-              ? "bg-amber-400 text-white border-amber-400"
-              : "bg-amber-50 text-amber-600 border-amber-200 hover:opacity-75"
-          }`}
-        >
-          <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
-          </svg>
-          Favoriten
-        </button>
+        {/* Favorites toggle — hidden in read-only mode */}
+        {!readOnly && (
+          <button
+            onClick={() => setShowFavoritesOnly((v) => !v)}
+            className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-colors ${
+              showFavoritesOnly
+                ? "bg-amber-400 text-white border-amber-400"
+                : "bg-amber-50 text-amber-600 border-amber-200 hover:opacity-75"
+            }`}
+          >
+            <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
+            </svg>
+            Favoriten
+          </button>
+        )}
 
         {allTags.map((tag) => {
             const { bg, text } = getTagColor(tag);
@@ -139,21 +143,26 @@ export default function RecipeList({ recipes }: Props) {
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((recipe) => {
             const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
+            const cardHref = readOnly && shareToken
+              ? `/shared/${shareToken}/${recipe.id}`
+              : `/${recipe.id}`;
             return (
               <li key={recipe.id} className="relative">
-                <button
-                  type="button"
-                  onClick={() => toggleFavorite(recipe.id)}
-                  aria-label={favoriteIds.has(recipe.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
-                  className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-white/80 hover:bg-white transition-colors shadow-sm"
-                >
-                  <svg viewBox="0 0 16 16" className="w-4 h-4" fill={favoriteIds.has(recipe.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}
-                    style={{ color: favoriteIds.has(recipe.id) ? "#FBBF24" : "#A0A09A" }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
-                  </svg>
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => toggleFavorite(recipe.id)}
+                    aria-label={favoriteIds.has(recipe.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                    className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-white/80 hover:bg-white transition-colors shadow-sm"
+                  >
+                    <svg viewBox="0 0 16 16" className="w-4 h-4" fill={favoriteIds.has(recipe.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}
+                      style={{ color: favoriteIds.has(recipe.id) ? "#FBBF24" : "#A0A09A" }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
+                    </svg>
+                  </button>
+                )}
                 <Link
-                  href={`/${recipe.id}`}
+                  href={cardHref}
                   className="group block border border-stone rounded overflow-hidden bg-white hover:border-ink-tertiary transition-colors"
                 >
                   <RecipeCover

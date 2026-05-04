@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ParsedRecipe, Recipe } from "@/types/recipe";
 import { findDuplicateRecipe } from "@/lib/duplicate-check";
 
@@ -14,6 +15,9 @@ interface ConfirmBody {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
     const { recipe, sourceTitle, stepImages = [], imageUrl } = (await request.json()) as ConfirmBody;
 
     if (!recipe) {
@@ -54,6 +58,7 @@ export async function POST(request: NextRequest) {
         image_url: imageUrl ?? null,
         step_images: stepImages,
         scalable: recipe.scalable ?? true,
+        user_id: user?.id ?? null,
       })
       .select()
       .single();

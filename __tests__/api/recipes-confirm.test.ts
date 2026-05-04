@@ -10,6 +10,14 @@ jest.mock("@/lib/duplicate-check", () => ({
   findDuplicateRecipe: jest.fn(),
 }));
 
+jest.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: jest.fn().mockResolvedValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
+    },
+  }),
+}));
+
 import { supabaseAdmin } from "@/lib/supabase";
 import { findDuplicateRecipe } from "@/lib/duplicate-check";
 

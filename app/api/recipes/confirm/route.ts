@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ParsedRecipe, Recipe } from "@/types/recipe";
 import { findDuplicateRecipe } from "@/lib/duplicate-check";
+import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,14 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
+
+    const rateLimit = await checkDailyImportLimit();
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { data: null, error: rateLimitErrorMessage(rateLimit) },
+        { status: rateLimit.userId ? 429 : 401 }
+      );
+    }
 
     const { recipe, sourceTitle, stepImages = [], imageUrl } = (await request.json()) as ConfirmBody;
 

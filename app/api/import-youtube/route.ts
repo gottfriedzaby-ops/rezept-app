@@ -3,6 +3,7 @@ import { YoutubeTranscript } from "youtube-transcript";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
 import { buildKnownAmountsPreamble, buildInlineAmountsPreamble } from "@/lib/amounts";
+import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -27,6 +28,14 @@ async function getThumbnail(videoId: string): Promise<string> {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimit = await checkDailyImportLimit();
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { data: null, error: rateLimitErrorMessage(rateLimit) },
+        { status: rateLimit.userId ? 429 : 401 }
+      );
+    }
+
     const { url } = (await request.json()) as { url: string };
 
     if (!url) {

@@ -4,6 +4,7 @@ import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 import type { JsonLdRecipeData } from "@/lib/claude";
 import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
 import { buildKnownAmountsPreamble, UNICODE_FRACTIONS } from "@/lib/amounts";
+import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -198,6 +199,14 @@ function extractStepImages($: $Type, pageUrl: string): string[] {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimit = await checkDailyImportLimit();
+    if (!rateLimit.allowed) {
+      return NextResponse.json(
+        { data: null, error: rateLimitErrorMessage(rateLimit) },
+        { status: rateLimit.userId ? 429 : 401 }
+      );
+    }
+
     const { url } = (await request.json()) as { url: string };
 
     if (!url) {

@@ -122,6 +122,7 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **FR-130** Cookidoo / Thermomix export per `06-cookidoo-export.md` (v1: schema.org JSON-LD).
 - **FR-131** Persistent shopping list with scaled ingredient aggregation per `07-shopping-list.md`.
 - **FR-132** Per-serving nutrition calculation (kcal and macros) on import per `08-nutrition-calculation.md`.
+- **FR-133** Each authenticated user must be limited to 20 import operations per calendar day (UTC). The limit applies across all import source types (`url`, `youtube`, `photo`, `instagram`). When the cap is reached, the import API must return a user-actionable error message. The counter resets at midnight UTC.
 
 ## 4. Non-Functional Requirements
 
@@ -181,11 +182,11 @@ This document is the project-wide functional requirements overview. Per-feature 
 The following items need stakeholder input to be fully specified. They are listed here as a backlog; per-feature documents under `/docs/requirements/` carry their own per-feature open questions.
 
 - **OQ-01** ~~Should the `manual` source type require a free-text "Quelle" string (e.g. "Oma's Kochbuch") to satisfy BR-02, or is the literal string `manual` acceptable as a placeholder?~~ **Resolved:** The literal string `manual` is acceptable and is set automatically. See FR-01.
-- **OQ-02** Should the duplicate-check Jaccard threshold of 0.85 be user-configurable or a fixed system constant?
+- **OQ-02** ~~Should the duplicate-check Jaccard threshold of 0.85 be user-configurable or a fixed system constant?~~ **Resolved:** Fixed system constant at 0.85. No configuration needed.
 - **OQ-03** When a YouTube transcript is unavailable, should the system attempt to import using the description and channel metadata only, or hard-fail and ask the user to switch sources?
 - **OQ-04** ~~For multi-user mode, should every existing recipe be migrated to a single owner account, or should an admin assignment step be required?~~ **Resolved:** All pre-auth recipes will be deleted when multi-user mode rolls out. Every user starts with a clean database.
 - **OQ-05** ~~Should shareable links expire by default, or only when the owner revokes them?~~ **Resolved:** Tokens are permanent until manually revoked by the owner. See FR-111.
-- **OQ-06** Is there a per-user import quota, or is rate limiting purely platform-driven (Vercel + Anthropic)?
+- **OQ-06** ~~Is there a per-user import quota, or is rate limiting purely platform-driven (Vercel + Anthropic)?~~ **Resolved:** A per-user daily import cap of 20 recipes must be enforced at the application layer. See FR-133.
 - **OQ-07** ~~The CLAUDE.md file currently states authentication is "not yet implemented" but the codebase contains login, register, password-reset, auth callback, and middleware session handling.~~ **Resolved:** Authentication is fully implemented. CLAUDE.md updated.
 
 ## 8. Glossary

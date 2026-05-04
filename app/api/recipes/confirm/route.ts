@@ -39,27 +39,29 @@ export async function POST(request: NextRequest) {
       .flatMap((s) => s.steps)
       .map((s, i) => ({ ...s, order: i + 1 }));
 
+    const insertPayload = {
+      title: recipe.title,
+      servings: recipe.servings,
+      prep_time: recipe.prepTime,
+      cook_time: recipe.cookTime,
+      recipe_type: recipe.recipe_type ?? "kochen",
+      sections,
+      ingredients: allIngredients,
+      steps: allSteps,
+      tags: recipe.tags,
+      source_type: recipe.source.type,
+      source_value: recipe.source.value,
+      source_title: sourceTitle ?? null,
+      description: null,
+      image_url: imageUrl ?? null,
+      step_images: stepImages,
+      scalable: recipe.scalable ?? true,
+      ...(user?.id ? { user_id: user.id } : {}),
+    };
+
     const { data: insertData, error: dbError } = await supabaseAdmin
       .from("recipes")
-      .insert({
-        title: recipe.title,
-        servings: recipe.servings,
-        prep_time: recipe.prepTime,
-        cook_time: recipe.cookTime,
-        recipe_type: recipe.recipe_type ?? "kochen",
-        sections,
-        ingredients: allIngredients,
-        steps: allSteps,
-        tags: recipe.tags,
-        source_type: recipe.source.type,
-        source_value: recipe.source.value,
-        source_title: sourceTitle ?? null,
-        description: null,
-        image_url: imageUrl ?? null,
-        step_images: stepImages,
-        scalable: recipe.scalable ?? true,
-        user_id: user?.id ?? null,
-      })
+      .insert(insertPayload)
       .select()
       .single();
 

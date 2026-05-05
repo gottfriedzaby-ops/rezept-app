@@ -208,12 +208,13 @@ function extractStepImages($: $Type, pageUrl: string): string[] {
   return hasFoodImage ? images.slice(0, 10) : [];
 }
 
-// Cloudflare managed-challenges can return HTTP 200 with a JS-challenge page
-// instead of 403, so status-code checks alone are insufficient.
+// Cloudflare managed-challenges can return HTTP 200 with a JS-challenge page.
+// IMPORTANT: "challenges.cloudflare.com" also appears in Cloudflare Turnstile
+// scripts on normal pages, so that string alone is NOT a reliable signal.
+// Use the challenge-page-specific DOM id ("cf-wrapper") and WAF block text instead.
 function isBlockedByCloudflare(html: string): boolean {
   return (
-    html.includes("cf-wrapper") ||
-    html.includes("challenges.cloudflare.com") ||
+    html.includes('id="cf-wrapper"') ||
     html.includes("Sorry, you have been blocked")
   );
 }
@@ -243,20 +244,31 @@ export async function POST(request: NextRequest) {
     }
 
     let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
-    // Cloudflare and similar WAFs block known crawler UAs with 403/406.
-    // Retry with a full browser header set before giving up.
-    if (!response.ok && (response.status === 403 || response.status === 406)) {
-      response = await fetch(url, { headers: BROWSER_HEADERS });
-    }
-    if (!response.ok) {
-      return NextResponse.json(
-        { data: null, error: "Seite konnte nicht geladen werden" },
-        { status: 400 }
-      );
-    }
-    const html = await response.text();
+    let html: string | null = null;
 
-    // Cloudflare managed-challenge: HTTP 200 but page is a JS challenge, not the recipe.
+    if (response.ok) {
+      const candidate = await response.text();
+      // If Googlebot UA triggered a managed-challenge page (HTTP 200 but challenge HTML),
+      // fall through to the browser-headers retry rather than passing challenge HTML to Claude.
+      if (!isBlockedByCloudflare(candidate)) {
+        html = candidate;
+      }
+    }
+
+    // Retry with full browser headers when: (a) Googlebot got 403/406, or
+    // (b) Googlebot got HTTP 200 but the body was a CF challenge page.
+    if (html === null) {
+      const r2 = await fetch(url, { headers: BROWSER_HEADERS });
+      if (!r2.ok) {
+        return NextResponse.json(
+          { data: null, error: "Seite konnte nicht geladen werden" },
+          { status: 400 }
+        );
+      }
+      html = await r2.text();
+    }
+
+    // If both attempts returned a challenge/block page, the site actively blocks scrapers.
     if (isBlockedByCloudflare(html)) {
       return NextResponse.json(
         { data: null, error: "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben." },

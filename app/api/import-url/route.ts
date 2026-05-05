@@ -228,6 +228,44 @@ function isBlockedByCloudflare(html: string): boolean {
   );
 }
 
+type FetchAttempt = { html: string | null; status: number; cfBlocked: boolean };
+
+async function fetchOnce(targetUrl: string, headers: Record<string, string>): Promise<FetchAttempt> {
+  const r = await fetch(targetUrl, { headers });
+  if (!r.ok) return { html: null, status: r.status, cfBlocked: false };
+  const body = await r.text();
+  if (isBlockedByCloudflare(body)) return { html: null, status: r.status, cfBlocked: true };
+  return { html: body, status: r.status, cfBlocked: false };
+}
+
+// Last-resort fetch through Jina AI Reader. Jina runs a real headless browser
+// on its end, so it bypasses TLS/HTTP fingerprinting that defeats Node fetch.
+// X-Return-Format: html keeps the existing cheerio + JSON-LD pipeline working
+// unchanged. JINA_READER_API_KEY is optional — only needed for higher rate
+// limits.
+async function fetchViaJinaReader(targetUrl: string): Promise<string | null> {
+  const headers: Record<string, string> = {
+    "X-Return-Format": "html",
+    "Accept": "text/html",
+  };
+  const apiKey = process.env.JINA_READER_API_KEY;
+  if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+  try {
+    const r = await fetch(`https://r.jina.ai/${targetUrl}`, {
+      headers,
+      signal: AbortSignal.timeout(30_000),
+    });
+    if (!r.ok) return null;
+    const body = await r.text();
+    // Empty or stub bodies indicate Jina couldn't fetch the page either.
+    if (body.length < 100) return null;
+    return body;
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimit = await checkDailyImportLimit();
@@ -257,40 +295,26 @@ export async function POST(request: NextRequest) {
     const BOT_BLOCK_STATUSES = new Set([403, 429, 503]);
     const BLOCKED_MESSAGE = "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben.";
 
-    let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
-    let html: string | null = null;
-    let firstWasBotBlock = BOT_BLOCK_STATUSES.has(response.status);
+    // Attempt 1: Googlebot UA — many sites whitelist it for SEO.
+    let result = await fetchOnce(url, { "User-Agent": GOOGLEBOT_UA });
+    let sawBotBlock = BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
 
-    if (response.ok) {
-      const candidate = await response.text();
-      // If Googlebot UA triggered a managed-challenge page (HTTP 200 but challenge HTML),
-      // fall through to the browser-headers retry rather than passing challenge HTML to Claude.
-      if (!isBlockedByCloudflare(candidate)) {
-        html = candidate;
-      }
+    // Attempt 2: Full Chrome headers — covers sites that just check UA + Sec-* hints.
+    if (!result.html) {
+      result = await fetchOnce(url, BROWSER_HEADERS);
+      sawBotBlock = sawBotBlock || BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
     }
 
-    // Retry with full browser headers when: (a) Googlebot got 403/406, or
-    // (b) Googlebot got HTTP 200 but the body was a CF challenge page.
-    if (html === null) {
-      const r2 = await fetch(url, { headers: BROWSER_HEADERS });
-      if (!r2.ok) {
-        // If both attempts look like CDN bot-blocks, give the user the actionable message.
-        const errorMsg = (firstWasBotBlock || BOT_BLOCK_STATUSES.has(r2.status))
-          ? BLOCKED_MESSAGE
-          : "Seite konnte nicht geladen werden";
-        return NextResponse.json(
-          { data: null, error: errorMsg },
-          { status: 400 }
-        );
-      }
-      html = await r2.text();
+    // Attempt 3: Jina Reader — proxies through a real headless browser, the
+    // only thing that gets past Cloudflare's TLS/HTTP/2 fingerprinting.
+    let html: string | null = result.html;
+    if (!html) {
+      html = await fetchViaJinaReader(url);
     }
 
-    // If both attempts returned a challenge/block page, the site actively blocks scrapers.
-    if (isBlockedByCloudflare(html)) {
+    if (!html) {
       return NextResponse.json(
-        { data: null, error: BLOCKED_MESSAGE },
+        { data: null, error: sawBotBlock ? BLOCKED_MESSAGE : "Seite konnte nicht geladen werden" },
         { status: 400 }
       );
     }

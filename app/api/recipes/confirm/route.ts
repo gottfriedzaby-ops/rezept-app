@@ -83,8 +83,15 @@ export async function POST(request: NextRequest) {
       try {
         const nutrition = await estimateNutrition(allIngredients, recipe.servings);
         if (nutrition.kcal_per_serving !== null) {
-          await supabaseAdmin.from("recipes").update(nutrition).eq("id", saved.id);
-          Object.assign(saved, nutrition);
+          const { error: nutritionUpdateError } = await supabaseAdmin
+            .from("recipes")
+            .update(nutrition)
+            .eq("id", saved.id);
+          if (!nutritionUpdateError) {
+            Object.assign(saved, nutrition);
+          } else {
+            console.error("[confirm] nutrition update failed:", nutritionUpdateError.message);
+          }
         }
       } catch { /* nutrition is best-effort */ }
     }

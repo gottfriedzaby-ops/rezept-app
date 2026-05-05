@@ -22,6 +22,12 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Rezept-App",
   description: "Rezepte importieren und verwalten",
+  themeColor: "#2D5F3F",
+  appleWebApp: {
+    capable: true,
+    title: "Rezept",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export default function RootLayout({

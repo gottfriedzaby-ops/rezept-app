@@ -4,8 +4,10 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ParsedRecipe, Recipe } from "@/types/recipe";
 import { findDuplicateRecipe } from "@/lib/duplicate-check";
 import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
+import { estimateNutrition } from "@/lib/claude";
 
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 interface ConfirmBody {
   recipe: ParsedRecipe;
@@ -74,6 +76,18 @@ export async function POST(request: NextRequest) {
 
     const saved = insertData as Recipe | null;
     if (dbError) throw dbError;
+
+    // Estimate nutrition synchronously — failures are silently ignored so the
+    // import always succeeds regardless of Claude availability.
+    if (saved?.id && recipe.servings > 0 && allIngredients.length > 0) {
+      try {
+        const nutrition = await estimateNutrition(allIngredients, recipe.servings);
+        if (nutrition.kcal_per_serving !== null) {
+          await supabaseAdmin.from("recipes").update(nutrition).eq("id", saved.id);
+          Object.assign(saved, nutrition);
+        }
+      } catch { /* nutrition is best-effort */ }
+    }
 
     return NextResponse.json({ data: saved, error: null });
   } catch (error) {

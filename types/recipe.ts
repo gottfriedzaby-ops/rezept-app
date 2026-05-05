@@ -20,6 +20,13 @@ export interface RecipeSection {
 
 export type SourceType = "url" | "photo" | "youtube" | "instagram" | "manual";
 
+export interface NutritionIngredient {
+  name: string;
+  amount: number;
+  unit: string;
+  kcal: number;
+}
+
 export interface Recipe {
   id: string;
   created_at: string;
@@ -41,6 +48,11 @@ export interface Recipe {
   step_images: string[] | null;
   favorite: boolean;
   scalable: boolean | null;
+  kcal_per_serving: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+  nutrition_breakdown: NutritionIngredient[] | null;
 }
 
 export interface ImportJob {

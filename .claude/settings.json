@@ -29,7 +29,12 @@
           "source": "github",
           "repo": "Trendium-Labs/trendium-tool-claude-code"
         }
-      }
+      },
+        "xyz-marketplace": {
+            "source": {
+                "source": "github",
+                "repo": "gottfriedzaby-ops/xyz"
+}
     },
     "theme": "auto",
     "skipAutoPermissionPrompt": true

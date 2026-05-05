@@ -50,12 +50,6 @@ export default function RecipeList({ recipes, readOnly = false, shareToken }: Pr
     }
   }
 
-  const allTags = useMemo(() => {
-    const seen = new Set<string>();
-    recipes.forEach((r) => r.tags.forEach((t) => seen.add(t)));
-    return Array.from(seen).sort();
-  }, [recipes]);
-
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return recipes.filter((r) => {
@@ -66,6 +60,14 @@ export default function RecipeList({ recipes, readOnly = false, shareToken }: Pr
       return matchesQuery && matchesTags && matchesFavorites;
     });
   }, [recipes, query, activeTags, showFavoritesOnly, favoriteIds]);
+
+  const availableTags = useMemo(() => {
+    // Seed with active tags so they are always present and can be deselected.
+    const seen = new Set<string>(activeTags);
+    // Add tags from recipes that still pass the current filter.
+    filtered.forEach((r) => r.tags.forEach((t) => seen.add(t)));
+    return Array.from(seen).sort();
+  }, [filtered, activeTags]);
 
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
@@ -118,7 +120,7 @@ export default function RecipeList({ recipes, readOnly = false, shareToken }: Pr
           </button>
         )}
 
-        {allTags.map((tag) => {
+        {availableTags.map((tag) => {
             const { bg, text } = getTagColor(tag);
             const active = activeTags.has(tag);
             return (

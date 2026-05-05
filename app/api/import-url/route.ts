@@ -266,6 +266,37 @@ async function fetchViaJinaReader(targetUrl: string): Promise<string | null> {
   }
 }
 
+// Lightweight metadata-only fetch using Facebook's link-preview crawler UA.
+// CDNs (incl. Cloudflare) frequently allow social-preview crawlers through
+// even when blocking general scrapers, since site owners want their links
+// to render with images on social. We only need <head> meta tags here.
+async function fetchOgImageFallback(targetUrl: string): Promise<string | null> {
+  const resolve = (src: string | undefined): string | null => {
+    if (!src || src.startsWith("data:")) return null;
+    try { return new URL(src, targetUrl).href; } catch { return null; }
+  };
+  try {
+    const r = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "facebookexternalhit/1.1 (+http://www.facebook.com/externalhit_uatext.php)",
+        "Accept": "text/html,application/xhtml+xml",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!r.ok) return null;
+    const html = await r.text();
+    if (isBlockedByCloudflare(html)) return null;
+    const $ = cheerio.load(html);
+    return (
+      resolve($('meta[property="og:image"]').attr("content")) ||
+      resolve($('meta[name="twitter:image"]').attr("content")) ||
+      resolve($('meta[name="twitter:image:src"]').attr("content"))
+    );
+  } catch {
+    return null;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimit = await checkDailyImportLimit();
@@ -308,8 +339,10 @@ export async function POST(request: NextRequest) {
     // Attempt 3: Jina Reader — proxies through a real headless browser, the
     // only thing that gets past Cloudflare's TLS/HTTP/2 fingerprinting.
     let html: string | null = result.html;
+    let usedJina = false;
     if (!html) {
       html = await fetchViaJinaReader(url);
+      usedJina = html !== null;
     }
 
     if (!html) {
@@ -324,7 +357,15 @@ export async function POST(request: NextRequest) {
     const pageTitle = ($("head > title").first().text() || $("title").first().text()).trim();
 
     const jsonLd = extractJsonLd($);
-    const imageUrl = extractCoverImage($, url, jsonLd);
+    let imageUrl = extractCoverImage($, url, jsonLd);
+
+    // Jina returns the cleaned article body, stripping <head> meta tags and
+    // JSON-LD scripts — so og:image / twitter:image are unreachable from its
+    // HTML. Fall back to a metadata-only fetch with a social-crawler UA that
+    // CDNs typically allow through.
+    if (!imageUrl && usedJina) {
+      imageUrl = await fetchOgImageFallback(url);
+    }
 
     $("script, style").remove();
     const stepImages = extractStepImages($, url);

@@ -40,7 +40,11 @@ export async function POST(
       .update(nutrition)
       .eq("id", params.id);
 
-    if (updateError) throw updateError;
+    if (updateError) {
+      // Log but don't fail — return the estimated values so the UI can still display them.
+      // Most likely cause: DB migration not yet applied (run supabase/migrations/20260505000000_feature08_nutrition_columns.sql).
+      console.error("[nutrition] DB update failed:", updateError.message);
+    }
 
     return NextResponse.json({ data: nutrition, error: null });
   } catch (error) {

@@ -15,7 +15,8 @@ export default function NutritionDisplay({ recipe }: Props) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const hasData = kcal !== null && protein !== null && carbs !== null && fat !== null;
+  // != null intentionally catches both null and undefined (columns may be absent before migration)
+  const hasData = kcal != null && protein != null && carbs != null && fat != null;
 
   async function recalculate() {
     setLoading(true);

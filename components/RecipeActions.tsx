@@ -86,10 +86,18 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
           type="button"
           onClick={() => setConfirmOpen(true)}
           aria-label="Rezept löschen"
+          title="Rezept löschen"
           className={btnCls}
         >
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 13h2m-5 4h8a2 2 0 002-2V7H4v8a2 2 0 002 2zM7 7V5a2 2 0 012-2h2a2 2 0 012 2v2M3 7h14" />
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5" aria-hidden="true">
+            {/* Lid handle */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 4.5V4a1 1 0 011-1h2a1 1 0 011 1v.5" />
+            {/* Lid */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6.5h14" />
+            {/* Bin body */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 6.5l.9 9.5a1 1 0 001 .9h6.2a1 1 0 001-.9l.9-9.5" />
+            {/* Vertical lines inside bin */}
+            <path strokeLinecap="round" d="M8 9v5M10 9v5M12 9v5" />
           </svg>
         </button>
       </div>

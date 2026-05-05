@@ -197,6 +197,16 @@ function extractStepImages($: $Type, pageUrl: string): string[] {
   return hasFoodImage ? images.slice(0, 10) : [];
 }
 
+// Cloudflare managed-challenges can return HTTP 200 with a JS-challenge page
+// instead of 403, so status-code checks alone are insufficient.
+function isBlockedByCloudflare(html: string): boolean {
+  return (
+    html.includes("cf-wrapper") ||
+    html.includes("challenges.cloudflare.com") ||
+    html.includes("Sorry, you have been blocked")
+  );
+}
+
 export async function POST(request: NextRequest) {
   try {
     const rateLimit = await checkDailyImportLimit();
@@ -222,10 +232,12 @@ export async function POST(request: NextRequest) {
     }
 
     let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
+    let usedBrowserUA = false;
     // Cloudflare and similar WAFs block known crawler UAs with 403/406.
     // Retry once with a browser UA before giving up.
     if (!response.ok && (response.status === 403 || response.status === 406)) {
       response = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+      usedBrowserUA = true;
     }
     if (!response.ok) {
       return NextResponse.json(
@@ -233,7 +245,19 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    const html = await response.text();
+    let html = await response.text();
+    // Cloudflare managed-challenge: HTTP 200 with challenge HTML (no 403 to detect).
+    // Retry with browser UA if we haven't already.
+    if (!usedBrowserUA && isBlockedByCloudflare(html)) {
+      const r2 = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+      if (r2.ok) html = await r2.text();
+    }
+    if (isBlockedByCloudflare(html)) {
+      return NextResponse.json(
+        { data: null, error: "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben." },
+        { status: 400 }
+      );
+    }
 
     const $ = cheerio.load(html);
     // head > title avoids picking up SVG <title> elements scattered through the page

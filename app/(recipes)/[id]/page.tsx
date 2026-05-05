@@ -8,6 +8,7 @@ import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
 import PdfExportButton from "@/components/PdfExportButton";
 import RecipeExportMenu from "@/components/RecipeExportMenu";
+import NutritionDisplay from "@/components/NutritionDisplay";
 import { getTagColor } from "@/lib/tag-colors";
 import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
@@ -132,6 +133,8 @@ export default async function RecipeDetailPage({
         )}
 
         <RecipeDetail recipe={recipe} />
+
+        <NutritionDisplay recipe={recipe} />
 
         <div className="mt-8 pt-8 border-t border-stone">
           <AddToShoppingListButton recipe={recipe} />

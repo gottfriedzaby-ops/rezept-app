@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import type { ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
+import type { Ingredient, ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
 
 export interface ClaudeCallMeta {
@@ -34,7 +34,8 @@ type ClaudeFunctionName =
   | "parseRecipeFromText"
   | "parseRecipeFromImage"
   | "parseRecipeFromImages"
-  | "reviewAndImproveRecipe";
+  | "reviewAndImproveRecipe"
+  | "estimateNutrition";
 
 // Replace base64 image data with a placeholder so log entries stay readable.
 function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
@@ -435,4 +436,60 @@ export async function parseRecipeFromText(
     })),
   }));
   return { recipe: parsed, meta };
+}
+
+interface NutritionResult {
+  kcal_per_serving: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+}
+
+export interface NutritionEstimate {
+  kcal_per_serving: number | null;
+  protein_g: number | null;
+  carbs_g: number | null;
+  fat_g: number | null;
+}
+
+export async function estimateNutrition(
+  ingredients: Ingredient[],
+  servings: number
+): Promise<NutritionEstimate> {
+  const ingredientList = ingredients
+    .map((ing) =>
+      ing.amount > 0
+        ? `- ${ing.amount} ${ing.unit} ${ing.name}`.replace(/\s+/g, " ").trim()
+        : `- ${ing.unit} ${ing.name}`.replace(/\s+/g, " ").trim()
+    )
+    .join("\n");
+
+  const prompt =
+    `Estimate the nutritional content per serving for a recipe that yields ${servings} serving(s).\n` +
+    `Ingredient amounts below are already per serving.\n\n` +
+    `Ingredients (per serving):\n${ingredientList}\n\n` +
+    `Return ONLY valid JSON (no markdown fences, no extra text):\n` +
+    `{"kcal_per_serving":number,"protein_g":number,"carbs_g":number,"fat_g":number}\n\n` +
+    `Round all values to the nearest integer. If an ingredient's contribution is unknown, approximate it as 0.`;
+
+  try {
+    const { message } = await claudeCreate("estimateNutrition", {
+      model: "claude-sonnet-4-6",
+      max_tokens: 256,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const block = message.content[0];
+    if (block.type !== "text") return { kcal_per_serving: null, protein_g: null, carbs_g: null, fat_g: null };
+
+    const result = parseClaudeJson<NutritionResult>(block.text);
+    return {
+      kcal_per_serving: Math.round(result.kcal_per_serving),
+      protein_g: Math.round(result.protein_g),
+      carbs_g: Math.round(result.carbs_g),
+      fat_g: Math.round(result.fat_g),
+    };
+  } catch {
+    return { kcal_per_serving: null, protein_g: null, carbs_g: null, fat_g: null };
+  }
 }

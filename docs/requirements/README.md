@@ -16,16 +16,16 @@ This directory contains feature requirement documents for the **Rezept-App** —
 
 ## Feature Overview
 
-| # | Feature | Summary | Effort | Doc |
+| # | Feature | Summary | Status | Doc |
 |---|---|---|---|---|
-| 01 | Recipe Type Distinction | Distinguish Kochen / Backen / Grillen / Zubereiten so labels and CTA buttons adapt | **S** | [01-recipe-type.md](./01-recipe-type.md) |
-| 02 | Multi-Image Recipe Import | Allow uploading multiple photos (e.g. Instagram carousel) to import a single recipe | **M** | [02-multi-image-import.md](./02-multi-image-import.md) |
-| 03 | Multi-Section Recipes | Support recipes with named sections (e.g. "Für die Soße" + "Für den Teig") with separate ingredient and step lists | **M** | [03-multi-section-recipes.md](./03-multi-section-recipes.md) |
-| 04 | PDF Export | Generate a print-friendly PDF for a single recipe from the detail page | **S–M** | [04-pdf-export.md](./04-pdf-export.md) |
-| 05 | Auth & Sharing | Multi-user authentication (email, Google, Apple) and read-only recipe collection sharing | **L** | [05-auth-and-sharing.md](./05-auth-and-sharing.md) |
-| 06 | Cookidoo Export | Transfer/export recipes toward Cookidoo / Thermomix; uses schema.org JSON-LD as v1 | **S / L** | [06-cookidoo-export.md](./06-cookidoo-export.md) |
-| 07 | Shopping List | Add scaled recipe ingredients to a persistent, checkable shopping list | **M / M+** | [07-shopping-list.md](./07-shopping-list.md) |
-| 08 | Nutrition Calculation | Calculate kcal and macros per serving on import; display on recipe detail page | **M / L** | [08-nutrition-calculation.md](./08-nutrition-calculation.md) |
+| 01 | Recipe Type Distinction | Distinguish Kochen / Backen / Grillen / Zubereiten so labels and CTA buttons adapt | ✅ Done | [01-recipe-type.md](./01-recipe-type.md) |
+| 02 | Multi-Image Recipe Import | Allow uploading multiple photos (e.g. Instagram carousel) to import a single recipe | ✅ Done | [02-multi-image-import.md](./02-multi-image-import.md) |
+| 03 | Multi-Section Recipes | Support recipes with named sections (e.g. "Für die Soße" + "Für den Teig") with separate ingredient and step lists | ✅ Done | [03-multi-section-recipes.md](./03-multi-section-recipes.md) |
+| 04 | PDF Export | Generate a print-friendly PDF for a single recipe from the detail page | ✅ Done | [04-pdf-export.md](./04-pdf-export.md) |
+| 05 | Auth & Sharing | Multi-user authentication (email + Google OAuth) and read-only recipe collection sharing via revocable tokens | ✅ Done | [05-auth-and-sharing.md](./05-auth-and-sharing.md) |
+| 06 | Cookidoo Export | schema.org JSON-LD download + plain-text copy (no public Cookidoo API exists) | ✅ Done | [06-cookidoo-export.md](./06-cookidoo-export.md) |
+| 07 | Shopping List | Add scaled recipe ingredients to a persistent, checkable shopping list (localStorage tier) | ✅ Done | [07-shopping-list.md](./07-shopping-list.md) |
+| 08 | Nutrition Calculation | Claude-estimated kcal and macros per serving, calculated on import and recalculable on demand | ✅ Done | [08-nutrition-calculation.md](./08-nutrition-calculation.md) |
 
 ---
 
@@ -72,4 +72,4 @@ Each feature doc follows this template:
 
 ---
 
-*Last updated: 2026-04-29*
+*Last updated: 2026-05-05 — all 8 features shipped*

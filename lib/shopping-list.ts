@@ -42,9 +42,10 @@ export function addRecipeItems(
 ): number {
   const current = getList();
   const newItems: ShoppingListItem[] = ingredients.map((ing) => {
+    // Amounts are stored per portion; total = amount * desired servings.
     const scaledAmount =
-      ing.amount > 0 && recipe.servings != null && recipe.servings > 0
-        ? Math.round((ing.amount * desiredServings) / recipe.servings * 10) / 10
+      ing.amount > 0
+        ? Math.round(ing.amount * desiredServings * 10) / 10
         : null;
 
     return {

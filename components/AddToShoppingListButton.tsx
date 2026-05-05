@@ -10,7 +10,7 @@ interface AddToShoppingListButtonProps {
 }
 
 export default function AddToShoppingListButton({ recipe }: AddToShoppingListButtonProps) {
-  const defaultServings = recipe.servings ?? 4;
+  const defaultServings = recipe.servings ?? 1;
   const [modalOpen, setModalOpen] = useState(false);
   const [desiredServings, setDesiredServings] = useState(defaultServings);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -21,9 +21,10 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
 
   function getPreviewText(): string {
     if (!firstIngredient) return "";
+    // Amounts are stored per portion; total = amount * desired servings.
     const scaled =
-      firstIngredient.amount > 0 && recipe.servings != null && recipe.servings > 0
-        ? Math.round((firstIngredient.amount * desiredServings) / recipe.servings * 10) / 10
+      firstIngredient.amount > 0
+        ? Math.round(firstIngredient.amount * desiredServings * 10) / 10
         : firstIngredient.amount;
     const parts: string[] = [];
     if (scaled != null && scaled > 0) parts.push(String(scaled));

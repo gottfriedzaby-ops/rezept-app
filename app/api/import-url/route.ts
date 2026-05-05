@@ -228,6 +228,16 @@ function isBlockedByCloudflare(html: string): boolean {
   );
 }
 
+type FetchAttempt = { html: string | null; status: number; cfBlocked: boolean };
+
+async function fetchOnce(targetUrl: string, headers: Record<string, string>): Promise<FetchAttempt> {
+  const r = await fetch(targetUrl, { headers });
+  if (!r.ok) return { html: null, status: r.status, cfBlocked: false };
+  const body = await r.text();
+  if (isBlockedByCloudflare(body)) return { html: null, status: r.status, cfBlocked: true };
+  return { html: body, status: r.status, cfBlocked: false };
+}
+
 // Last-resort fetch through Jina AI Reader. Jina runs a real headless browser
 // on its end, so it bypasses TLS/HTTP fingerprinting that defeats Node fetch.
 // X-Return-Format: html keeps the existing cheerio + JSON-LD pipeline working
@@ -285,21 +295,13 @@ export async function POST(request: NextRequest) {
     const BOT_BLOCK_STATUSES = new Set([403, 429, 503]);
     const BLOCKED_MESSAGE = "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben.";
 
-    async function attempt(headers: Record<string, string>): Promise<{ html: string | null; status: number; cfBlocked: boolean }> {
-      const r = await fetch(url, { headers });
-      if (!r.ok) return { html: null, status: r.status, cfBlocked: false };
-      const body = await r.text();
-      if (isBlockedByCloudflare(body)) return { html: null, status: r.status, cfBlocked: true };
-      return { html: body, status: r.status, cfBlocked: false };
-    }
-
     // Attempt 1: Googlebot UA — many sites whitelist it for SEO.
-    let result = await attempt({ "User-Agent": GOOGLEBOT_UA });
+    let result = await fetchOnce(url, { "User-Agent": GOOGLEBOT_UA });
     let sawBotBlock = BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
 
     // Attempt 2: Full Chrome headers — covers sites that just check UA + Sec-* hints.
     if (!result.html) {
-      result = await attempt(BROWSER_HEADERS);
+      result = await fetchOnce(url, BROWSER_HEADERS);
       sawBotBlock = sawBotBlock || BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
     }
 

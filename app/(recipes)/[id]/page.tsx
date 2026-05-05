@@ -3,6 +3,7 @@ import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
+import AddToShoppingListButton from "@/components/AddToShoppingListButton";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
 import PdfExportButton from "@/components/PdfExportButton";
@@ -131,6 +132,10 @@ export default async function RecipeDetailPage({
         )}
 
         <RecipeDetail recipe={recipe} />
+
+        <div className="mt-8 pt-8 border-t border-stone">
+          <AddToShoppingListButton recipe={recipe} />
+        </div>
       </div>
     </div>
   );

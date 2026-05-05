@@ -138,6 +138,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 ANTHROPIC_API_KEY=
 YOUTUBE_API_KEY=
+JINA_READER_API_KEY=   # optional, raises r.jina.ai rate limits (Cloudflare-bypass fallback)
 ```
 
 ## Implementierte Features

@@ -139,6 +139,7 @@ SUPABASE_SERVICE_ROLE_KEY=
 ANTHROPIC_API_KEY=
 YOUTUBE_API_KEY=
 JINA_READER_API_KEY=   # optional, raises r.jina.ai rate limits (Cloudflare-bypass fallback)
+IMPORT_DEBUG=          # optional, set to "1" to log JSON-LD + Claude's parsed servings/ingredients before per-portion division
 ```
 
 ## Implementierte Features

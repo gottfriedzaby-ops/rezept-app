@@ -5,6 +5,7 @@ import type { JsonLdRecipeData } from "@/lib/claude";
 import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
 import { buildKnownAmountsPreamble, UNICODE_FRACTIONS } from "@/lib/amounts";
 import { checkDailyImportLimit, rateLimitErrorMessage } from "@/lib/import-rate-limit";
+import { fetchHttp2 } from "@/lib/http2-fetch";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
@@ -242,27 +243,39 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
-    let usedBrowserUA = false;
-    // Cloudflare and similar WAFs block known crawler UAs with 403/406.
-    // Retry once with a browser UA before giving up.
-    if (!response.ok && (response.status === 403 || response.status === 406)) {
-      response = await fetch(url, { headers: BROWSER_HEADERS });
-      usedBrowserUA = true;
+    // Attempt 1: Googlebot UA over HTTP/1.1. Many sites whitelist Googlebot
+    // and return richer structured data for it.
+    const firstRes = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
+    let html: string;
+
+    if (firstRes.ok) {
+      const rawHtml = await firstRes.text();
+      if (!isBlockedByCloudflare(rawHtml)) {
+        html = rawHtml;
+      } else {
+        // HTTP 200 + Cloudflare managed-challenge page — fall through to H2 retry.
+        const h2res = await fetchHttp2(url, BROWSER_HEADERS);
+        if (!h2res.ok) {
+          return NextResponse.json(
+            { data: null, error: "Seite konnte nicht geladen werden" },
+            { status: 400 }
+          );
+        }
+        html = await h2res.text();
+      }
+    } else {
+      // Attempt 2: full browser headers over HTTP/2. Cloudflare rejects HTTP/1.1
+      // requests that lack a proper browser fingerprint (protocol version + headers).
+      const h2res = await fetchHttp2(url, BROWSER_HEADERS);
+      if (!h2res.ok) {
+        return NextResponse.json(
+          { data: null, error: "Seite konnte nicht geladen werden" },
+          { status: 400 }
+        );
+      }
+      html = await h2res.text();
     }
-    if (!response.ok) {
-      return NextResponse.json(
-        { data: null, error: "Seite konnte nicht geladen werden" },
-        { status: 400 }
-      );
-    }
-    let html = await response.text();
-    // Cloudflare managed-challenge: HTTP 200 with challenge HTML (no 403 to detect).
-    // Retry with full browser headers if we haven't already.
-    if (!usedBrowserUA && isBlockedByCloudflare(html)) {
-      const r2 = await fetch(url, { headers: BROWSER_HEADERS });
-      if (r2.ok) html = await r2.text();
-    }
+
     if (isBlockedByCloudflare(html)) {
       return NextResponse.json(
         { data: null, error: "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben." },

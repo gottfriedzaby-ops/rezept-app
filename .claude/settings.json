@@ -21,7 +21,8 @@
       "typescript-lsp@claude-plugins-official": true,
       "github@claude-plugins-official": true,
       "vercel@claude-plugins-official": true,
-      "standards@trendium-marketplace": true
+      "standards@trendium-marketplace": true,
+      "standards@xyz-marketplace": true
     },
     "extraKnownMarketplaces": {
       "trendium-marketplace": {

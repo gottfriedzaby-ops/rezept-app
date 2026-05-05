@@ -30,8 +30,8 @@ export default function UserNav() {
   if (loading || !user) return null;
 
   return (
-    <div className="flex items-center gap-3 text-sm text-ink-tertiary">
-      <span className="truncate max-w-[180px]" title={user.email ?? undefined}>
+    <div className="flex items-center gap-3 text-sm text-ink-tertiary shrink-0">
+      <span className="hidden sm:block truncate max-w-[180px]" title={user.email ?? undefined}>
         {user.email}
       </span>
 
@@ -74,7 +74,7 @@ export default function UserNav() {
           fill="none"
           stroke="currentColor"
           strokeWidth={1.5}
-          className="w-4 h-4 shrink-0"
+          className="w-5 h-5 shrink-0"
           aria-hidden="true"
         >
           <path
@@ -88,7 +88,7 @@ export default function UserNav() {
             d="M17.657 10c0-.34-.02-.674-.057-1.003l1.527-1.19a.375.375 0 00.09-.477l-1.448-2.506a.375.375 0 00-.456-.164l-1.8.723a7.462 7.462 0 00-1.727-.998l-.272-1.912A.375.375 0 0013.146 3h-2.896a.375.375 0 00-.37.313l-.272 1.91a7.464 7.464 0 00-1.727.999l-1.8-.723a.375.375 0 00-.456.164L4.178 8.17a.375.375 0 00.09.476l1.527 1.19A7.596 7.596 0 005.738 10c0 .34.02.674.057 1.003l-1.527 1.19a.375.375 0 00-.09.477l1.448 2.506c.1.173.316.238.456.164l1.8-.723c.535.386 1.116.71 1.727.998l.272 1.912c.05.352.37.473.37.473h2.896s.32-.121.37-.473l.272-1.91a7.464 7.464 0 001.727-.999l1.8.723a.375.375 0 00.456-.164l1.448-2.506a.375.375 0 00-.09-.477l-1.527-1.19c.037-.329.057-.663.057-1.003z"
           />
         </svg>
-        Einstellungen
+        <span className="hidden sm:inline">Einstellungen</span>
       </Link>
     </div>
   );

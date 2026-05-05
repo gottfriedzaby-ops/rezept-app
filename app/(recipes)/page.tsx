@@ -25,10 +25,10 @@ export default async function RecipesPage() {
 
   return (
     <div className="min-h-screen bg-surface-primary">
-      <div className="max-w-[1200px] mx-auto px-8 py-16">
+      <div className="max-w-[1200px] mx-auto px-4 sm:px-8 py-10 sm:py-16">
 
-        <header className="mb-16 flex items-start justify-between gap-4">
-          <h1 className="font-serif text-5xl font-medium text-ink-primary tracking-[-0.02em] leading-tight">
+        <header className="mb-12 sm:mb-16 flex items-center justify-between gap-3">
+          <h1 className="font-serif text-4xl sm:text-5xl font-medium text-ink-primary tracking-[-0.02em] leading-tight">
             Meine Rezepte
           </h1>
           <UserNav />

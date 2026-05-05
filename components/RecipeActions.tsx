@@ -91,13 +91,15 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
         >
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5" aria-hidden="true">
             {/* Lid handle */}
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8 4.5V4a1 1 0 011-1h2a1 1 0 011 1v.5" />
-            {/* Lid */}
-            <path strokeLinecap="round" strokeLinejoin="round" d="M3 6.5h14" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M8 5h4V3.5a.5.5 0 00-.5-.5h-3a.5.5 0 00-.5.5V5z" />
+            {/* Lid bar */}
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 5h13" />
             {/* Bin body */}
-            <path strokeLinecap="round" strokeLinejoin="round" d="M5 6.5l.9 9.5a1 1 0 001 .9h6.2a1 1 0 001-.9l.9-9.5" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 5l1 11.5a.5.5 0 00.5.5h7a.5.5 0 00.5-.5L15 5" />
             {/* Vertical lines inside bin */}
-            <path strokeLinecap="round" d="M8 9v5M10 9v5M12 9v5" />
+            <line strokeLinecap="round" x1="8" y1="8.5" x2="8" y2="14.5" />
+            <line strokeLinecap="round" x1="10" y1="8.5" x2="10" y2="14.5" />
+            <line strokeLinecap="round" x1="12" y1="8.5" x2="12" y2="14.5" />
           </svg>
         </button>
       </div>

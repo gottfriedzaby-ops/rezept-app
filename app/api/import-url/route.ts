@@ -17,13 +17,22 @@ const BROWSER_UA =
 
 // Cloudflare bot-detection checks for standard browser request headers beyond
 // just User-Agent. Node.js fetch() sends only the headers you provide, so we
-// must add them explicitly when retrying as a browser.
+// must add them explicitly when retrying as a browser. Sec-Fetch-* and
+// Sec-Ch-Ua-* are Client Hints that Chrome sends on every navigation; sites
+// behind Cloudflare often block requests that omit them.
 const BROWSER_HEADERS: Record<string, string> = {
   "User-Agent": BROWSER_UA,
   "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
   "Accept-Language": "de,en;q=0.9",
   "Accept-Encoding": "gzip, deflate, br",
   "Upgrade-Insecure-Requests": "1",
+  "Sec-Fetch-Site": "none",
+  "Sec-Fetch-Mode": "navigate",
+  "Sec-Fetch-User": "?1",
+  "Sec-Fetch-Dest": "document",
+  "Sec-Ch-Ua": '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+  "Sec-Ch-Ua-Mobile": "?0",
+  "Sec-Ch-Ua-Platform": '"macOS"',
 };
 
 // Images whose URL or alt text suggest non-food product content
@@ -243,8 +252,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 403/503/429 from a CDN (Cloudflare, Akamai, …) is a bot-block, not a
+    // genuine "page missing" — surface the actionable manual-import message.
+    const BOT_BLOCK_STATUSES = new Set([403, 429, 503]);
+    const BLOCKED_MESSAGE = "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben.";
+
     let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
     let html: string | null = null;
+    let firstWasBotBlock = BOT_BLOCK_STATUSES.has(response.status);
 
     if (response.ok) {
       const candidate = await response.text();
@@ -260,8 +275,12 @@ export async function POST(request: NextRequest) {
     if (html === null) {
       const r2 = await fetch(url, { headers: BROWSER_HEADERS });
       if (!r2.ok) {
+        // If both attempts look like CDN bot-blocks, give the user the actionable message.
+        const errorMsg = (firstWasBotBlock || BOT_BLOCK_STATUSES.has(r2.status))
+          ? BLOCKED_MESSAGE
+          : "Seite konnte nicht geladen werden";
         return NextResponse.json(
-          { data: null, error: "Seite konnte nicht geladen werden" },
+          { data: null, error: errorMsg },
           { status: 400 }
         );
       }
@@ -271,7 +290,7 @@ export async function POST(request: NextRequest) {
     // If both attempts returned a challenge/block page, the site actively blocks scrapers.
     if (isBlockedByCloudflare(html)) {
       return NextResponse.json(
-        { data: null, error: "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben." },
+        { data: null, error: BLOCKED_MESSAGE },
         { status: 400 }
       );
     }

@@ -223,9 +223,9 @@ export async function POST(request: NextRequest) {
 
     let response = await fetch(url, { headers: { "User-Agent": GOOGLEBOT_UA } });
     // Cloudflare and similar WAFs block known crawler UAs with 403/406.
-    // Retry once with a browser UA before giving up.
+    // Retry with a full browser header set before giving up.
     if (!response.ok && (response.status === 403 || response.status === 406)) {
-      response = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+      response = await fetch(url, { headers: BROWSER_HEADERS });
     }
     if (!response.ok) {
       return NextResponse.json(
@@ -234,6 +234,14 @@ export async function POST(request: NextRequest) {
       );
     }
     const html = await response.text();
+
+    // Cloudflare managed-challenge: HTTP 200 but page is a JS challenge, not the recipe.
+    if (isBlockedByCloudflare(html)) {
+      return NextResponse.json(
+        { data: null, error: "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben." },
+        { status: 400 }
+      );
+    }
 
     const $ = cheerio.load(html);
     // head > title avoids picking up SVG <title> elements scattered through the page

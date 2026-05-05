@@ -15,6 +15,17 @@ const GOOGLEBOT_UA = "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google
 const BROWSER_UA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+// Cloudflare bot-detection checks for standard browser request headers beyond
+// just User-Agent. Node.js fetch() sends only the headers you provide, so we
+// must add them explicitly when retrying as a browser.
+const BROWSER_HEADERS: Record<string, string> = {
+  "User-Agent": BROWSER_UA,
+  "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+  "Accept-Language": "de,en;q=0.9",
+  "Accept-Encoding": "gzip, deflate, br",
+  "Upgrade-Insecure-Requests": "1",
+};
+
 // Images whose URL or alt text suggest non-food product content
 const STEP_IMAGE_EXCLUSION_PATTERN =
   /logo|icon|avatar|banner|spinner|placeholder|\.svg|pixel|tracking|product|shop|store|buy|cart|gallery|catalog|manufacturer|oven|grill|appliance|equipment|accessory|accessories/i;
@@ -236,7 +247,7 @@ export async function POST(request: NextRequest) {
     // Cloudflare and similar WAFs block known crawler UAs with 403/406.
     // Retry once with a browser UA before giving up.
     if (!response.ok && (response.status === 403 || response.status === 406)) {
-      response = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+      response = await fetch(url, { headers: BROWSER_HEADERS });
       usedBrowserUA = true;
     }
     if (!response.ok) {
@@ -247,9 +258,9 @@ export async function POST(request: NextRequest) {
     }
     let html = await response.text();
     // Cloudflare managed-challenge: HTTP 200 with challenge HTML (no 403 to detect).
-    // Retry with browser UA if we haven't already.
+    // Retry with full browser headers if we haven't already.
     if (!usedBrowserUA && isBlockedByCloudflare(html)) {
-      const r2 = await fetch(url, { headers: { "User-Agent": BROWSER_UA } });
+      const r2 = await fetch(url, { headers: BROWSER_HEADERS });
       if (r2.ok) html = await r2.text();
     }
     if (isBlockedByCloudflare(html)) {

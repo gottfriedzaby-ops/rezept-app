@@ -1,9 +1,10 @@
 # Requirements: Rezept-App
 
-**Status:** In Review
+**Status:** Released
 **Author:** Requirements Engineer
 **Date:** 2026-05-04
 **Version:** 1.0
+**Released:** 2026-05-05 — all 8 features merged to master
 
 ## 1. Overview
 

@@ -25,36 +25,82 @@
 - **Styling:** Tailwind CSS
 - **Datenbank:** Supabase (PostgreSQL)
 - **Deployment:** Vercel
-- **KI:** Claude API — Modell: `claude-sonnet-4-6` (Rezept-Parsing aus rohem Text)
+- **KI:** Claude API — Modell: `claude-sonnet-4-6` (Rezept-Parsing, Review-Pass, Nährwertschätzung)
 
 ## Wichtige Befehle
 ```bash
 npm run dev        # Lokaler Dev-Server (Port 3000)
 npm run build      # Produktions-Build
 npm run lint       # ESLint
+npm test           # Jest-Tests
 npx supabase start # Lokale Supabase-Instanz (optional)
 ```
 
 ## Projektstruktur
 ```
 /app
-  /api             # Next.js API Routes (Import-Logik)
-    /import-url    # Website-Import
-    /import-youtube
-    /import-photo
-  /(recipes)       # Rezept-Seiten (Liste, Detail, Kochmodus)
-/components        # Wiederverwendbare UI-Komponenten
+  /api
+    /import-url          # Website-Import (Scraping + Claude)
+    /import-youtube      # YouTube-Import (Transcript + Claude)
+    /import-photo        # Foto-Import (Vision + Claude), Multi-Image
+    /import-instagram    # Instagram-Import
+    /recipes
+      /confirm           # Rezept speichern + Nährwerte berechnen
+      /[id]              # GET/PATCH/DELETE einzelnes Rezept
+        /nutrition       # POST: Nährwerte neu berechnen
+    /shares              # Share-Link erstellen/löschen
+    /admin/normalize-tags
+    /upload-image
+  /(recipes)             # Rezept-Seiten (Liste, Detail, Bearbeiten, Kochmodus)
+  /shared/[token]        # Öffentliche Rezeptsammlung (read-only)
+  /shopping-list         # Einkaufsliste
+  /login                 # Auth-Seiten
+  /register
+  /settings
+  /auth/callback
+  /auth/reset-password
+/components              # Wiederverwendbare UI-Komponenten
 /lib
-  supabase.ts      # Supabase-Client
-  claude.ts        # Claude API Wrapper
-  parsers/         # Quellen-spezifische Parser
-/types             # TypeScript-Typen (Recipe, Ingredient, etc.)
+  supabase.ts            # Supabase Admin-Client
+  supabase/
+    client.ts            # Browser-Client
+    server.ts            # Server-Client (SSR, Cookies)
+  claude.ts              # Claude API Wrapper (parse, review, nutrition)
+  duplicate-check.ts     # Dreistufige Duplikatprüfung
+  import-rate-limit.ts   # Tageslimit 20 Imports/User
+  shopping-list.ts       # localStorage-Store für Einkaufsliste
+  tags.ts / tag-colors.ts
+  amounts.ts
+  schemaOrg.ts           # schema.org/Recipe Export
+  recipeTypeLabels.ts
+/types
+  recipe.ts              # Recipe, ParsedRecipe, Ingredient, etc.
+/contexts
+  AuthContext.tsx
+  ImportContext.tsx
+/middleware.ts            # Auth-Schutz aller Routen
+/__tests__               # Jest-Tests (186 Tests)
+/docs
+  requirements.md        # Vollständige Anforderungsdokumentation
+  requirements/          # Feature-Spezifikationen 01–08
+  test-concept.md        # QA-Testkonzept
+/supabase/migrations/    # SQL-Migrationen
 ```
 
 ## Datenmodell (Kurzübersicht)
-- `recipes` — Haupttabelle, enthält Titel, Zutaten (JSONB), Schritte (JSONB), Quelle, Tags
-- `sources` — Quellen-Metadaten (URL, Foto-Pfad, YouTube-ID)
-- Zutaten & Schritte: immer als strukturiertes JSON in der recipes-Tabelle gespeichert
+- `recipes` — Haupttabelle:
+  - Zutaten (`ingredients` JSONB) und Schritte (`steps` JSONB) **per Portion** gespeichert
+  - `sections` JSONB — benannte Abschnitte (z.B. „Für die Soße")
+  - `source_type` / `source_value` — Pflichtfelder (url, photo, youtube, instagram, manual)
+  - `user_id` — Eigentümer (auth.users)
+  - `recipe_type` — kochen / backen / grillen / zubereiten
+  - `scalable` — ob Mengen linear skalierbar sind
+  - `kcal_per_serving`, `protein_g`, `carbs_g`, `fat_g` — Nährwerte pro Portion (nullable)
+  - `favorite`, `image_url`, `step_images`, `tags`
+- `shares` — Share-Tokens (owner_id, token, revoked_at)
+- `import_jobs` — asynchrone Import-Queue
+
+**Pending Migration:** `supabase/migrations/20260505000000_feature08_nutrition_columns.sql` muss noch im Supabase SQL-Editor ausgeführt werden (fügt Nährwert-Spalten hinzu).
 
 ## Code-Konventionen
 - TypeScript strict mode — keine `any`-Typen
@@ -63,26 +109,27 @@ npx supabase start # Lokale Supabase-Instanz (optional)
 - Fehlerbehandlung: try/catch in allen API-Calls
 - Deutsch für UI-Text, Englisch für Code/Variablen
 
-## Import-Pipeline (so funktioniert es)
-1. Rohdaten holen (Scraping / OCR / YouTube Transcript)
-2. Rohdaten an Claude API schicken → strukturiertes JSON zurück
-3. JSON in Supabase speichern
-4. Quelle immer als Pflichtfeld mitführen
+## Import-Pipeline (vollständiger Ablauf)
+1. Rohdaten holen (Scraping / OCR / YouTube Transcript / Instagram)
+2. **Parse-Pass:** Rohdaten → Claude → strukturiertes `ParsedRecipe` JSON
+3. **Review-Pass:** Claude prüft Vollständigkeit, Mengen, Reihenfolge, übersetzt auf Deutsch
+4. Duplikatprüfung (exact URL → normalisierte URL → Jaccard-Ähnlichkeit ≥ 0.85)
+5. User-Review-Formular (Zutaten, Schritte bearbeitbar)
+6. Speichern via `/api/recipes/confirm` + Nährwerte schätzen (Claude, best-effort)
+7. Quelle immer als Pflichtfeld; `source_value = "manual"` für manuelle Eingaben
 
-## Claude API Prompt-Konvention
-Immer dieses Output-Format verlangen:
-```json
-{
-  "title": "string",
-  "servings": number,
-  "prepTime": number,
-  "cookTime": number,
-  "ingredients": [{ "amount": number, "unit": "string", "name": "string" }],
-  "steps": [{ "order": number, "text": "string", "timerSeconds": number|null }],
-  "tags": ["string"],
-  "source": { "type": "url|photo|youtube", "value": "string" }
-}
-```
+## Import-Tageslimit
+- 20 Imports pro User pro Kalendertag (UTC)
+- Geprüft in allen 4 Import-Routen + confirm-Route
+- Antwort: HTTP 429 mit deutschem Fehlertext
+
+## Claude API — verwendete Funktionen in `lib/claude.ts`
+- `parseRecipeFromText` — Text/URL → ParsedRecipe
+- `parseRecipeFromImage` / `parseRecipeFromImages` — Foto(s) → ParsedRecipe
+- `reviewAndImproveRecipe` — Qualitätsprüfung + Übersetzung ins Deutsche
+- `estimateNutrition` — Nährwertschätzung aus Zutaten (per-Portion-Mengen → per-Portion-Nährwerte)
+
+Ingredient-Mengen werden **immer per Portion** gespeichert (Division durch servings im Parser).
 
 ## Umgebungsvariablen (.env.local)
 ```
@@ -93,12 +140,24 @@ ANTHROPIC_API_KEY=
 YOUTUBE_API_KEY=
 ```
 
+## Implementierte Features
+- ✅ Rezept-Import: URL, YouTube, Foto (inkl. Multi-Image), Instagram, manuell
+- ✅ Rezept-Typ-Unterscheidung (kochen / backen / grillen / zubereiten)
+- ✅ Multi-Abschnitt-Rezepte (benannte Sections mit eigenen Zutaten/Schritten)
+- ✅ PDF-Export
+- ✅ Authentifizierung (E-Mail + Google OAuth, Registrierung, Passwort-Reset, Middleware)
+- ✅ Sharing (tokenbasierte read-only Links, widerrufbar, kein Ablaufdatum)
+- ✅ Cookidoo-Export (schema.org JSON-LD Download + Plaintext-Kopie)
+- ✅ Einkaufsliste (localStorage, Portionsskalierung, manuelle Eingabe)
+- ✅ Nährwertberechnung (Claude-Schätzung, per Portion, Neu-berechnen-Button)
+- ✅ Dreistufige Duplikatprüfung
+- ✅ Tag-Normalisierung (Synonym-Map → lowercase Deutsch)
+- ✅ Kochmodus (step-by-step, Timer, Wake-Lock)
+- ✅ Import-Tageslimit (20/Tag/User, UTC-Reset)
+
 ## Was noch NICHT implementiert ist
 - Mehrsprachigkeit
 - Meal Planning
-
-## Bereits implementiert (war als Phase 2 geplant)
-- Authentifizierung (E-Mail-Login, Registrierung, Passwort-Reset, Session-Middleware)
 
 ## Datenmigrations-Entscheidungen
 - Beim Rollout von Multi-User werden alle vor der Auth-Einführung importierten Rezepte gelöscht. Jeder Nutzer startet mit einer leeren Datenbank.</pre>

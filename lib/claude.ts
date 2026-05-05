@@ -93,6 +93,31 @@ async function claudeCreate(
   }
 }
 
+// schema.org/recipeYield is allowed to be a number, a string ("6", "6 Portionen",
+// "makes 4-6 servings"), or an array of those. Coerce to a single positive
+// integer or return null if no usable value can be derived. For ranges like
+// "4-6" we use the lower bound, matching how cooks treat "serves 4-6".
+function parseRecipeYield(value: unknown): number | null {
+  if (value == null) return null;
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const n = parseRecipeYield(v);
+      if (n) return n;
+    }
+    return null;
+  }
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.round(value);
+  }
+  if (typeof value === "string") {
+    const m = value.match(/\d+/);
+    if (!m) return null;
+    const n = parseInt(m[0], 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
+
 const RECIPE_SCHEMA = `{
   "title": "string",
   "recipe_type": "kochen | backen | grillen | zubereiten",
@@ -427,6 +452,37 @@ export async function parseRecipeFromText(
 
   const parsed = parseClaudeJson(block.text) as ParsedRecipe;
   parsed.tags = normalizeTags(parsed.tags);
+
+  // Authoritative servings: schema.org/recipeYield is structured data, so when
+  // it gives a clear count we trust it over Claude's parse. Fixes recipes
+  // where Claude returned servings: 1 despite the source declaring 6 — that
+  // mismatch causes the per-portion division below to leave total amounts
+  // stored as if they were per-portion.
+  const yieldFromJsonLd = parseRecipeYield(jsonLd?.recipeYield);
+  if (
+    yieldFromJsonLd !== null &&
+    yieldFromJsonLd >= 2 &&
+    parsed.servings !== yieldFromJsonLd
+  ) {
+    console.warn(
+      `[parseRecipeFromText] servings overridden ${parsed.servings} → ${yieldFromJsonLd} (from JSON-LD recipeYield)`
+    );
+    parsed.servings = yieldFromJsonLd;
+  }
+
+  if (process.env.IMPORT_DEBUG === "1") {
+    const flatIngredients = (parsed.sections ?? []).flatMap((s) => s.ingredients);
+    console.info("[parseRecipeFromText] debug", {
+      sourceType,
+      hadJsonLd: !!jsonLd,
+      jsonLdRecipeYield: jsonLd?.recipeYield ?? null,
+      claudeServings: parsed.servings,
+      ingredientsBeforeDivision: flatIngredients
+        .slice(0, 5)
+        .map((i) => ({ amount: i.amount, unit: i.unit, name: i.name })),
+    });
+  }
+
   const sv = Math.max(1, parsed.servings || 1);
   parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
     ...section,

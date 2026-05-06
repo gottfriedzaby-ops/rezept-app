@@ -33,8 +33,11 @@ export const UNICODE_FRACTIONS: Record<string, number> = {
 };
 
 // Injects parenthetical metric amounts as ground truth so Claude doesn't re-derive them from imperial measurements.
+// Allows leading qualifier words inside the parens (heaping/scant/about/...) and includes
+// the post-paren context so Claude can map each metric value to its ingredient unambiguously.
 export function buildKnownAmountsPreamble(text: string): string {
-  const re = /\(([½¼¾⅓⅔⅛]|\d+(?:\.\d+)?)\s*(grams?|g\b|ml\b|millilitres?|litres?|l\b|kg\b)\)/gi;
+  const re =
+    /\((?:(?:heaping|scant|about|approximately|approx\.?|ca\.?|roughly|generous)\s+)?([½¼¾⅓⅔⅛]|\d+(?:\.\d+)?)\s*(grams?|g\b|ml\b|millilitres?|litres?|l\b|kg\b)\)/gi;
   const lines: string[] = [];
   let m: RegExpExecArray | null;
   while ((m = re.exec(text)) !== null) {
@@ -44,8 +47,10 @@ export function buildKnownAmountsPreamble(text: string): string {
     const amount = UNICODE_FRACTIONS[rawAmt] ?? parseFloat(rawAmt);
     if (!isNaN(amount) && amount > 0) {
       const ctxStart = Math.max(0, m.index - 80);
-      const ctx = text.slice(ctxStart, m.index).replace(/\s+/g, " ").trim();
-      lines.push(`- ${amount} ${unit}  (context: "${ctx}")`);
+      const before = text.slice(ctxStart, m.index).replace(/\s+/g, " ").trim();
+      const afterEnd = Math.min(text.length, m.index + m[0].length + 80);
+      const after = text.slice(m.index + m[0].length, afterEnd).replace(/\s+/g, " ").trim();
+      lines.push(`- ${amount} ${unit}  (source line: "${before} <PAREN> ${after}")`);
     }
   }
   if (lines.length === 0) return "";

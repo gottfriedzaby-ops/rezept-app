@@ -59,7 +59,9 @@ The recipient sees the shared library as a separate, clearly-labelled "Geteilte 
 - **FR-02:** If the entered email belongs to an existing registered user, the system creates a `library_share` record with status `pending` and sends an in-app + email notification to that user prompting them to accept or decline.
 - **FR-03:** If the entered email does NOT belong to a registered user, the system creates a `library_share` record with status `pending` and sends an email containing a registration link. Upon successful registration via that link, the share is automatically transitioned to `pending` against the new user account, who must then explicitly accept or decline.
 - **FR-04:** Acceptance of a pending invitation by User B transitions the share status to `accepted` and grants read access. Declining transitions it to `declined` and revokes any potential access.
-- **FR-05:** User A can revoke an `accepted` or `pending` share at any time, transitioning the status to `revoked`. Revoked shares are removed from User B's UI silently (no notification, no toast).
+- **FR-04b:** User B can leave an `accepted` share at any time from their inbound-shares UI. This transitions the share status to `left`, silently removes the collection from User B's UI, and silently removes User B from User A's outbound list. Recipes User B had already duplicated are unaffected.
+- **FR-05:** User A can revoke an `accepted` or `pending` share at any time, transitioning the status to `revoked`. Revoked shares are removed from User B's UI silently (no notification, no toast). Recipes User B had already duplicated remain in User B's library.
+- **FR-05b:** Invitation sending is rate-limited to **5 invitations per user per calendar day (UTC)**. Exceeding this limit returns `HTTP 429` with the German error: `"Du hast heute bereits 5 Einladungen gesendet. Bitte versuche es morgen erneut."`.
 - **FR-06:** A user may have an unlimited number of concurrent outbound shares (User A sharing with many) and inbound shares (User B receiving from many). There is no system-imposed limit.
 
 ### 3.2 Recipe Visibility Rules
@@ -130,7 +132,8 @@ create table library_shares (
   status          text not null check (status in (
                     'pending',     -- invitation sent, awaiting acceptance
                     'accepted',    -- active share
-                    'declined',    -- recipient declined
+                    'declined',    -- recipient declined the initial invitation
+                    'left',        -- recipient left an accepted share voluntarily
                     'revoked'      -- owner or system revoked
                   )),
 
@@ -465,7 +468,7 @@ All emails sent via the project's email provider (e.g. Supabase Auth email or tr
 ## 8. Edge Cases & Error Handling
 
 ### 8.1 Account Deletion (per stakeholder decision 12)
-- **User A is deleted:** `library_shares.owner_id … on delete cascade` removes all of User A's share rows. User B's UI: shared collection silently disappears on next reload (no notification, per FR-05).
+- **User A is deleted:** `library_shares.owner_id … on delete cascade` removes all of User A's share rows. User B's UI: shared collection silently disappears on next reload (no notification, per FR-05). Recipes User B had already duplicated remain in User B's library unaffected (they are fully owned by User B at that point).
 - **User B is deleted:** `library_shares.recipient_id … on delete cascade` removes all of User B's incoming share rows. User A's "Geteilte mit"-list no longer shows that invitee on next reload.
 
 ### 8.2 Recipe Deletion by Owner
@@ -473,7 +476,7 @@ All emails sent via the project's email provider (e.g. Supabase Auth email or tr
 
 ### 8.3 Recipe Marked as Private After Sharing
 - The recipe disappears from all User B views immediately on next reload. No notification.
-- User B's previously-copied/duplicated version (if any) is unaffected.
+- User B's previously-copied/duplicated version (if any) is fully owned by User B and remains unaffected by any privacy or revocation action.
 
 ### 8.4 Inviting an Email That Is Already Pending or Accepted
 - API returns `400` with German error: `"Für diese E-Mail-Adresse besteht bereits eine Einladung oder ein aktiver Zugriff."`.
@@ -530,7 +533,7 @@ The Settings page gains a new section, structured as:
   - Persisted in `user_settings.merge_shared_tags_into_global`.
 
 ### 9.2 Section: Inbound shares
-- A separate section (still in `/settings` or alternatively on the dedicated `/library-shares/incoming` page) lists incoming shares and allows the user to leave a shared collection (functional equivalent to the owner revoking — but initiated by the recipient). On leaving, the share status transitions to `declined` (or a new `left` status if stakeholders prefer; see §11).
+- A separate section (still in `/settings` or alternatively on the dedicated `/library-shares/incoming` page) lists incoming shares and allows the user to leave a shared collection (functional equivalent to the owner revoking — but initiated by the recipient). On leaving, the share status transitions to a new `left` status (distinct from `declined`, to differentiate a recipient-initiated exit from declining an initial invitation).
 
 ---
 
@@ -555,16 +558,20 @@ The following are explicitly NOT included in this feature:
 
 ---
 
-## 11. Open Questions / Decisions Needed
+## 11. Resolved Questions
 
-The following items were not covered by the 14 decision points and may require stakeholder follow-up before implementation:
+All open questions from the initial draft have been resolved by the stakeholder:
 
-- **OQ-1:** Should User B be allowed to "leave" a shared collection from their side without requiring User A to revoke? If yes, what status does the record transition to (`declined`, or a new `left` status)?
-- **OQ-2:** Should User A see in their outbound list when User B has copied (duplicated) a recipe? Currently assumed: NO.
-- **OQ-3:** Display name policy — what is shown to User B when User A has no display name set? Assumed fallback: email address.
-- **OQ-4:** Rate-limit on invitation sending (anti-spam): is there a maximum number of invitations per user per day? Not specified.
-- **OQ-5:** When User A revokes a share, should User B's locally-stored shopping-list entries derived from those recipes be flagged in any way? Currently assumed: NO (silent persistence).
-- **OQ-6:** Should the owner be able to see, in the outbound-share row, whether the recipient has registered yet (vs. still pending email-only)? Assumed: YES (status differentiation in UI).
+| # | Question | Decision |
+|---|----------|----------|
+| OQ-1 | Can User B leave a shared collection from their side? | **Yes.** Status transitions to a new `left` state (distinct from `declined`). |
+| OQ-2 | Should User A see when User B copies a recipe? | **No.** Copy actions are not surfaced to the owner. |
+| OQ-3 | Display name fallback when User A has no display name? | **Email address** (confirmed default). |
+| OQ-4 | Rate-limit on invitation sending? | **5 invitations per user per day.** API returns `429` with German error on breach. |
+| OQ-5 | Flag User B's shopping list entries on revocation? | **No.** Silently persist (confirmed default). |
+| OQ-6 | Owner sees registration status in outbound list? | **Yes.** Status badges differentiate `pending_unregistered` from `pending` (confirmed default). |
+
+**Additional stakeholder decision:** If User B has already duplicated (copied) recipes from User A's library and User A later revokes access, **User B retains all previously copied recipes** in their own library. Copied recipes are fully owned by User B at the point of duplication; revocation has no retroactive effect on copies. (See also §8.1 and §8.3.)
 
 ---
 

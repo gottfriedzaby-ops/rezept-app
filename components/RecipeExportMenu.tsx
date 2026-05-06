@@ -52,7 +52,7 @@ export default function RecipeExportMenu({ recipe }: { recipe: Recipe }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="w-8 h-8 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-secondary transition-colors"
+        className="w-10 h-10 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-secondary transition-colors"
         aria-label="Exportieren"
         title="Exportieren"
       >
@@ -64,7 +64,7 @@ export default function RecipeExportMenu({ recipe }: { recipe: Recipe }) {
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-9 z-20 w-64 rounded-lg border border-stone bg-surface-primary shadow-lg py-1">
+          <div className="absolute right-0 top-full mt-1 z-20 w-64 rounded-lg border border-stone bg-surface-primary shadow-lg py-1">
             <p className="px-3 pt-2 pb-1 text-[11px] text-ink-tertiary uppercase tracking-wide font-medium">
               Exportieren
             </p>

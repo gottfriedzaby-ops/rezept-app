@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "Ungültige YouTube-URL" }, { status: 400 });
     }
 
-    const earlyDuplicate = await checkUrlDuplicate(videoId);
+    const earlyDuplicate = await checkUrlDuplicate(videoId, rateLimit.userId!);
     if (earlyDuplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...earlyDuplicate },
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const { recipe: parsed } = await parseRecipeFromText(combined, "youtube", videoId);
     const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
-    const duplicate = await findDuplicateRecipe(reviewed.title, videoId);
+    const duplicate = await findDuplicateRecipe(reviewed.title, videoId, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...duplicate },

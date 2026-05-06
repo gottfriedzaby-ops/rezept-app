@@ -313,7 +313,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "url is required" }, { status: 400 });
     }
 
-    const earlyDuplicate = await checkUrlDuplicate(url);
+    const earlyDuplicate = await checkUrlDuplicate(url, rateLimit.userId!);
     if (earlyDuplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...earlyDuplicate },
@@ -422,7 +422,7 @@ export async function POST(request: NextRequest) {
     const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
     const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
-    const duplicate = await findDuplicateRecipe(reviewed.title, url);
+    const duplicate = await findDuplicateRecipe(reviewed.title, url, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...duplicate },

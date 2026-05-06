@@ -40,11 +40,12 @@ function titleSimilarity(a: string, b: string): number {
 
 // Fast URL-only check — run this before any expensive processing to short-circuit
 // duplicate imports without triggering Claude API calls.
-export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | null> {
+export async function checkUrlDuplicate(url: string, userId: string): Promise<DuplicateResult | null> {
   const { data: exact } = await supabaseAdmin
     .from("recipes")
     .select("id, title")
     .eq("source_value", url)
+    .eq("user_id", userId)
     .maybeSingle();
   if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
 
@@ -56,6 +57,7 @@ export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | 
       const { data: candidates } = await supabaseAdmin
         .from("recipes")
         .select("id, title, source_value")
+        .eq("user_id", userId)
         .ilike("source_value", `%${hostname}%`);
       if (candidates) {
         for (const row of candidates) {
@@ -72,12 +74,14 @@ export async function checkUrlDuplicate(url: string): Promise<DuplicateResult | 
 
 export async function findDuplicateRecipe(
   title: string,
-  sourceValue: string
+  sourceValue: string,
+  userId: string
 ): Promise<DuplicateResult | null> {
   const { data: exact } = await supabaseAdmin
     .from("recipes")
     .select("id, title")
     .eq("source_value", sourceValue)
+    .eq("user_id", userId)
     .maybeSingle();
   if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
 
@@ -92,6 +96,7 @@ export async function findDuplicateRecipe(
       const { data: urlCandidates } = await supabaseAdmin
         .from("recipes")
         .select("id, title, source_value")
+        .eq("user_id", userId)
         .ilike("source_value", `%${hostname}%`);
 
       if (urlCandidates) {
@@ -116,6 +121,7 @@ export async function findDuplicateRecipe(
     const { data: titleCandidates } = await supabaseAdmin
       .from("recipes")
       .select("id, title")
+      .eq("user_id", userId)
       .ilike("title", `%${titleWords[0]}%`)
       .limit(20);
 

@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "Ungültige Instagram-URL" }, { status: 400 });
     }
 
-    const earlyDuplicate = await checkUrlDuplicate(shortcode);
+    const earlyDuplicate = await checkUrlDuplicate(shortcode, rateLimit.userId!);
     if (earlyDuplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...earlyDuplicate },
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
-    const duplicate = await findDuplicateRecipe(reviewed.title, shortcode);
+    const duplicate = await findDuplicateRecipe(reviewed.title, shortcode, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...duplicate },

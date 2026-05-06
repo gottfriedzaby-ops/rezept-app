@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ data: null, error: "recipe is required" }, { status: 400 });
     }
 
-    const duplicate = await findDuplicateRecipe(recipe.title, recipe.source.value);
+    const duplicate = await findDuplicateRecipe(recipe.title, recipe.source.value, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...duplicate },

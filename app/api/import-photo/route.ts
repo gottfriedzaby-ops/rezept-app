@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
       const { recipe: parsed } = await parseRecipeFromImages(urls, sourceValue);
       const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
-      const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue);
+      const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue, rateLimit.userId!);
       if (duplicate) {
         return NextResponse.json(
           { data: null, error: "duplicate", ...duplicate },
@@ -135,7 +135,7 @@ export async function POST(request: NextRequest) {
     const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
     console.log("[import-photo] review complete, returning response");
 
-    const duplicate = await findDuplicateRecipe(reviewed.title, fileName);
+    const duplicate = await findDuplicateRecipe(reviewed.title, fileName, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
         { data: null, error: "duplicate", ...duplicate },

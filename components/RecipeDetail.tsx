@@ -63,6 +63,35 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
         </Link>
       </div>
 
+      {/* All-ingredients summary — only for multi-section recipes */}
+      {showSectionHeaders && (
+        <section className="mt-12">
+          <h2 className="label-overline mb-6">Alle Zutaten</h2>
+          {sections.map((section, sIdx) => (
+            <div key={sIdx}>
+              {section.title && (
+                <p className="text-xs font-medium text-ink-tertiary uppercase tracking-wide mt-4 mb-1">
+                  {section.title}
+                </p>
+              )}
+              <ul className="space-y-3">
+                {section.ingredients.map((ing, i) => (
+                  <li key={i} className="flex gap-4 text-sm">
+                    {ing.amount > 0 && (
+                      <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
+                        {formatAmount(ing.amount, servings)}
+                        {ing.unit ? ` ${ing.unit}` : ""}
+                      </span>
+                    )}
+                    <span className="text-ink-secondary">{ing.name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
+      )}
+
       {/* Sections — ingredients + steps per section */}
       {sections.map((section, sIdx) => (
         <div key={sIdx}>
@@ -74,7 +103,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
           )}
 
           <section className={showSectionHeaders && section.title ? "mt-6" : "mt-12"}>
-            {(!showSectionHeaders || sIdx === 0) && (
+            {(showSectionHeaders || sIdx === 0) && (
               <h2 className="label-overline mb-6">Zutaten</h2>
             )}
             <ul className="space-y-3">

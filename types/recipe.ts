@@ -31,6 +31,7 @@ export interface Recipe {
   id: string;
   created_at: string;
   updated_at: string;
+  user_id?: string;
   title: string;
   description: string | null;
   servings: number | null;
@@ -48,6 +49,7 @@ export interface Recipe {
   step_images: string[] | null;
   favorite: boolean;
   scalable: boolean | null;
+  is_private: boolean;
   kcal_per_serving: number | null;
   protein_g: number | null;
   carbs_g: number | null;

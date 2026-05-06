@@ -36,7 +36,9 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth") ||
-    pathname.startsWith("/shared");
+    pathname.startsWith("/shared") ||
+    // Public: invitation token lookup (GET only — claim enforces auth internally)
+    pathname.startsWith("/api/library-shares/invitation");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

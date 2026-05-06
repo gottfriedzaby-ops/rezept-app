@@ -49,6 +49,12 @@ function makeRecipe(overrides: Partial<Recipe> = {}): Recipe {
     step_images: null,
     favorite: false,
     scalable: true,
+    is_private: false,
+    kcal_per_serving: null,
+    protein_g: null,
+    carbs_g: null,
+    fat_g: null,
+    nutrition_breakdown: null,
     ...overrides,
   };
 }

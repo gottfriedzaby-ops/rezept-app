@@ -49,6 +49,15 @@ function makeRequest(body: object) {
   });
 }
 
+function makeRateLimitChain(count = 0) {
+  const chain = {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    gte: jest.fn().mockResolvedValue({ count, data: null, error: null }),
+  };
+  return chain;
+}
+
 function makeDbChain(result: { data: unknown; error: unknown }) {
   return {
     insert: jest.fn().mockReturnThis(),
@@ -61,6 +70,8 @@ beforeEach(() => {
   fromMock.mockReset();
   findDuplicateMock.mockReset();
   findDuplicateMock.mockResolvedValue(null);
+  // First call to from() is always the rate-limit count check
+  fromMock.mockReturnValueOnce(makeRateLimitChain(0));
 });
 
 describe("POST /api/recipes/confirm", () => {
@@ -89,7 +100,7 @@ describe("POST /api/recipes/confirm", () => {
   });
 
   it("calls findDuplicateRecipe with the recipe title and source value", async () => {
-    fromMock.mockReturnValue(makeDbChain({ data: { id: "new-id", title: "Tomatensoße" }, error: null }));
+    fromMock.mockReturnValueOnce(makeDbChain({ data: { id: "new-id", title: "Tomatensoße" }, error: null }));
 
     const req = makeRequest({ recipe: validRecipe });
     await POST(req);
@@ -99,7 +110,7 @@ describe("POST /api/recipes/confirm", () => {
 
   it("inserts the recipe and returns 200 with the saved data", async () => {
     const savedRecipe = { id: "new-id", title: "Tomatensoße" };
-    fromMock.mockReturnValue(makeDbChain({ data: savedRecipe, error: null }));
+    fromMock.mockReturnValueOnce(makeDbChain({ data: savedRecipe, error: null }));
 
     const req = makeRequest({ recipe: validRecipe });
     const res = await POST(req);
@@ -111,7 +122,7 @@ describe("POST /api/recipes/confirm", () => {
   });
 
   it("returns 500 when the database insert fails", async () => {
-    fromMock.mockReturnValue(makeDbChain({ data: null, error: { message: "DB error" } }));
+    fromMock.mockReturnValueOnce(makeDbChain({ data: null, error: { message: "DB error" } }));
 
     const req = makeRequest({ recipe: validRecipe });
     const res = await POST(req);
@@ -145,7 +156,7 @@ describe("POST /api/recipes/confirm", () => {
       error: null,
     });
 
-    fromMock.mockReturnValue({
+    fromMock.mockReturnValueOnce({
       insert: insertMock,
       select: selectMock,
       single: singleMock,
@@ -165,7 +176,7 @@ describe("POST /api/recipes/confirm", () => {
     const selectMock = jest.fn().mockReturnThis();
     const singleMock = jest.fn().mockResolvedValue({ data: { id: "new-id" }, error: null });
 
-    fromMock.mockReturnValue({ insert: insertMock, select: selectMock, single: singleMock });
+    fromMock.mockReturnValueOnce({ insert: insertMock, select: selectMock, single: singleMock });
 
     const req = makeRequest({ recipe: validRecipe, sourceTitle: "Mein Koch-Blog" });
     await POST(req);
@@ -179,7 +190,7 @@ describe("POST /api/recipes/confirm", () => {
     const selectMock = jest.fn().mockReturnThis();
     const singleMock = jest.fn().mockResolvedValue({ data: { id: "new-id" }, error: null });
 
-    fromMock.mockReturnValue({ insert: insertMock, select: selectMock, single: singleMock });
+    fromMock.mockReturnValueOnce({ insert: insertMock, select: selectMock, single: singleMock });
 
     const recipeWithoutScalable = { ...validRecipe };
     delete (recipeWithoutScalable as Partial<ParsedRecipe>).scalable;

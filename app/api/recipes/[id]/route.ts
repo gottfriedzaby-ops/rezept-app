@@ -23,7 +23,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const body = await request.json();
     const {
       title, description, servings, prep_time, cook_time,
-      sections, recipe_type, ingredients, steps, tags, image_url, favorite,
+      sections, recipe_type, ingredients, steps, tags, image_url, favorite, is_private,
     } = body;
 
     const update: Record<string, unknown> = {};
@@ -48,6 +48,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (tags !== undefined)        update.tags = tags;
     if (image_url !== undefined)   update.image_url = image_url;
     if (favorite !== undefined)    update.favorite = favorite;
+    if (is_private !== undefined)  update.is_private = is_private;
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ data: null, error: "Keine Felder zum Aktualisieren" }, { status: 400 });

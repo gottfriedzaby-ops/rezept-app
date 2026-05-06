@@ -139,9 +139,19 @@ const RECIPE_SCHEMA = `{
 const RULES = `
 - Return ONLY valid JSON — no markdown fences, no extra text, no content after the closing brace
 - All double-quote characters that appear inside JSON string values must be escaped as \" — never output raw unescaped " inside a string
+- METRIC PRIORITY (read first, applies before any other amount/unit rule): when an ingredient line states a metric value (g, kg, ml, l) anywhere — most commonly in parentheses after a non-metric leader, e.g. "1 ¼ cups plus 4 tablespoons (320 grams) water" — store that parenthetical metric value AS-IS and IGNORE the non-metric leader entirely. Do NOT perform your own cup/tbsp/tsp/oz/lb → g/ml conversion when a parenthetical metric is present, even if the leader's quantity seems primary. The parenthetical metric is authoritative even when:
+  • the parenthetical contains a qualifier word before the number ("(heaping ½ gram)", "(scant 10 grams)", "(about 250 ml)", "(approximately 30 g)", "(ca. 30 g)", "(roughly 1 kg)") — strip the qualifier, keep the number+unit
+  • the imperial leader is compound ("1 ¼ cups plus 4 tablespoons (320 grams) water" → 320 g water)
+  • the ingredient name follows the parenthetical ("4 ½ cups (500 grams) strong white flour" → 500 g flour)
+  • the line lists two alternatives joined by "or" ("½ of ¼ teaspoons (½ gram) instant dried yeast or ¼ teaspoon (heaping ½ gram) active dried yeast") — pick the FIRST alternative and use its parenthetical metric (→ 0.5 g instant dried yeast); never sum or average both
+  Worked examples:
+    "1 ¼ cups plus 4 tablespoons (320 grams) water"     → { amount: 320, unit: "g", name: "Wasser" }
+    "2 scant teaspoons (10 grams) fine sea salt"        → { amount: 10,  unit: "g", name: "feines Meersalz" }
+    "½ of ¼ teaspoons (½ gram) instant dried yeast"     → { amount: 0.5, unit: "g", name: "Trockenhefe" }
+    "4 ½ cups (500 grams) strong white flour"           → { amount: 500, unit: "g", name: "Weizenmehl" }
 - Translate ALL text fields (title, ingredient names, step texts, tags) into German, regardless of the source language
 - Unicode fraction characters represent exact values: ½=0.5, ¼=0.25, ¾=0.75, ⅓≈0.333, ⅔≈0.667, ⅛=0.125 — apply these when they appear in amounts (e.g. "½ gram" = 0.5 g, "¼ tsp" = 0.25 tsp)
-- Convert ALL measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). HIGHEST PRIORITY EXCEPTION: when the source provides an explicit metric value alongside a non-metric one — whether in parentheses like "2 tsp (10 g)", as a fraction like "(½ gram)", or any other form — use ONLY the stated metric value; do NOT independently convert the non-metric unit
+- For ingredients WITHOUT a parenthetical metric value, convert non-metric measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). This fallback never overrides the METRIC PRIORITY rule above
 - EL (Esslöffel) and TL (Teelöffel) are German cooking units — keep them exactly as written; do NOT convert to ml. Store "3 EL Olivenöl" as amount: 3, unit: "EL". Store "1 TL Salz" as amount: 1, unit: "TL". Prise is also a valid unit; store as amount: 1, unit: "Prise". Only the ingredient list/table is authoritative for unit and amount — do NOT derive amounts from EL/TL mentions inside step text
 - Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100). If the source lists amounts "per serving" or "for 1 person", multiply each amount by the total number of servings before storing. Never output per-serving amounts — always total amounts for all servings combined
 - The "servings" field must reflect the recipe's actual yield (number of portions the total amounts produce)

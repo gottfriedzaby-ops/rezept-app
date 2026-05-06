@@ -7,7 +7,7 @@ import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
 import { useImport } from "@/contexts/ImportContext";
 
-type ImportType = "url" | "youtube" | "photo" | "instagram";
+type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
 
 interface ImportApiResponse {
   data: {
@@ -47,14 +47,6 @@ async function safeParseJson(res: Response): Promise<ImportApiResponse> {
   }
 }
 
-function detectType(url: string, images: ImageEntry[]): ImportType | null {
-  if (images.length > 0) return "photo";
-  const t = url.trim();
-  if (INSTAGRAM_RE.test(t)) return "instagram";
-  if (YOUTUBE_RE.test(t)) return "youtube";
-  if (URL_RE.test(t)) return "url";
-  return null;
-}
 
 async function compressImage(file: File): Promise<File> {
   return new Promise((resolve, reject) => {
@@ -90,10 +82,12 @@ async function compressImage(file: File): Promise<File> {
 export default function ImportUnified() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
   // UI-local state (doesn't need to survive navigation)
   const [urlInput, setUrlInput] = useState("");
   const [images, setImages] = useState<ImageEntry[]>([]);
+  const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -104,7 +98,13 @@ export default function ImportUnified() {
     setDuplicateId, setDuplicateTitle, reset,
   } = useImport();
 
-  const inputType = detectType(urlInput, images);
+  const inputType: ImportType | null =
+    pdfFile ? "pdf" :
+    images.length > 0 ? "photo" :
+    INSTAGRAM_RE.test(urlInput.trim()) ? "instagram" :
+    YOUTUBE_RE.test(urlInput.trim()) ? "youtube" :
+    URL_RE.test(urlInput.trim()) ? "url" :
+    null;
   const canSubmit = inputType !== null && phase !== "loading";
 
   function addImages(newFiles: FileList | File[]) {
@@ -136,6 +136,11 @@ export default function ImportUnified() {
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  function clearPdf() {
+    setPdfFile(null);
+    if (pdfInputRef.current) pdfInputRef.current.value = "";
+  }
+
   function handleDragOver(e: React.DragEvent) { e.preventDefault(); setIsDragging(true); }
   function handleDragLeave(e: React.DragEvent) { e.preventDefault(); setIsDragging(false); }
   function handleDrop(e: React.DragEvent) {
@@ -157,7 +162,12 @@ export default function ImportUnified() {
     try {
       let json: ImportApiResponse;
 
-      if (inputType === "photo" && images.length > 0) {
+      if (inputType === "pdf" && pdfFile) {
+        const fd = new FormData();
+        fd.append("file", pdfFile);
+        const res = await fetch("/api/import-pdf", { method: "POST", body: fd });
+        json = await safeParseJson(res);
+      } else if (inputType === "photo" && images.length > 0) {
         const urls: string[] = [];
         const fileNames: string[] = [];
 
@@ -265,6 +275,7 @@ export default function ImportUnified() {
   function handleReset() {
     setUrlInput("");
     clearImages();
+    clearPdf();
     reset();
   }
 
@@ -315,8 +326,8 @@ export default function ImportUnified() {
         isDragging ? "outline outline-2 outline-forest/30 bg-forest-soft" : ""
       }`}
     >
-      {/* URL input — hidden when images are selected */}
-      {images.length === 0 && (
+      {/* URL input — hidden when images or PDF are selected */}
+      {images.length === 0 && !pdfFile && (
         <input
           type="text"
           value={urlInput}
@@ -362,6 +373,22 @@ export default function ImportUnified() {
             </button>
           )}
         </div>
+      ) : pdfFile ? (
+        /* PDF chip */
+        <div className="flex items-center gap-3 px-4 py-3 border border-stone rounded bg-surface-secondary">
+          <svg className="h-5 w-5 shrink-0 text-ink-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+          </svg>
+          <span className="flex-1 text-sm text-ink-primary truncate">{pdfFile.name}</span>
+          <button
+            type="button"
+            onClick={clearPdf}
+            className="text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none"
+            aria-label="PDF entfernen"
+          >
+            ×
+          </button>
+        </div>
       ) : (
         <div>
           <div className="flex items-center gap-3 my-1">
@@ -369,17 +396,30 @@ export default function ImportUnified() {
             <span className="text-xs text-ink-tertiary">oder</span>
             <div className="flex-1 h-px bg-stone" />
           </div>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={phase === "loading"}
-            className="mt-2 w-full flex items-center justify-center gap-2 px-4 py-3.5 border border-dashed border-stone rounded text-sm text-ink-tertiary hover:border-ink-secondary hover:text-ink-secondary transition-colors disabled:opacity-50"
-          >
-            <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
-            </svg>
-            Foto hochladen
-          </button>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={phase === "loading"}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 border border-dashed border-stone rounded text-sm text-ink-tertiary hover:border-ink-secondary hover:text-ink-secondary transition-colors disabled:opacity-50"
+            >
+              <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
+              </svg>
+              Foto hochladen
+            </button>
+            <button
+              type="button"
+              onClick={() => pdfInputRef.current?.click()}
+              disabled={phase === "loading"}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 border border-dashed border-stone rounded text-sm text-ink-tertiary hover:border-ink-secondary hover:text-ink-secondary transition-colors disabled:opacity-50"
+            >
+              <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+              </svg>
+              PDF hochladen
+            </button>
+          </div>
         </div>
       )}
 
@@ -391,12 +431,21 @@ export default function ImportUnified() {
         onChange={(e) => { if (e.target.files) addImages(e.target.files); }}
         className="sr-only"
       />
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept="application/pdf"
+        onChange={(e) => { if (e.target.files?.[0]) { setPdfFile(e.target.files[0]); setError(null); } }}
+        className="sr-only"
+      />
 
       <button type="submit" disabled={!canSubmit} className="btn-primary w-full py-3">
         {phase === "loading"
           ? "Wird analysiert…"
           : images.length > 1
           ? `Importieren (${images.length} Bilder)`
+          : pdfFile
+          ? "PDF importieren"
           : "Rezept importieren"}
       </button>
 
@@ -414,7 +463,7 @@ export default function ImportUnified() {
       {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
         <p className="text-xs text-ink-tertiary text-center">
-          Website, YouTube-, Instagram-Link oder Foto eines Rezepts
+          Website, YouTube-, Instagram-Link, Foto oder PDF eines Rezepts
         </p>
       )}
     </form>

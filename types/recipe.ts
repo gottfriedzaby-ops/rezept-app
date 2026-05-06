@@ -18,7 +18,7 @@ export interface RecipeSection {
   steps: Step[];
 }
 
-export type SourceType = "url" | "photo" | "youtube" | "instagram" | "manual";
+export type SourceType = "url" | "photo" | "youtube" | "instagram" | "manual" | "pdf";
 
 export interface NutritionIngredient {
   name: string;

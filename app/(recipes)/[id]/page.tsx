@@ -46,7 +46,7 @@ export default async function RecipeDetailPage({
       />
 
       {/* Content column */}
-      <div className="max-w-[720px] mx-auto px-8 py-10">
+      <div className="max-w-[720px] mx-auto px-4 sm:px-8 py-10">
         <Link
           href="/"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
@@ -54,11 +54,18 @@ export default async function RecipeDetailPage({
           ← Alle Rezepte
         </Link>
 
-        <div className="flex items-start justify-between gap-4 mb-5">
-          <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em] leading-tight">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-5">
+          <h1 className={[
+            "font-serif font-medium text-ink-primary tracking-[-0.02em] leading-tight break-words hyphens-auto min-w-0",
+            recipe.title.length > 60
+              ? "text-xl sm:text-2xl md:text-[2rem]"
+              : recipe.title.length > 30
+              ? "text-2xl sm:text-[2rem]"
+              : "text-[2rem]",
+          ].join(" ")}>
             {recipe.title}
           </h1>
-          <div className="flex items-center gap-0 -mr-1">
+          <div className="flex items-center gap-1 shrink-0 -ml-1 sm:ml-0 sm:-mr-1 justify-end sm:justify-start">
             <RecipeExportMenu recipe={recipe} />
             <PdfExportButton recipe={recipe} />
             <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />

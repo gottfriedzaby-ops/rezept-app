@@ -41,13 +41,13 @@ export default function PdfExportButton({ recipe }: { recipe: Recipe }) {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="relative">
       <button
         type="button"
         onClick={handleDownload}
         disabled={loading}
         aria-label="PDF exportieren"
-        className="w-11 h-11 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        className="w-10 h-10 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
         title="PDF exportieren"
       >
         {loading ? (
@@ -62,7 +62,7 @@ export default function PdfExportButton({ recipe }: { recipe: Recipe }) {
         )}
       </button>
       {error && (
-        <p className="text-xs text-red-600 max-w-[120px] text-right">
+        <p className="absolute right-0 top-11 text-xs text-red-600 w-[140px] text-right leading-snug">
           PDF konnte nicht erstellt werden. Bitte versuche es erneut.
         </p>
       )}

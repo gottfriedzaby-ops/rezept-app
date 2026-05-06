@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
@@ -8,6 +8,14 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 type FormState = "idle" | "loading" | "success";
 
 export default function RegisterPage() {
+  return (
+    <Suspense>
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const searchParams = useSearchParams();
   const invitationToken = searchParams.get("invitation");
 

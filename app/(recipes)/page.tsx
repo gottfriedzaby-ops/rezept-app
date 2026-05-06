@@ -16,12 +16,62 @@ export default async function RecipesPage() {
     .select("*")
     .order("created_at", { ascending: false });
 
-  // Filter by owner when authenticated
   if (user) {
     query.eq("user_id", user.id);
   }
 
   const { data: recipes } = await query.returns<Recipe[]>();
+
+  // Fetch shared recipes from accepted library shares
+  let sharedRecipes: Array<Recipe & { _ownerName: string }> = [];
+  let excludeSharedFromTagCloud = false;
+
+  if (user) {
+    const { data: acceptedShares } = await supabaseAdmin
+      .from("library_shares")
+      .select("owner_id")
+      .eq("recipient_id", user.id)
+      .eq("status", "accepted");
+
+    if (acceptedShares && acceptedShares.length > 0) {
+      const ownerIds = acceptedShares.map((s) => s.owner_id);
+
+      const [{ data: sharedRecipesRaw }, { data: settings }] = await Promise.all([
+        supabaseAdmin
+          .from("recipes")
+          .select("*")
+          .in("user_id", ownerIds)
+          .eq("is_private", false)
+          .order("created_at", { ascending: false })
+          .returns<Recipe[]>(),
+        supabaseAdmin
+          .from("user_settings")
+          .select("merge_shared_tags_into_global")
+          .eq("user_id", user.id)
+          .maybeSingle(),
+      ]);
+
+      excludeSharedFromTagCloud = !(settings?.merge_shared_tags_into_global ?? true);
+
+      // Enrich with owner names
+      const ownerNames = new Map<string, string>();
+      await Promise.all(
+        ownerIds.map(async (ownerId) => {
+          const { data } = await supabaseAdmin.auth.admin.getUserById(ownerId);
+          const name =
+            (data.user?.user_metadata?.full_name as string) ||
+            data.user?.email ||
+            "Unbekannt";
+          ownerNames.set(ownerId, name);
+        })
+      );
+
+      sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({
+        ...r,
+        _ownerName: ownerNames.get(r.user_id ?? "") ?? "Unbekannt",
+      }));
+    }
+  }
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -48,7 +98,11 @@ export default async function RecipesPage() {
               Noch keine Rezepte. Importiere das erste!
             </p>
           ) : (
-            <RecipeList recipes={recipes} />
+            <RecipeList
+              recipes={recipes}
+              sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
+              excludeSharedFromTagCloud={excludeSharedFromTagCloud}
+            />
           )}
         </section>
 

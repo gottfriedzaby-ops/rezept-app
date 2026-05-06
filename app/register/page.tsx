@@ -1,19 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 type FormState = "idle" | "loading" | "success";
 
 export default function RegisterPage() {
+  const searchParams = useSearchParams();
+  const invitationToken = searchParams.get("invitation");
+
   const [email, setEmail] = useState("");
+  const [emailReadOnly, setEmailReadOnly] = useState(false);
+  const [invitationOwnerName, setInvitationOwnerName] = useState<string | null>(null);
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [formState, setFormState] = useState<FormState>("idle");
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createSupabaseBrowserClient();
+
+  useEffect(() => {
+    if (!invitationToken) return;
+    fetch(`/api/library-shares/invitation/${invitationToken}`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.data) {
+          setEmail(json.data.recipient_email);
+          setEmailReadOnly(true);
+          setInvitationOwnerName(json.data.owner_display_name);
+        }
+      })
+      .catch(() => {});
+  }, [invitationToken]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -32,10 +52,14 @@ export default function RegisterPage() {
     setFormState("loading");
     const origin = window.location.origin;
 
+    const callbackUrl = invitationToken
+      ? `${origin}/auth/callback?invitation=${invitationToken}`
+      : `${origin}/auth/callback`;
+
     const { error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: { emailRedirectTo: `${origin}/auth/callback` },
+      options: { emailRedirectTo: callbackUrl },
     });
 
     if (signUpError) {
@@ -97,9 +121,17 @@ export default function RegisterPage() {
           <h1 className="font-serif text-3xl font-medium text-ink-primary tracking-[-0.02em]">
             Konto erstellen
           </h1>
-          <p className="mt-2 text-sm text-ink-secondary">
-            Speichere und verwalte deine Lieblingsrezepte.
-          </p>
+          {invitationOwnerName ? (
+            <p className="mt-2 text-sm text-ink-secondary">
+              Du wurdest von{" "}
+              <span className="font-medium text-ink-primary">{invitationOwnerName}</span>{" "}
+              eingeladen, ihre/seine Rezeptsammlung anzusehen.
+            </p>
+          ) : (
+            <p className="mt-2 text-sm text-ink-secondary">
+              Speichere und verwalte deine Lieblingsrezepte.
+            </p>
+          )}
         </div>
 
         <div className="rounded-xl border border-stone bg-surface-primary shadow-sm p-6">
@@ -135,8 +167,9 @@ export default function RegisterPage() {
                 autoComplete="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="input-field"
+                onChange={(e) => !emailReadOnly && setEmail(e.target.value)}
+                readOnly={emailReadOnly}
+                className={`input-field${emailReadOnly ? " bg-surface-secondary cursor-not-allowed" : ""}`}
                 placeholder="name@beispiel.de"
               />
             </div>

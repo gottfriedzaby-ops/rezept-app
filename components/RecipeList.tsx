@@ -10,9 +10,19 @@ interface Props {
   recipes: Recipe[];
   readOnly?: boolean;
   shareToken?: string;
+  sharedCollectionOwnerId?: string;
+  sharedRecipes?: Array<Recipe & { _ownerName: string }>;
+  excludeSharedFromTagCloud?: boolean;
 }
 
-export default function RecipeList({ recipes, readOnly = false, shareToken }: Props) {
+export default function RecipeList({
+  recipes,
+  readOnly = false,
+  shareToken,
+  sharedCollectionOwnerId,
+  sharedRecipes,
+  excludeSharedFromTagCloud = false,
+}: Props) {
   const [query, setQuery] = useState("");
   const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
@@ -62,12 +72,13 @@ export default function RecipeList({ recipes, readOnly = false, shareToken }: Pr
   }, [recipes, query, activeTags, showFavoritesOnly, favoriteIds]);
 
   const availableTags = useMemo(() => {
-    // Seed with active tags so they are always present and can be deselected.
     const seen = new Set<string>(activeTags);
-    // Add tags from recipes that still pass the current filter.
     filtered.forEach((r) => r.tags.forEach((t) => seen.add(t)));
+    if (!excludeSharedFromTagCloud && sharedRecipes) {
+      sharedRecipes.forEach((r) => r.tags.forEach((t) => seen.add(t)));
+    }
     return Array.from(seen).sort();
-  }, [filtered, activeTags]);
+  }, [filtered, activeTags, sharedRecipes, excludeSharedFromTagCloud]);
 
   function toggleTag(tag: string) {
     setActiveTags((prev) => {
@@ -145,9 +156,12 @@ export default function RecipeList({ recipes, readOnly = false, shareToken }: Pr
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((recipe) => {
             const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
-            const cardHref = readOnly && shareToken
-              ? `/shared/${shareToken}/${recipe.id}`
-              : `/${recipe.id}`;
+            const cardHref =
+              sharedCollectionOwnerId
+                ? `/library-shares/${sharedCollectionOwnerId}/${recipe.id}`
+                : readOnly && shareToken
+                ? `/shared/${shareToken}/${recipe.id}`
+                : `/${recipe.id}`;
             return (
               <li key={recipe.id} className="relative">
                 {!readOnly && (

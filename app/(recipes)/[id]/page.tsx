@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
 import AddToShoppingListButton from "@/components/AddToShoppingListButton";
@@ -9,6 +10,7 @@ import RecipeActions from "@/components/RecipeActions";
 import PdfExportButton from "@/components/PdfExportButton";
 import RecipeExportMenu from "@/components/RecipeExportMenu";
 import NutritionDisplay from "@/components/NutritionDisplay";
+import PrivacyToggle from "@/components/PrivacyToggle";
 import { getTagColor } from "@/lib/tag-colors";
 import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
@@ -20,14 +22,16 @@ export default async function RecipeDetailPage({
 }: {
   params: { id: string };
 }) {
-  const { data } = await supabaseAdmin
-    .from("recipes")
-    .select("*")
-    .eq("id", params.id)
-    .single();
+  const [{ data }, supabase] = await Promise.all([
+    supabaseAdmin.from("recipes").select("*").eq("id", params.id).single(),
+    createSupabaseServerClient(),
+  ]);
+  const { data: { user } } = await supabase.auth.getUser();
 
   const recipe = data as Recipe | null;
   if (!recipe) notFound();
+
+  const isOwner = user?.id === recipe.user_id;
 
   const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
 
@@ -70,6 +74,11 @@ export default async function RecipeDetailPage({
             <PdfExportButton recipe={recipe} />
             <RecipeActions recipeId={recipe.id} initialFavorite={recipe.favorite ?? false} />
           </div>
+          {isOwner && (
+            <div className="mt-2">
+              <PrivacyToggle recipeId={recipe.id} initialIsPrivate={recipe.is_private} />
+            </div>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">

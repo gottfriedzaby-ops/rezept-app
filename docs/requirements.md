@@ -15,7 +15,7 @@ The product goals are:
 - Provide a clean, distraction-free reading and cooking experience (including a step-by-step cook mode with timers).
 - Maintain a clean, deduplicated personal recipe library with reliable provenance (source is always recorded).
 
-This document is the project-wide functional requirements overview. Per-feature requirement documents already exist under `/docs/requirements/` (recipe type, multi-image import, multi-section recipes, PDF export, auth & sharing, Cookidoo export, shopping list, nutrition calculation) and remain authoritative for those specific features.
+This document is the project-wide functional requirements overview. Per-feature requirement documents already exist under `/docs/requirements/` (recipe type, multi-image import, multi-section recipes, PDF export, auth & sharing, Cookidoo export, shopping list, nutrition calculation, user-scoped duplicate check, PDF import) and remain authoritative for those specific features.
 
 ## 2. Business Requirements
 
@@ -31,7 +31,7 @@ This document is the project-wide functional requirements overview. Per-feature 
 
 ### 3.1 Recipe Import — Common Pipeline
 
-- **FR-01** The system must accept import requests from at least four source types: `url`, `youtube`, `photo`, `instagram`. A `manual` source type must also be supported for recipes the user types directly. For manual entries, `source_value` must be set to the literal string `manual` by default (satisfying BR-02 without requiring the user to supply a custom provenance string).
+- **FR-01** The system must accept import requests from at least five source types: `url`, `youtube`, `photo`, `instagram`, `pdf`. A `manual` source type must also be supported for recipes the user types directly. For manual entries, `source_value` must be set to the literal string `manual` by default (satisfying BR-02 without requiring the user to supply a custom provenance string). For `pdf` imports, `source_value` is the original filename of the uploaded PDF (per `10-pdf-import.md`).
 - **FR-02** The import pipeline must execute in this order: (1) fetch raw content, (2) Claude parse pass producing a structured `ParsedRecipe`, (3) Claude review pass that verifies completeness, ingredient realism, step ordering, and German language consistency, (4) duplicate check, (5) user review form, (6) persistence on confirm.
 - **FR-03** Every successfully imported recipe must be persisted with: title, ingredients (JSONB, per-serving amounts), steps (JSONB, with optional `timerSeconds`), tags, source type, source value, optional source title, optional cover image URL, recipe type, servings, prep time, cook time, and a scalable flag.
 - **FR-04** The Claude review pass must not be allowed to overwrite ground-truth ingredient amounts that were extracted from structured source data (e.g. JSON-LD or parenthetical metric amounts). A code-side guard must restore those amounts after the review pass.
@@ -63,6 +63,14 @@ This document is the project-wide functional requirements overview. Per-feature 
 ### 3.5 Recipe Import — Instagram Source
 
 - **FR-40** The Instagram importer must accept an Instagram post URL and produce a `ParsedRecipe` following the same pipeline contract as other sources.
+
+### 3.5.1 Recipe Import — PDF Source
+
+- **FR-45** The PDF importer must accept a PDF file (max 10 MB, max 10 pages) uploaded via the Supabase Storage relay pattern and produce a `ParsedRecipe` following the same pipeline contract as other sources, per `10-pdf-import.md`.
+- **FR-46** PDF imports must use a hybrid extraction strategy: both the embedded text layer and rasterised page images are sent in a single multimodal Claude call. Image-only / scanned PDFs are supported up to 5 pages.
+- **FR-47** Password-protected PDFs must be supported via a user-supplied password.
+- **FR-48** Multi-recipe PDFs must trigger a picker UI; the user picks exactly one recipe per import session.
+- **FR-49** PDF imports must skip duplicate-check stages 1 and 2 and run only stage 3 (fuzzy title Jaccard ≥ 0.85), since `source_value` is a filename and URL-based matching is meaningless.
 
 ### 3.6 Tag Normalisation
 
@@ -123,7 +131,9 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **FR-130** Cookidoo / Thermomix export per `06-cookidoo-export.md` (v1: schema.org JSON-LD).
 - **FR-131** Persistent shopping list with scaled ingredient aggregation per `07-shopping-list.md`.
 - **FR-132** Per-serving nutrition calculation (kcal and macros) on import per `08-nutrition-calculation.md`.
-- **FR-133** Each authenticated user must be limited to 20 import operations per calendar day (UTC). The limit applies across all import source types (`url`, `youtube`, `photo`, `instagram`). When the cap is reached, the import API must return a user-actionable error message. The counter resets at midnight UTC.
+- **FR-133** Each authenticated user must be limited to 20 import operations per calendar day (UTC). The limit applies across all import source types (`url`, `youtube`, `photo`, `instagram`, `pdf`). When the cap is reached, the import API must return a user-actionable error message. The counter resets at midnight UTC.
+- **FR-134** User-scoped duplicate check across all source types per `09-user-scoped-duplicate-check.md`.
+- **FR-135** PDF recipe import per `10-pdf-import.md`: hybrid text + image multimodal extraction, max 10 MB / 10 pages, password-protected and short scanned PDFs supported, multi-recipe picker, no PDF retention.
 
 ## 4. Non-Functional Requirements
 
@@ -201,7 +211,7 @@ The following items need stakeholder input to be fully specified. They are liste
 | **Cook mode** | The full-screen, step-by-step, hands-free cooking view at `/(recipes)/[id]/cook`. |
 | **Section** | A named subgroup within a recipe (e.g. "Für die Soße") with its own ingredients and steps. |
 | **Scalable** | A boolean flag indicating whether ingredient amounts may be linearly scaled with the serving count. |
-| **Source value** | The opaque identifier of where the recipe came from: a URL, a YouTube ID, a Supabase Storage path, an Instagram URL, or the literal `manual`. |
+| **Source value** | The opaque identifier of where the recipe came from: a URL, a YouTube ID, a Supabase Storage path, an Instagram URL, a PDF filename, or the literal `manual`. |
 | **Recipe type** | Kochen / Backen / Grillen / Zubereiten — drives label and CTA wording per `01-recipe-type.md`. |
 | **Tag normalisation** | Mapping of synonym/foreign-language tags to canonical lowercase German tags via a synonym map. |
 | **Import job** | A row in the `import_jobs` table tracking the status of an asynchronous import (`pending | processing | done | error`). |

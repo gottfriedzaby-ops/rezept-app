@@ -81,7 +81,7 @@ export default async function SettingsPage() {
         .order("created_at", { ascending: false })
     : { data: [] };
 
-  const mergeTagsDefault = userSettings?.merge_shared_tags_into_global ?? true;
+  const showSharedDefault = userSettings?.show_shared_in_main_library ?? true;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -129,12 +129,12 @@ export default async function SettingsPage() {
           <IncomingSharesManager initialShares={incomingShares} />
         </section>
 
-        {/* Tag settings */}
+        {/* Library display settings */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Tag-Einstellungen
+            Bibliotheksansicht
           </h2>
-          <TagMergeToggle initialValue={mergeTagsDefault} />
+          <TagMergeToggle initialValue={showSharedDefault} />
         </section>
 
         {/* Share links */}

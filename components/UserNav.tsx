@@ -10,6 +10,7 @@ export default function UserNav() {
   const { user, loading } = useAuth();
   const [uncheckedCount, setUncheckedCount] = useState(0);
   const [hasSharedCollections, setHasSharedCollections] = useState(false);
+  const [showSharedInMain, setShowSharedInMain] = useState(true);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -31,13 +32,16 @@ export default function UserNav() {
 
   useEffect(() => {
     if (!user) return;
-    fetch("/api/library-shares/incoming")
-      .then((r) => r.json())
-      .then((json) => {
-        const accepted = (json.data ?? []).some(
+    Promise.all([
+      fetch("/api/library-shares/incoming").then((r) => r.json()),
+      fetch("/api/settings").then((r) => r.json()),
+    ])
+      .then(([sharesJson, settingsJson]) => {
+        const accepted = (sharesJson.data ?? []).some(
           (s: LibraryShareInbound) => s.status === "accepted"
         );
         setHasSharedCollections(accepted);
+        setShowSharedInMain(settingsJson.data?.show_shared_in_main_library ?? true);
       })
       .catch(() => {});
   }, [user]);
@@ -50,8 +54,8 @@ export default function UserNav() {
         {user.email}
       </span>
 
-      {/* Shared collections link */}
-      {hasSharedCollections && (
+      {/* Shared collections link — only shown when unified view is OFF */}
+      {hasSharedCollections && !showSharedInMain && (
         <Link
           href="/library-shares"
           aria-label="Geteilte Sammlungen"

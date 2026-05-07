@@ -24,7 +24,6 @@ export default async function RecipesPage() {
 
   // Fetch shared recipes from accepted library shares
   let sharedRecipes: Array<Recipe & { _ownerName: string }> = [];
-  let excludeSharedFromTagCloud = false;
 
   if (user) {
     const { data: acceptedShares } = await supabaseAdmin
@@ -46,12 +45,12 @@ export default async function RecipesPage() {
           .returns<Recipe[]>(),
         supabaseAdmin
           .from("user_settings")
-          .select("merge_shared_tags_into_global")
+          .select("show_shared_in_main_library")
           .eq("user_id", user.id)
           .maybeSingle(),
       ]);
 
-      excludeSharedFromTagCloud = !(settings?.merge_shared_tags_into_global ?? true);
+      const showSharedInMainLibrary = settings?.show_shared_in_main_library ?? true;
 
       // Enrich with owner names
       const ownerNames = new Map<string, string>();
@@ -66,10 +65,12 @@ export default async function RecipesPage() {
         })
       );
 
-      sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({
-        ...r,
-        _ownerName: ownerNames.get(r.user_id ?? "") ?? "Unbekannt",
-      }));
+      if (showSharedInMainLibrary) {
+        sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({
+          ...r,
+          _ownerName: ownerNames.get(r.user_id ?? "") ?? "Unbekannt",
+        }));
+      }
     }
   }
 
@@ -101,7 +102,6 @@ export default async function RecipesPage() {
             <RecipeList
               recipes={recipes}
               sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
-              excludeSharedFromTagCloud={excludeSharedFromTagCloud}
             />
           )}
         </section>

@@ -50,10 +50,11 @@ export async function POST(
   if (ownerData.user?.email) {
     const recipientName =
       (user.user_metadata?.full_name as string) || user.email || "";
-    await sendAcceptanceNotification({
+    const emailResult = await sendAcceptanceNotification({
       ownerEmail: ownerData.user.email,
       recipientName,
     });
+    if (!emailResult.success) console.error("[library-shares/accept] sendAcceptanceNotification failed:", emailResult.error);
   }
 
   return NextResponse.json({ data: updated, error: null });

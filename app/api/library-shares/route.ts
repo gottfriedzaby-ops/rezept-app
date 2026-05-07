@@ -134,9 +134,11 @@ export async function POST(request: NextRequest) {
 
   // Send email (non-blocking — failure doesn't prevent share creation)
   if (recipientId) {
-    await sendInvitationToRegistered({ ownerName, recipientEmail });
+    const emailResult = await sendInvitationToRegistered({ ownerName, recipientEmail });
+    if (!emailResult.success) console.error("[library-shares] sendInvitationToRegistered failed:", emailResult.error);
   } else {
-    await sendInvitationToUnregistered({ ownerName, recipientEmail, invitationToken });
+    const emailResult = await sendInvitationToUnregistered({ ownerName, recipientEmail, invitationToken });
+    if (!emailResult.success) console.error("[library-shares] sendInvitationToUnregistered failed:", emailResult.error);
   }
 
   return NextResponse.json({ data: share, error: null }, { status: 201 });

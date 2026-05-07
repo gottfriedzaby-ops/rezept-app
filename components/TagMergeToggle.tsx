@@ -62,7 +62,7 @@ export default function TagMergeToggle({ initialValue }: Props) {
           <p className="text-xs text-ink-tertiary mt-1 leading-relaxed">
             Wenn aktiviert, erscheinen Rezepte aus mit dir geteilten Sammlungen gemeinsam mit
             deinen eigenen Rezepten in der Bibliothek – erkennbar an einem Badge mit dem Namen
-            der Person. Wenn deaktiviert, sind sie nur unter „Geteilte Sammlungen" erreichbar.
+            der Person. Wenn deaktiviert, sind sie nur unter &bdquo;Geteilte Sammlungen&ldquo; erreichbar.
           </p>
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         </div>

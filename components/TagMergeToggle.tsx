@@ -20,7 +20,7 @@ export default function TagMergeToggle({ initialValue }: Props) {
       const res = await fetch("/api/settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ merge_shared_tags_into_global: next }),
+        body: JSON.stringify({ show_shared_in_main_library: next }),
       });
       if (!res.ok) {
         setEnabled(!next); // revert
@@ -57,12 +57,12 @@ export default function TagMergeToggle({ initialValue }: Props) {
         </button>
         <div>
           <p className="text-sm font-medium text-ink-primary">
-            Tags aus geteilten Sammlungen in meiner globalen Tag-Liste anzeigen
+            Geteilte Rezepte in meiner Bibliothek anzeigen
           </p>
           <p className="text-xs text-ink-tertiary mt-1 leading-relaxed">
-            Wenn aktiviert, erscheinen Tags von Rezepten aus mit dir geteilten Sammlungen in
-            deiner globalen Tag-Filterleiste. Wenn deaktiviert, sind sie nur innerhalb der
-            jeweiligen geteilten Sammlung sichtbar.
+            Wenn aktiviert, erscheinen Rezepte aus mit dir geteilten Sammlungen gemeinsam mit
+            deinen eigenen Rezepten in der Bibliothek – erkennbar an einem Badge mit dem Namen
+            der Person. Wenn deaktiviert, sind sie nur unter &bdquo;Geteilte Sammlungen&ldquo; erreichbar.
           </p>
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         </div>

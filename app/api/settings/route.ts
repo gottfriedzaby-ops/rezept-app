@@ -14,7 +14,7 @@ export async function GET() {
   const { data, error } = await supabaseAdmin
     .from("user_settings")
     .upsert(
-      { user_id: user.id, merge_shared_tags_into_global: true },
+      { user_id: user.id, show_shared_in_main_library: true },
       { onConflict: "user_id", ignoreDuplicates: true }
     )
     .select()
@@ -35,8 +35,8 @@ export async function PATCH(request: NextRequest) {
   const body = await request.json().catch(() => ({}));
   const update: Record<string, unknown> = {};
 
-  if (typeof body.merge_shared_tags_into_global === "boolean") {
-    update.merge_shared_tags_into_global = body.merge_shared_tags_into_global;
+  if (typeof body.show_shared_in_main_library === "boolean") {
+    update.show_shared_in_main_library = body.show_shared_in_main_library;
   }
 
   if (Object.keys(update).length === 0) {

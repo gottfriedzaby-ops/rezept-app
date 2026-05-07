@@ -42,7 +42,7 @@ export interface ReshareRequest {
 
 export interface UserSettings {
   user_id: string;
-  merge_shared_tags_into_global: boolean;
+  show_shared_in_main_library: boolean;
   created_at: string;
   updated_at: string;
 }

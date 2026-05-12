@@ -15,6 +15,7 @@ const config: Config = {
       displayName: "node",
       testEnvironment: "node",
       testMatch: [
+        "<rootDir>/__tests__/*.test.ts",
         "<rootDir>/__tests__/lib/**/*.test.ts",
         "<rootDir>/__tests__/api/**/*.test.ts",
       ],

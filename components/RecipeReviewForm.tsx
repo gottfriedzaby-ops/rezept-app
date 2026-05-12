@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import type { ParsedRecipe, RecipeType } from "@/types/recipe";
+import TagInput from "@/components/TagInput";
+import { normalizeTags } from "@/lib/tags";
 
 interface DraftIngredient { amount: string; unit: string; name: string }
 interface DraftStep { text: string; timerSeconds: number | null }
@@ -46,7 +48,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
       steps: s.steps.map((st) => ({ text: st.text, timerSeconds: st.timerSeconds })),
     }))
   );
-  const [tagsInput, setTagsInput] = useState(initial.tags.join(", "));
+  const [tags, setTags] = useState<string[]>(initial.tags);
 
   const currentServings = parseInt(servings);
   const showServingsWarning = isNaN(currentServings) || currentServings <= 0;
@@ -69,7 +71,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
           .filter((st) => st.text.trim() !== "")
           .map((st, idx) => ({ order: idx + 1, text: st.text, timerSeconds: st.timerSeconds })),
       })),
-      tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+      tags: normalizeTags(tags),
       source: initial.source,
       scalable: initial.scalable,
     });
@@ -245,10 +247,13 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Tags */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">
-          Tags <span className="text-ink-tertiary/60">(kommagetrennt)</span>
-        </label>
-        <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="pasta, vegetarisch, schnell" disabled={saving} className={fieldCls} />
+        <label className="block text-xs text-ink-tertiary mb-1.5">Tags</label>
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          disabled={saving}
+          placeholder="Tag eingeben (Enter oder Komma)"
+        />
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

@@ -100,8 +100,6 @@ npx supabase start # Lokale Supabase-Instanz (optional)
 - `shares` — Share-Tokens (owner_id, token, revoked_at)
 - `import_jobs` — asynchrone Import-Queue
 
-**Pending Migration:** `supabase/migrations/20260505000000_feature08_nutrition_columns.sql` muss noch im Supabase SQL-Editor ausgeführt werden (fügt Nährwert-Spalten hinzu).
-
 ## Code-Konventionen
 - TypeScript strict mode — keine `any`-Typen
 - Komponenten: funktional, mit expliziten Props-Interfaces

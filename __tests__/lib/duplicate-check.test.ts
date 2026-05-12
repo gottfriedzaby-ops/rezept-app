@@ -27,6 +27,8 @@ function makeChain(result: { data: unknown; error: unknown }) {
   return chain;
 }
 
+const TEST_USER = "test-user-id";
+
 beforeEach(() => {
   fromMock.mockReset();
 });
@@ -34,7 +36,7 @@ beforeEach(() => {
 describe("checkUrlDuplicate", () => {
   it("returns null when the URL is not in the database", async () => {
     fromMock.mockReturnValue(makeChain({ data: null, error: null }));
-    const result = await checkUrlDuplicate("https://example.com/recipe");
+    const result = await checkUrlDuplicate("https://example.com/recipe", TEST_USER);
     expect(result).toBeNull();
   });
 
@@ -42,7 +44,7 @@ describe("checkUrlDuplicate", () => {
     fromMock.mockReturnValueOnce(
       makeChain({ data: { id: "abc-123", title: "Tomatensoße" }, error: null })
     );
-    const result = await checkUrlDuplicate("https://example.com/recipe");
+    const result = await checkUrlDuplicate("https://example.com/recipe", TEST_USER);
     expect(result).toEqual({ existingRecipeId: "abc-123", existingTitle: "Tomatensoße" });
   });
 
@@ -60,7 +62,7 @@ describe("checkUrlDuplicate", () => {
     );
 
     const urlWithTracking = "https://example.com/recipe?utm_source=newsletter&utm_medium=email";
-    const result = await checkUrlDuplicate(urlWithTracking);
+    const result = await checkUrlDuplicate(urlWithTracking, TEST_USER);
     expect(result).toEqual({ existingRecipeId: "xyz-789", existingTitle: "Pasta Rezept" });
   });
 
@@ -79,23 +81,49 @@ describe("checkUrlDuplicate", () => {
       })
     );
 
-    const result = await checkUrlDuplicate("https://example.com/recipe");
+    const result = await checkUrlDuplicate("https://example.com/recipe", TEST_USER);
     expect(result).toBeNull();
   });
 
   it("skips URL normalization check for non-http sources", async () => {
     // Only one from() call expected — no hostname extraction for non-http
     fromMock.mockReturnValueOnce(makeChain({ data: null, error: null }));
-    const result = await checkUrlDuplicate("manual");
+    const result = await checkUrlDuplicate("manual", TEST_USER);
     expect(result).toBeNull();
     expect(fromMock).toHaveBeenCalledTimes(1);
+  });
+
+  // DC-U-01
+  it("passes userId as eq filter on the exact-match query", async () => {
+    const chain = makeChain({ data: null, error: null });
+    fromMock.mockReturnValue(chain);
+    await checkUrlDuplicate("https://example.com/recipe", "user-abc");
+    const eqCalls = (chain.eq as jest.Mock).mock.calls;
+    expect(eqCalls).toContainEqual(["user_id", "user-abc"]);
+  });
+
+  // DC-U-03
+  it("returns null for a user who does not own the recipe at that URL", async () => {
+    // DB returns null when queried with "user-b" — simulates user isolation
+    fromMock.mockReturnValue(makeChain({ data: null, error: null }));
+    const result = await checkUrlDuplicate("https://example.com/recipe", "user-b");
+    expect(result).toBeNull();
+  });
+
+  // DC-U-04
+  it("returns duplicate info for the user who owns the recipe at that URL", async () => {
+    fromMock.mockReturnValueOnce(
+      makeChain({ data: { id: "owned-id", title: "Mein Rezept" }, error: null })
+    );
+    const result = await checkUrlDuplicate("https://example.com/recipe", "user-a");
+    expect(result).toEqual({ existingRecipeId: "owned-id", existingTitle: "Mein Rezept" });
   });
 });
 
 describe("findDuplicateRecipe", () => {
   it("returns null when no duplicates exist", async () => {
     fromMock.mockReturnValue(makeChain({ data: null, error: null }));
-    const result = await findDuplicateRecipe("Neues Rezept", "manual");
+    const result = await findDuplicateRecipe("Neues Rezept", "manual", TEST_USER);
     expect(result).toBeNull();
   });
 
@@ -103,7 +131,11 @@ describe("findDuplicateRecipe", () => {
     fromMock.mockReturnValueOnce(
       makeChain({ data: { id: "dup-id", title: "Tomatensoße" }, error: null })
     );
-    const result = await findDuplicateRecipe("Tomatensoße", "https://example.com/tomaten");
+    const result = await findDuplicateRecipe(
+      "Tomatensoße",
+      "https://example.com/tomaten",
+      TEST_USER
+    );
     expect(result).toEqual({ existingRecipeId: "dup-id", existingTitle: "Tomatensoße" });
   });
 
@@ -119,7 +151,7 @@ describe("findDuplicateRecipe", () => {
       })
     );
 
-    const result = await findDuplicateRecipe("Tomatensuppe", "manual");
+    const result = await findDuplicateRecipe("Tomatensuppe", "manual", TEST_USER);
     expect(result).toEqual({ existingRecipeId: "fuzzy-id", existingTitle: "Tomatensuppe" });
   });
 
@@ -132,16 +164,32 @@ describe("findDuplicateRecipe", () => {
       })
     ); // title search returns a very different title
 
-    const result = await findDuplicateRecipe("Tomatensuppe", "manual");
+    const result = await findDuplicateRecipe("Tomatensuppe", "manual", TEST_USER);
     expect(result).toBeNull();
   });
 
   it("returns null when title words are all short (≤4 chars) — no fuzzy search triggered", async () => {
     // Exact source_value: no match, URL: skip, no title words >4 chars
     fromMock.mockReturnValueOnce(makeChain({ data: null, error: null }));
-    const result = await findDuplicateRecipe("Eis", "manual");
+    const result = await findDuplicateRecipe("Eis", "manual", TEST_USER);
     expect(result).toBeNull();
     // Only one from() call — the title search branch is skipped
     expect(fromMock).toHaveBeenCalledTimes(1);
+  });
+
+  // DC-U-02
+  it("passes userId as eq filter on every DB query", async () => {
+    const exactChain = makeChain({ data: null, error: null });
+    const titleChain = makeChain({
+      data: [{ id: "t-id", title: "Tomatensuppe" }],
+      error: null,
+    });
+    fromMock.mockReturnValueOnce(exactChain).mockReturnValueOnce(titleChain);
+
+    await findDuplicateRecipe("Tomatensuppe", "manual", "user-abc");
+
+    // Both chains must have been scoped to "user-abc"
+    expect((exactChain.eq as jest.Mock).mock.calls).toContainEqual(["user_id", "user-abc"]);
+    expect((titleChain.eq as jest.Mock).mock.calls).toContainEqual(["user_id", "user-abc"]);
   });
 });

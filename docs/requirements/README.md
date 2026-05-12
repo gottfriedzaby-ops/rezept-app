@@ -26,6 +26,25 @@ This directory contains feature requirement documents for the **Rezept-App** —
 | 06 | Cookidoo Export | schema.org JSON-LD download + plain-text copy (no public Cookidoo API exists) | ✅ Done | [06-cookidoo-export.md](./06-cookidoo-export.md) |
 | 07 | Shopping List | Add scaled recipe ingredients to a persistent, checkable shopping list (localStorage tier) | ✅ Done | [07-shopping-list.md](./07-shopping-list.md) |
 | 08 | Nutrition Calculation | Claude-estimated kcal and macros per serving, calculated on import and recalculable on demand | ✅ Done | [08-nutrition-calculation.md](./08-nutrition-calculation.md) |
+| 09 | User-Scoped Duplicate Check | Duplicate detection scoped per user so different users can import the same URL independently | ✅ Done | [09-user-scoped-duplicate-check.md](./09-user-scoped-duplicate-check.md) |
+| 09b | Library Sharing | Read-only tokenised public library sharing at `/shared/[token]` and `/library-shares/[ownerId]` | ✅ Done | [09_library_sharing.md](./09_library_sharing.md) |
+| 10 | PDF Import | Import recipes from uploaded PDF files | ✅ Done | [10-pdf-import.md](./10-pdf-import.md) |
+| 11 | Unified Library Display | Unified view combining own + shared-library recipes | ✅ Done | [11-unified-library-display.md](./11-unified-library-display.md) |
+
+### Frontend Improvements (no DB migrations)
+
+| # | Improvement | Components | Status |
+|---|---|---|---|
+| FE-01 | Keyboard Navigation in Cook Mode | `CookMode.tsx` | ✅ Done |
+| FE-02 | Sticky Progress Bar in Cook Mode | `CookMode.tsx` | ✅ Done |
+| FE-03 | Empty-State Illustration on Recipe List | `RecipeList.tsx` | ✅ Done |
+| FE-04 | Ingredient Checklist in Cook Mode | `CookMode.tsx` | ✅ Done |
+| FE-05 | Scroll-to-Top + Step Images in Cook Mode | `CookMode.tsx` | ✅ Done |
+| FE-06 | Expanded Search (Ingredients + Tags) | `RecipeList.tsx` | ✅ Done |
+| FE-07 | Sort Control for Recipe List | `RecipeList.tsx` | ✅ Done |
+| FE-08 | `next/image` for Recipe Covers | `RecipeCover.tsx`, `next.config.js` | ✅ Done |
+| FE-09 | Inline Tag Editor with Colour Preview | `TagInput.tsx` (new), forms | ✅ Done |
+| FE-10 | Persist Filter State in the URL | `RecipeList.tsx`, `page.tsx` | ✅ Done |
 
 ---
 
@@ -72,4 +91,4 @@ Each feature doc follows this template:
 
 ---
 
-*Last updated: 2026-05-05 — all 8 features shipped*
+*Last updated: 2026-05-12 — 11 backend features + 10 frontend improvements shipped*

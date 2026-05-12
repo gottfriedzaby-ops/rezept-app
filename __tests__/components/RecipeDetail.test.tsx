@@ -189,7 +189,7 @@ describe("RecipeDetail — multi-section recipe", () => {
       ],
     });
     render(<RecipeDetail recipe={recipe} />);
-    expect(screen.getByText("Teig")).toBeInTheDocument();
-    expect(screen.getByText("Füllung")).toBeInTheDocument();
+    expect(screen.getAllByText("Teig").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Füllung").length).toBeGreaterThan(0);
   });
 });

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { Recipe, RecipeType } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
+import TagInput from "@/components/TagInput";
+import { normalizeTags } from "@/lib/tags";
 
 interface DraftIngredient { amount: string; unit: string; name: string }
 interface DraftStep { text: string; timerSeconds: number | null }
@@ -42,7 +44,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
       steps: s.steps.map((st) => ({ text: st.text, timerSeconds: st.timerSeconds })),
     }))
   );
-  const [tagsInput, setTagsInput] = useState(recipe.tags.join(", "));
+  const [tags, setTags] = useState<string[]>(recipe.tags);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -71,7 +73,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
           .filter((st) => st.text.trim() !== "")
           .map((st, idx) => ({ order: idx + 1, text: st.text, timerSeconds: st.timerSeconds })),
       })),
-      tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
+      tags: normalizeTags(tags),
       image_url: imageUrl.trim() || null,
     };
 
@@ -329,8 +331,13 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
 
       {/* Tags */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Tags <span className="text-ink-tertiary/60">(kommagetrennt)</span></label>
-        <input type="text" value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="pasta, vegetarisch, schnell" disabled={saving} className={fieldCls} />
+        <label className="block text-xs text-ink-tertiary mb-1.5">Tags</label>
+        <TagInput
+          value={tags}
+          onChange={setTags}
+          disabled={saving}
+          placeholder="Tag eingeben (Enter oder Komma)"
+        />
       </div>
 
       {/* Cover image URL */}

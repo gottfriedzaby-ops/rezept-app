@@ -50,6 +50,10 @@ export function getTagColor(tag: string): { bg: string; text: string } {
   return { bg, text };
 }
 
+export function getTagKeys(): string[] {
+  return TAG_MAP.map(([key]) => key);
+}
+
 export function getRecipeGradient(tags: string[]): [string, string] {
   for (const tag of tags) {
     const lower = tag.toLowerCase();

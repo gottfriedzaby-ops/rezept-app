@@ -1,8 +1,8 @@
 # Test Concept — Rezept-App
 
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 2026-05-12  
-**Scope:** All existing functionality + Authentication (email/password, Google OAuth, session middleware, route protection) + Per-user daily import rate limiting (FR-133: 20 imports/day, UTC reset) + User-scoped duplicate check + Shares API + Library Shares API + Nutrition recalculation + TagInput component + CookMode enhancements (FE-01, FE-02, FE-04, FE-05) + RecipeList enhancements (FE-03, FE-06, FE-07, FE-10)
+**Scope:** All existing functionality + Authentication (email/password, Google OAuth, session middleware, route protection) + Per-user daily import rate limiting (FR-133: 20 imports/day, UTC reset) + User-scoped duplicate check + Shares API + Library Shares API + Nutrition recalculation + TagInput component + CookMode enhancements (FE-01, FE-02, FE-04, FE-05) + RecipeList enhancements (FE-03, FE-06, FE-07, FE-10) + Playwright E2E for public auth pages (mocked Supabase routes)
 
 ---
 
@@ -26,7 +26,7 @@ The Rezept-App uses a **unit-first test pyramid**: the bulk of coverage lives in
 | Component tests | React Testing Library (`@testing-library/react`) |
 | DOM environment | jsdom |
 | Mocking | `jest.mock()` — module-level factory mocks |
-| E2E (future) | Playwright (recommended, not yet configured) |
+| E2E | Playwright — runs `npm run dev` and intercepts Supabase REST calls via `page.route()` (hermetic, no real network) |
 
 ### Test Pyramid
 
@@ -489,9 +489,59 @@ const mockSearchParams = useSearchParams as jest.Mock;
 
 ---
 
-## 13. Mock Patterns
+## 13. End-to-End Tests (Playwright)
 
-### 13.1 Mocking `createSupabaseServerClient` (established pattern)
+E2E tests live under `tests/e2e/` and run via `npm run test:e2e`. The suite is **hermetic by design** — Playwright boots `npm run dev` with placeholder Supabase env vars (`https://placeholder.supabase.co`), and every `tests/e2e/*.spec.ts` file uses `page.route()` to intercept Supabase REST calls (`**/auth/v1/**`, etc.) and return controlled responses. No real Supabase project, Claude API key, or network access is required.
+
+### Coverage
+
+| Spec | What it verifies |
+|---|---|
+| `tests/e2e/auth-pages.spec.ts` | Login renders + wrong-credentials error mapping (against intercepted Supabase response); register renders + client-side password-mismatch guard (without an API call); forgot-password success state |
+
+### Commands
+
+| Script | Purpose |
+|---|---|
+| `npm run test:e2e` | Headless run (CI-style) |
+| `npm run test:e2e:headed` | Run with browser visible (debugging) |
+| `npm run test:e2e:ui` | Playwright's interactive UI mode |
+
+### Why no auth-state tests?
+
+Tests that depend on a valid Supabase **session** (logged-in routes like `/`, `/recipes/:id`, Cook Mode) would need either:
+
+1. Cookie injection that mimics Supabase's SSR session format, or
+2. A real Supabase test project (see §14)
+
+Option 1 is fragile (the cookie shape can change between Supabase SDK versions). Option 2 is documented below as a future enhancement.
+
+### Conventions inside specs
+
+- **Strict-mode selectors**: use `getByRole("button", { name: "Anmelden", exact: true })` to avoid substring matches against other buttons on the page (e.g. "Mit Google anmelden").
+- **Alert assertions**: use `page.locator('p[role="alert"]')` rather than `getByRole("alert")` to avoid colliding with Next.js's `__next-route-announcer__`.
+
+---
+
+## 14. Future Enhancement: Real-Supabase Smoke Tests (Flagged)
+
+The current Playwright suite is fully mocked. For deployment-time confidence, consider adding a thin "smoke" tier that runs against a real Supabase **test project** in a dedicated CI job:
+
+| Item | Notes |
+|---|---|
+| **Supabase test project** | Separate project from staging/prod; reset between runs (`supabase db reset`) or use a transaction-rollback pattern |
+| **Seed user(s)** | Two-three test accounts created via SQL or the auth admin API on each run |
+| **Credentials in CI** | `E2E_SUPABASE_URL`, `E2E_SUPABASE_ANON_KEY`, `E2E_TEST_USER_EMAIL`, `E2E_TEST_USER_PASSWORD` as GitHub Actions secrets |
+| **Test scope** | Just the golden paths — sign in, create a manual recipe, view it in Cook Mode, log out. Not exhaustive coverage |
+| **Run cadence** | Pre-deploy gate or nightly, not per-PR (real network is slow + flaky) |
+
+This is **not** implemented today and would require buy-in on the operational cost (extra Supabase project, GitHub secrets, CI minutes).
+
+---
+
+## 15. Mock Patterns
+
+### 15.1 Mocking `createSupabaseServerClient` (established pattern)
 
 From `__tests__/api/recipes-confirm.test.ts`:
 
@@ -525,7 +575,7 @@ it("returns 401 when not authenticated", async () => {
 });
 ```
 
-### 13.2 Mocking `checkDailyImportLimit`
+### 15.2 Mocking `checkDailyImportLimit`
 
 For import route and confirm route tests where rate limiting needs to be controlled independently:
 
@@ -571,7 +621,7 @@ checkRateLimitMock.mockResolvedValueOnce({
 });
 ```
 
-### 13.3 Mocking `supabaseAdmin` (established pattern)
+### 15.3 Mocking `supabaseAdmin` (established pattern)
 
 From `__tests__/lib/duplicate-check.test.ts` and `__tests__/api/normalize-tags.test.ts`:
 
@@ -598,7 +648,7 @@ function makeCountChain(count: number | null) {
 fromMock.mockReturnValue(makeCountChain(5));
 ```
 
-### 13.4 Mocking `createSupabaseBrowserClient` (for component tests)
+### 15.4 Mocking `createSupabaseBrowserClient` (for component tests)
 
 Components use the browser client directly. Mock at module level:
 
@@ -621,7 +671,7 @@ jest.mock("@/lib/supabase/client", () => ({
 }));
 ```
 
-### 13.5 Mocking Next.js navigation (for client component tests)
+### 15.5 Mocking Next.js navigation (for client component tests)
 
 ```typescript
 const mockPush = jest.fn();
@@ -632,7 +682,7 @@ jest.mock("next/navigation", () => ({
 }));
 ```
 
-### 13.6 Mocking the middleware's `createServerClient` from `@supabase/ssr`
+### 15.6 Mocking the middleware's `createServerClient` from `@supabase/ssr`
 
 The middleware imports `createServerClient` directly from `@supabase/ssr`, not from an internal wrapper. Test it by importing the middleware function and mocking the module:
 
@@ -664,7 +714,7 @@ beforeEach(() => {
 });
 ```
 
-### 13.7 Mocking `useSearchParams` for URL-bound state (RecipeList and similar)
+### 15.7 Mocking `useSearchParams` for URL-bound state (RecipeList and similar)
 
 `useSearchParams` is a named export from `next/navigation`. Mock the whole module, then control the params per test via `mockReturnValue`:
 
@@ -701,7 +751,7 @@ expect(mockReplace).toHaveBeenCalledWith(
 );
 ```
 
-### 13.8 Mocking `estimateNutrition` from `@/lib/claude`
+### 15.8 Mocking `estimateNutrition` from `@/lib/claude`
 
 ```typescript
 jest.mock("@/lib/claude", () => ({

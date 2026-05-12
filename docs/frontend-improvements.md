@@ -26,10 +26,10 @@ During active cooking, users' hands are often wet or dirty. Advancing a step req
 - Nav buttons and the timer button must expose `aria-keyshortcuts` attributes for screen-reader discoverability.
 
 ### Acceptance Criteria
-- [ ] Arrow keys and Space navigate steps without clicking.
-- [ ] `t` starts and pauses the timer.
-- [ ] No key events fire when a modal or input within the page has focus.
-- [ ] Listener is removed on component unmount.
+- [x] Arrow keys and Space navigate steps without clicking.
+- [x] `t` starts and pauses the timer.
+- [x] No key events fire when a modal or input within the page has focus.
+- [x] Listener is removed on component unmount.
 
 ---
 
@@ -53,10 +53,10 @@ Cook Mode shows only a fraction like "2 / 7" in the header. Users have no visual
 - The bar is always visible (not scrollable away) — it must be `position: sticky` or part of the fixed header area.
 
 ### Acceptance Criteria
-- [ ] Bar is visible at all times during Cook Mode.
-- [ ] Width increases smoothly on each step advance.
-- [ ] Reaches 100% on the last step.
-- [ ] No layout shift introduced.
+- [x] Bar is visible at all times during Cook Mode.
+- [x] Width increases smoothly on each step advance.
+- [x] Reaches 100% on the last step.
+- [x] No layout shift introduced.
 
 ---
 
@@ -80,10 +80,10 @@ When a filter or search returns no results, only plain text "Keine Rezepte gefun
 - The empty state must not appear when the list has recipes that simply aren't loaded yet (loading state is handled separately).
 
 ### Acceptance Criteria
-- [ ] Empty-state block is shown when `filtered.length === 0` and at least one filter is active.
-- [ ] "Filter zurücksetzen" clears all active filters and restores the full list.
-- [ ] Illustration uses the project colour palette (forest green, cream).
-- [ ] Zero-recipe state on first load (no filters) retains the existing import-nudge copy.
+- [x] Empty-state block is shown when `filtered.length === 0` and at least one filter is active.
+- [x] "Filter zurücksetzen" clears all active filters and restores the full list.
+- [x] Illustration uses the project colour palette (forest green, cream).
+- [x] Zero-recipe state on first load (no filters) retains the existing import-nudge copy.
 
 ---
 
@@ -108,10 +108,10 @@ The collapsible ingredient drawer in Cook Mode is purely read-only. Users cannot
 - The existing `formatAmount()` helper must be reused unchanged.
 
 ### Acceptance Criteria
-- [ ] Tapping an ingredient toggles its checked appearance.
-- [ ] Visual distinction between checked and unchecked is clear.
-- [ ] Checking does not affect ingredient amounts.
-- [ ] State is not preserved across Cook Mode sessions (by design).
+- [x] Tapping an ingredient toggles its checked appearance.
+- [x] Visual distinction between checked and unchecked is clear.
+- [x] Checking does not affect ingredient amounts.
+- [x] State is not preserved across Cook Mode sessions (by design).
 
 ---
 
@@ -135,10 +135,10 @@ The collapsible ingredient drawer in Cook Mode is purely read-only. Users cannot
 - The image should be responsive and not break the layout on small screens.
 
 ### Acceptance Criteria
-- [ ] Advancing a step always resets the scroll position to the top.
-- [ ] A step image is displayed when `recipe.step_images[stepIndex]` is defined.
-- [ ] No image placeholder is shown when no step image exists.
-- [ ] Scroll reset does not trigger layout shift.
+- [x] Advancing a step always resets the scroll position to the top.
+- [x] A step image is displayed when `recipe.step_images[stepIndex]` is defined.
+- [x] No image placeholder is shown when no step image exists.
+- [x] Scroll reset does not trigger layout shift.
 
 ---
 
@@ -162,10 +162,10 @@ The search filter matches only `recipe.title`. Searching for "Knoblauch" or "veg
 - Search remains case-insensitive.
 
 ### Acceptance Criteria
-- [ ] Searching a tag name (e.g., "vegetarisch") returns recipes with that tag.
-- [ ] Searching an ingredient name (e.g., "Knoblauch") returns recipes containing that ingredient.
-- [ ] Title search still works as before.
-- [ ] Performance is not noticeably degraded for up to ~200 recipes.
+- [x] Searching a tag name (e.g., "vegetarisch") returns recipes with that tag.
+- [x] Searching an ingredient name (e.g., "Knoblauch") returns recipes containing that ingredient.
+- [x] Title search still works as before.
+- [x] Performance is not noticeably degraded for up to ~200 recipes.
 
 ---
 
@@ -192,10 +192,10 @@ Recipes are always displayed newest-first (fixed server-side ordering). With a g
 - Sort preference is stored in `useState`; it does not need to be persisted in the URL (that is covered by REQ-010).
 
 ### Acceptance Criteria
-- [ ] All three sort options produce the correct order.
-- [ ] Sort is applied after filtering (not before).
-- [ ] Default is newest-first on page load.
-- [ ] Visual style matches existing filter controls.
+- [x] All three sort options produce the correct order.
+- [x] Sort is applied after filtering (not before).
+- [x] Default is newest-first on page load.
+- [x] Visual style matches existing filter controls.
 
 ---
 
@@ -220,11 +220,11 @@ Recipes are always displayed newest-first (fixed server-side ordering). With a g
 - `priority` prop is set to `true` on the hero variant to enable LCP preloading.
 
 ### Acceptance Criteria
-- [ ] No plain `<img>` remains in `RecipeCover.tsx`.
-- [ ] DevTools Network tab shows `srcSet` / WebP variants being served.
-- [ ] No CLS on the recipe list page (Lighthouse CLS = 0).
-- [ ] Blur placeholder is visible while the image loads.
-- [ ] `npm run build` produces no `next/image` warnings.
+- [x] No plain `<img>` remains in `RecipeCover.tsx`.
+- [x] DevTools Network tab shows `srcSet` / WebP variants being served.
+- [x] No CLS on the recipe list page (Lighthouse CLS = 0).
+- [x] Blur placeholder is visible while the image loads.
+- [x] `npm run build` produces no `next/image` warnings.
 
 ---
 
@@ -251,11 +251,11 @@ Tags in `RecipeReviewForm` and `RecipeEditForm` are entered as a raw comma-separ
 - `normalizeTags()` from `lib/tags.ts` must be applied when tags are submitted.
 
 ### Acceptance Criteria
-- [ ] Existing tags render as coloured pills in both forms.
-- [ ] A tag can be removed individually without clearing all tags.
-- [ ] Autocomplete suggests known tags as the user types.
-- [ ] Tag colour preview is visible before confirming a new tag.
-- [ ] Saved tags are identical in format to the current implementation (lowercase, normalised).
+- [x] Existing tags render as coloured pills in both forms.
+- [x] A tag can be removed individually without clearing all tags.
+- [x] Autocomplete suggests known tags as the user types.
+- [x] Tag colour preview is visible before confirming a new tag.
+- [x] Saved tags are identical in format to the current implementation (lowercase, normalised).
 
 ---
 
@@ -282,11 +282,11 @@ Filter state (search query, active tags, favourites toggle) is held in React `us
 - Sort preference from REQ-007 may optionally be included as `?sort=az`.
 
 ### Acceptance Criteria
-- [ ] URL reflects active filters in real time.
-- [ ] Navigating to a recipe and pressing Back restores the previous filter state.
-- [ ] A URL with filter params can be opened in a new tab and shows the correct filtered view.
-- [ ] Clearing all filters removes the query params from the URL.
-- [ ] `npm run build` has no hydration warnings related to `useSearchParams`.
+- [x] URL reflects active filters in real time.
+- [x] Navigating to a recipe and pressing Back restores the previous filter state.
+- [x] A URL with filter params can be opened in a new tab and shows the correct filtered view.
+- [x] Clearing all filters removes the query params from the URL.
+- [x] `npm run build` has no hydration warnings related to `useSearchParams`.
 
 ---
 

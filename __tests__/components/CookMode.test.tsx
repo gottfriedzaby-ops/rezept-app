@@ -247,3 +247,233 @@ describe("CookMode — recipe title display", () => {
     expect(screen.getByText("Pasta")).toBeInTheDocument();
   });
 });
+
+// ---------------------------------------------------------------------------
+// FE-01: Keyboard navigation
+// ---------------------------------------------------------------------------
+
+describe("CookMode — keyboard navigation (FE-01)", () => {
+  // CM-K-01
+  it("ArrowRight advances to the next step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+  });
+
+  // CM-K-02
+  it("Space advances to the next step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    act(() => {
+      fireEvent.keyDown(window, { key: " " });
+    });
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+  });
+
+  // CM-K-03
+  it("ArrowLeft goes back one step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("2 / 3")).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowLeft" });
+    });
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+  });
+
+  // CM-K-04
+  it("ArrowRight does nothing on the last step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+  });
+
+  // CM-K-05
+  it("ArrowLeft does nothing on the first step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowLeft" });
+    });
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+  });
+
+  it("t toggles the timer when a timer is present", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    // Advance to step 2 which has timerSeconds: 480
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("Start")).toBeInTheDocument();
+    act(() => {
+      fireEvent.keyDown(window, { key: "t" });
+    });
+    expect(screen.getByText("Pause")).toBeInTheDocument();
+  });
+
+  it("ignores keyboard events while typing in an input", () => {
+    const recipe = makeRecipe();
+    render(
+      <>
+        <input data-testid="focused-input" />
+        <CookMode recipe={recipe} initialServings={2} />
+      </>
+    );
+
+    const input = screen.getByTestId("focused-input");
+    input.focus();
+
+    act(() => {
+      fireEvent.keyDown(input, { key: "ArrowRight" });
+    });
+
+    // Step should not have advanced
+    expect(screen.getByText("1 / 3")).toBeInTheDocument();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FE-02: Progress bar
+// ---------------------------------------------------------------------------
+
+describe("CookMode — progress bar (FE-02)", () => {
+  function getProgressFill(): HTMLElement {
+    const bar = screen.getByRole("progressbar");
+    return bar.firstElementChild as HTMLElement;
+  }
+
+  // CM-P-01
+  it("progress bar fill width is 1/N on the first step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    const fill = getProgressFill();
+    // 3-step recipe → step 1 / 3 ≈ 33.333%
+    expect(fill.style.width).toMatch(/^33\.333/);
+  });
+
+  // CM-P-02
+  it("progress bar fill width reaches 100% on the last step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(screen.getByText("3 / 3")).toBeInTheDocument();
+    expect(getProgressFill().style.width).toBe("100%");
+  });
+
+  it("exposes aria-valuenow that tracks the current step", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    const bar = screen.getByRole("progressbar");
+    expect(bar.getAttribute("aria-valuenow")).toBe("1");
+    expect(bar.getAttribute("aria-valuemax")).toBe("3");
+
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+    expect(bar.getAttribute("aria-valuenow")).toBe("2");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FE-04: Ingredient checklist
+// ---------------------------------------------------------------------------
+
+describe("CookMode — ingredient checklist (FE-04)", () => {
+  function openIngredients() {
+    fireEvent.click(screen.getByText(/Zutaten für/));
+  }
+
+  // CM-C-01
+  it("clicking an ingredient marks it checked (aria-pressed=true)", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    openIngredients();
+
+    const button = screen.getByRole("button", { pressed: false, name: /Nudeln/ });
+    fireEvent.click(button);
+
+    expect(screen.getByRole("button", { pressed: true, name: /Nudeln/ })).toBeInTheDocument();
+  });
+
+  // CM-C-02
+  it("clicking a checked ingredient un-marks it", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    openIngredients();
+
+    const button = screen.getByRole("button", { name: /Nudeln/ });
+    fireEvent.click(button); // check
+    fireEvent.click(button); // uncheck
+
+    expect(screen.getByRole("button", { pressed: false, name: /Nudeln/ })).toBeInTheDocument();
+  });
+
+  // CM-C-03
+  it("checked ingredient text has line-through styling", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    openIngredients();
+
+    const button = screen.getByRole("button", { name: /Nudeln/ });
+    fireEvent.click(button);
+
+    // The name span receives `line-through text-ink-tertiary` when checked
+    const nameSpan = screen.getByText("Nudeln");
+    expect(nameSpan.className).toMatch(/line-through/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// FE-05: Step images
+// ---------------------------------------------------------------------------
+
+describe("CookMode — step images (FE-05)", () => {
+  // CM-I-01
+  it("renders a step image when step_images has a URL for the current step", () => {
+    const recipe = makeRecipe({
+      step_images: ["https://example.com/step1.jpg", null, null],
+    });
+    render(<CookMode recipe={recipe} initialServings={2} />);
+
+    const img = document.querySelector("main img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.src).toBe("https://example.com/step1.jpg");
+  });
+
+  // CM-I-02
+  it("renders no step image when step_images entry for the current step is null", () => {
+    const recipe = makeRecipe({
+      step_images: [null, "https://example.com/step2.jpg", null],
+    });
+    render(<CookMode recipe={recipe} initialServings={2} />);
+
+    expect(document.querySelector("main img")).toBeNull();
+  });
+
+  // CM-I-03
+  it("renders the correct step image after advancing", () => {
+    const recipe = makeRecipe({
+      step_images: [null, "https://example.com/step2.jpg", null],
+    });
+    render(<CookMode recipe={recipe} initialServings={2} />);
+
+    expect(document.querySelector("main img")).toBeNull();
+
+    act(() => {
+      fireEvent.keyDown(window, { key: "ArrowRight" });
+    });
+
+    const img = document.querySelector("main img") as HTMLImageElement | null;
+    expect(img).not.toBeNull();
+    expect(img!.src).toBe("https://example.com/step2.jpg");
+  });
+});
+

@@ -17,12 +17,21 @@ function gradientBlurDataURL(from: string, to: string): string {
   return `data:image/svg+xml;base64,${base64}`;
 }
 
+function isOptimizableHost(url: string): boolean {
+  try {
+    return new URL(url).hostname.endsWith(".supabase.co");
+  } catch {
+    return false;
+  }
+}
+
 export default function RecipeCover({ imageUrl, title, tags, variant = "card" }: Props) {
   const [from, to] = getRecipeGradient(tags);
   const isHero = variant === "hero";
 
   if (imageUrl) {
     const blurDataURL = gradientBlurDataURL(from, to);
+    const unoptimized = !isOptimizableHost(imageUrl);
     if (isHero) {
       return (
         <div className="w-full overflow-hidden">
@@ -35,6 +44,7 @@ export default function RecipeCover({ imageUrl, title, tags, variant = "card" }:
             sizes="100vw"
             placeholder="blur"
             blurDataURL={blurDataURL}
+            unoptimized={unoptimized}
             className="w-full h-[260px] sm:h-[360px] lg:h-[420px] object-cover"
           />
         </div>
@@ -49,6 +59,7 @@ export default function RecipeCover({ imageUrl, title, tags, variant = "card" }:
           sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           placeholder="blur"
           blurDataURL={blurDataURL}
+          unoptimized={unoptimized}
           className="object-cover"
         />
       </div>

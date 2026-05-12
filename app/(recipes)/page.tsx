@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
@@ -99,10 +100,12 @@ export default async function RecipesPage() {
               Noch keine Rezepte. Importiere das erste!
             </p>
           ) : (
-            <RecipeList
-              recipes={recipes}
-              sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
-            />
+            <Suspense fallback={null}>
+              <RecipeList
+                recipes={recipes}
+                sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
+              />
+            </Suspense>
           )}
         </section>
 

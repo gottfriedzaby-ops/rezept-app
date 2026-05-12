@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -67,11 +68,13 @@ export default async function SharedLibraryPage({
           <UserNav />
         </header>
 
-        <RecipeList
-          recipes={recipes ?? []}
-          readOnly
-          sharedCollectionOwnerId={params.ownerId}
-        />
+        <Suspense fallback={null}>
+          <RecipeList
+            recipes={recipes ?? []}
+            readOnly
+            sharedCollectionOwnerId={params.ownerId}
+          />
+        </Suspense>
       </div>
     </div>
   );

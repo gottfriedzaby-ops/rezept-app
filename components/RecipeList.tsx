@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import type { Recipe } from "@/types/recipe";
 import RecipeCover from "@/components/RecipeCover";
 import { getTagColor } from "@/lib/tag-colors";
@@ -24,9 +25,41 @@ export default function RecipeList({
   sharedCollectionOwnerId,
   sharedRecipes,
 }: Props) {
-  const [query, setQuery] = useState("");
-  const [activeTags, setActiveTags] = useState<Set<string>>(new Set());
-  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const query = searchParams.get("q") ?? "";
+  const activeTags = useMemo(
+    () => new Set(searchParams.getAll("tag")),
+    [searchParams]
+  );
+  const showFavoritesOnly = searchParams.get("fav") === "1";
+
+  const updateParams = useCallback(
+    (mutate: (p: URLSearchParams) => void) => {
+      const p = new URLSearchParams(Array.from(searchParams.entries()));
+      mutate(p);
+      const qs = p.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [searchParams, router, pathname]
+  );
+
+  const setQuery = (value: string) => {
+    updateParams((p) => {
+      p.delete("q");
+      if (value) p.set("q", value);
+    });
+  };
+
+  const setShowFavoritesOnly = (value: boolean) => {
+    updateParams((p) => {
+      if (value) p.set("fav", "1");
+      else p.delete("fav");
+    });
+  };
+
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(recipes.filter((r) => r.favorite).map((r) => r.id))
   );
@@ -68,7 +101,11 @@ export default function RecipeList({
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return allRecipes.filter((r) => {
-      const matchesQuery = q === "" || r.title.toLowerCase().includes(q);
+      const matchesQuery =
+        q === "" ||
+        r.title.toLowerCase().includes(q) ||
+        r.tags.some((t) => t.toLowerCase().includes(q)) ||
+        r.ingredients.some((i) => i.name.toLowerCase().includes(q));
       const matchesTags =
         activeTags.size === 0 || Array.from(activeTags).every((t) => r.tags.includes(t));
       const matchesFavorites = !showFavoritesOnly || favoriteIds.has(r.id);
@@ -83,11 +120,13 @@ export default function RecipeList({
   }, [filtered, activeTags]);
 
   function toggleTag(tag: string) {
-    setActiveTags((prev) => {
-      const next = new Set(prev);
-      if (next.has(tag)) next.delete(tag);
-      else next.add(tag);
-      return next;
+    updateParams((p) => {
+      const current = p.getAll("tag");
+      p.delete("tag");
+      const next = current.includes(tag)
+        ? current.filter((t) => t !== tag)
+        : [...current, tag];
+      next.forEach((t) => p.append("tag", t));
     });
   }
 
@@ -119,7 +158,7 @@ export default function RecipeList({
         {/* Favorites toggle — hidden in read-only mode */}
         {!readOnly && (
           <button
-            onClick={() => setShowFavoritesOnly((v) => !v)}
+            onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
             className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded border transition-colors ${
               showFavoritesOnly
                 ? "bg-amber-400 text-white border-amber-400"

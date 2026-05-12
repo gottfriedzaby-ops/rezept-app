@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -59,7 +60,9 @@ export default async function SharedCollectionPage({
           {!recipes || recipes.length === 0 ? (
             <p className="text-ink-secondary">Noch keine Rezepte in dieser Sammlung.</p>
           ) : (
-            <RecipeList recipes={recipes} readOnly shareToken={params.token} />
+            <Suspense fallback={null}>
+              <RecipeList recipes={recipes} readOnly shareToken={params.token} />
+            </Suspense>
           )}
         </section>
       </div>

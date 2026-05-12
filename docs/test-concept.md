@@ -227,8 +227,8 @@ The Rezept-App uses a **unit-first test pyramid**: the bulk of coverage lives in
 
 ### 4.5 `POST /api/recipes/confirm` — Rate Limit + Race Condition
 
-**File:** `__tests__/api/recipes-confirm.test.ts` (extend existing file)  
-**Mocks required:** as currently set up; additionally mock `checkDailyImportLimit` from `@/lib/import-rate-limit`
+**File:** `__tests__/api/recipes-confirm-rate-limit.test.ts` (separate from existing `recipes-confirm.test.ts` to avoid mock conflicts)  
+**Mocks required:** `@/lib/import-rate-limit` → `checkDailyImportLimit`, `rateLimitErrorMessage`; `@/lib/supabase`; `@/lib/supabase/server`; `@/lib/duplicate-check`; `@/lib/claude` → `estimateNutrition`
 
 | ID | Name | Type | Given | When | Then |
 |---|---|---|---|---|---|

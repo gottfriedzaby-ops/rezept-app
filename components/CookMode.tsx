@@ -122,6 +122,43 @@ export default function CookMode({ recipe, initialServings }: Props) {
     setTimeLeft(currentCookStep?.step.timerSeconds ?? null);
   }, [currentCookStep]);
 
+  useEffect(() => {
+    const isTypingTarget = (el: EventTarget | null): boolean => {
+      if (!(el instanceof HTMLElement)) return false;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+      if (el.isContentEditable) return true;
+      return false;
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      if (isTypingTarget(e.target)) return;
+
+      switch (e.key) {
+        case "ArrowRight":
+        case " ":
+          e.preventDefault();
+          setStepIndex((i) => Math.min(cookSteps.length - 1, i + 1));
+          break;
+        case "ArrowLeft":
+          e.preventDefault();
+          setStepIndex((i) => Math.max(0, i - 1));
+          break;
+        case "t":
+        case "T":
+          if (timeLeft !== null && timeLeft > 0) {
+            e.preventDefault();
+            setTimerRunning((r) => !r);
+          }
+          break;
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [cookSteps.length, timeLeft]);
+
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
 
@@ -170,6 +207,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
               <button
                 onClick={() => setTimerRunning((r) => !r)}
                 disabled={timeLeft === 0}
+                aria-keyshortcuts="t"
                 className="h-14 px-8 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
               >
                 {timerRunning ? "Pause" : "Start"}
@@ -245,6 +283,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
         <button
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={isFirst}
+          aria-keyshortcuts="ArrowLeft"
           className="flex-1 h-14 rounded border border-stone text-ink-secondary font-medium hover:bg-surface-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
           ← Zurück
@@ -260,6 +299,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
         ) : (
           <button
             onClick={() => setStepIndex((i) => i + 1)}
+            aria-keyshortcuts="ArrowRight Space"
             className="flex-1 h-14 rounded bg-ink-primary text-white font-medium hover:bg-ink-secondary transition-colors"
           >
             Weiter →

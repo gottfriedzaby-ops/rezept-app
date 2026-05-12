@@ -35,6 +35,9 @@ export default function RecipeList({
     [searchParams]
   );
   const showFavoritesOnly = searchParams.get("fav") === "1";
+  const sortRaw = searchParams.get("sort") ?? "newest";
+  const sort: "newest" | "az" | "time" =
+    sortRaw === "az" || sortRaw === "time" ? sortRaw : "newest";
 
   const updateParams = useCallback(
     (mutate: (p: URLSearchParams) => void) => {
@@ -59,6 +62,23 @@ export default function RecipeList({
       else p.delete("fav");
     });
   };
+
+  const setSort = (value: "newest" | "az" | "time") => {
+    updateParams((p) => {
+      if (value === "newest") p.delete("sort");
+      else p.set("sort", value);
+    });
+  };
+
+  const resetFilters = useCallback(() => {
+    updateParams((p) => {
+      p.delete("q");
+      p.delete("tag");
+      p.delete("fav");
+    });
+  }, [updateParams]);
+
+  const hasActiveFilter = query !== "" || activeTags.size > 0 || showFavoritesOnly;
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(recipes.filter((r) => r.favorite).map((r) => r.id))
@@ -100,7 +120,7 @@ export default function RecipeList({
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return allRecipes.filter((r) => {
+    const result = allRecipes.filter((r) => {
       const matchesQuery =
         q === "" ||
         r.title.toLowerCase().includes(q) ||
@@ -111,7 +131,17 @@ export default function RecipeList({
       const matchesFavorites = !showFavoritesOnly || favoriteIds.has(r.id);
       return matchesQuery && matchesTags && matchesFavorites;
     });
-  }, [allRecipes, query, activeTags, showFavoritesOnly, favoriteIds]);
+    if (sort === "az") {
+      result.sort((a, b) => a.title.localeCompare(b.title, "de"));
+    } else if (sort === "time") {
+      result.sort(
+        (a, b) =>
+          ((a.prep_time ?? 0) + (a.cook_time ?? 0)) -
+          ((b.prep_time ?? 0) + (b.cook_time ?? 0))
+      );
+    }
+    return result;
+  }, [allRecipes, query, activeTags, showFavoritesOnly, favoriteIds, sort]);
 
   const availableTags = useMemo(() => {
     const seen = new Set<string>(activeTags);
@@ -132,25 +162,37 @@ export default function RecipeList({
 
   return (
     <div>
-      {/* Search */}
-      <div className="relative mb-5 max-w-sm">
-        <svg
-          className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-tertiary pointer-events-none"
-          xmlns="http://www.w3.org/2000/svg"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-          strokeWidth={2}
+      {/* Search + sort */}
+      <div className="flex flex-wrap items-center gap-3 mb-5">
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <svg
+            className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-ink-tertiary pointer-events-none"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Suchen…"
+            className="input-field pl-9"
+          />
+        </div>
+        <select
+          aria-label="Sortierung"
+          value={sort}
+          onChange={(e) => setSort(e.target.value as "newest" | "az" | "time")}
+          className="input-field w-auto"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
-        </svg>
-        <input
-          type="search"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder="Suchen…"
-          className="input-field pl-9"
-        />
+          <option value="newest">Neueste zuerst</option>
+          <option value="az">A–Z</option>
+          <option value="time">Kochzeit</option>
+        </select>
       </div>
 
       {/* Filter bar */}
@@ -192,7 +234,36 @@ export default function RecipeList({
 
       {/* Grid */}
       {filtered.length === 0 ? (
-        <p className="text-ink-tertiary text-sm">Keine Rezepte gefunden.</p>
+        hasActiveFilter ? (
+          <div className="flex flex-col items-center justify-center text-center py-16">
+            <svg
+              viewBox="0 0 64 64"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="w-16 h-16 text-forest mb-5"
+              aria-hidden="true"
+            >
+              <path d="M8 16h20c2 0 4 2 4 4v32c0-2-2-4-4-4H8V16z" />
+              <path d="M56 16H36c-2 0-4 2-4 4v32c0-2 2-4 4-4h20V16z" />
+              <path d="M14 24h12M14 30h12M14 36h8M38 24h12M38 30h12M38 36h8" />
+            </svg>
+            <h3 className="font-serif text-xl font-medium text-ink-primary mb-2">
+              Nichts gefunden
+            </h3>
+            <button
+              type="button"
+              onClick={resetFilters}
+              className="mt-3 text-sm px-4 py-1.5 rounded border border-stone text-ink-secondary hover:bg-surface-hover transition-colors"
+            >
+              Filter zurücksetzen
+            </button>
+          </div>
+        ) : (
+          <p className="text-ink-tertiary text-sm">Keine Rezepte gefunden.</p>
+        )
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {filtered.map((recipe) => {

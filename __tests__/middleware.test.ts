@@ -184,3 +184,58 @@ describe("middleware — config.matcher (static assets bypass)", () => {
     }
   );
 });
+
+// ---------------------------------------------------------------------------
+// Cookie forwarding (setAll / getAll) — when Supabase SSR refreshes the
+// session, the cookies it writes via setAll must end up on the final response.
+// ---------------------------------------------------------------------------
+
+describe("middleware — Supabase SSR cookie callbacks", () => {
+  it("getAll returns the request's cookies", async () => {
+    let capturedGetAll: (() => unknown) | null = null;
+    createServerClientMock.mockImplementationOnce((_url, _key, opts) => {
+      capturedGetAll = opts.cookies.getAll;
+      return {
+        auth: {
+          getUser: jest.fn().mockResolvedValue({ data: { user: { id: "u1" } } }),
+        },
+      };
+    });
+
+    const req = makeRequest("/recipes");
+    req.cookies.set("flavour", "vanilla");
+
+    await middleware(req);
+
+    expect(capturedGetAll).not.toBeNull();
+    const all = (capturedGetAll as unknown as () => Array<{ name: string; value: string }>)();
+    const names = all.map((c) => c.name);
+    expect(names).toContain("flavour");
+  });
+
+  it("setAll: cookies written by Supabase SSR appear on the response", async () => {
+    let capturedSetAll:
+      | ((cookies: Array<{ name: string; value: string; options?: Record<string, unknown> }>) => void)
+      | null = null;
+    createServerClientMock.mockImplementationOnce((_url, _key, opts) => {
+      capturedSetAll = opts.cookies.setAll;
+      return {
+        auth: {
+          getUser: jest.fn().mockImplementation(async () => {
+            // Simulate Supabase SSR refreshing the session mid-flight
+            capturedSetAll!([
+              { name: "sb-access-token", value: "new-token", options: {} },
+              { name: "sb-refresh-token", value: "new-refresh", options: {} },
+            ]);
+            return { data: { user: { id: "u1" } } };
+          }),
+        },
+      };
+    });
+
+    const res = await middleware(makeRequest("/recipes"));
+
+    expect(res.cookies.get("sb-access-token")?.value).toBe("new-token");
+    expect(res.cookies.get("sb-refresh-token")?.value).toBe("new-refresh");
+  });
+});

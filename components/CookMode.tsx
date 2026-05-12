@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import Link from "next/link";
 import type { Recipe, Step } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
@@ -43,6 +43,53 @@ interface CookStep {
   sectionTitle: string | null;
 }
 
+interface IngredientRowProps {
+  ing: { amount: number; unit: string; name: string };
+  checked: boolean;
+  servings: number;
+  onToggle: () => void;
+  paddingTopClass: string;
+}
+
+function IngredientRow({ ing, checked, servings, onToggle, paddingTopClass }: IngredientRowProps) {
+  return (
+    <li className={paddingTopClass}>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={checked}
+        className="w-full flex gap-4 text-sm text-left items-baseline"
+      >
+        {ing.amount > 0 && (
+          <span
+            className={`font-medium tabular-nums w-20 shrink-0 ${
+              checked ? "line-through text-ink-tertiary" : "text-ink-primary"
+            }`}
+          >
+            {formatAmount(ing.amount, servings)}
+            {ing.unit ? ` ${ing.unit}` : ""}
+          </span>
+        )}
+        <span className={`flex-1 ${checked ? "line-through text-ink-tertiary" : "text-ink-secondary"}`}>
+          {ing.name}
+        </span>
+        {checked && (
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth={2}
+            className="w-4 h-4 shrink-0 text-forest self-center"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 8.5l3 3 7-7" />
+          </svg>
+        )}
+      </button>
+    </li>
+  );
+}
+
 interface Props {
   recipe: Recipe;
   initialServings: number;
@@ -69,6 +116,25 @@ export default function CookMode({ recipe, initialServings }: Props) {
   const [showIngredients, setShowIngredients] = useState(false);
   const [timeLeft, setTimeLeft] = useState<number | null>(cookSteps[0]?.step.timerSeconds ?? null);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
+  const mainRef = useRef<HTMLElement | null>(null);
+
+  const toggleIngredient = useCallback((globalIdx: number) => {
+    setCheckedIngredients((prev) => {
+      const next = new Set(prev);
+      if (next.has(globalIdx)) next.delete(globalIdx);
+      else next.add(globalIdx);
+      return next;
+    });
+  }, []);
+
+  // Reset scroll on every step change (instant, not smooth)
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [stepIndex]);
+
+  const stepImageUrl = recipe.step_images?.[stepIndex] ?? null;
+  const progressPct = cookSteps.length > 0 ? ((stepIndex + 1) / cookSteps.length) * 100 : 0;
 
   const currentCookStep = cookSteps[stepIndex];
   const isFirst = stepIndex === 0;
@@ -180,7 +246,22 @@ export default function CookMode({ recipe, initialServings }: Props) {
         <div className="w-20" />
       </header>
 
-      <main className="flex-1 overflow-y-auto px-6 py-10 max-w-[720px] mx-auto w-full flex flex-col gap-8">
+      <div
+        className="h-1 bg-stone shrink-0"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={cookSteps.length}
+        aria-valuenow={stepIndex + 1}
+      >
+        <div
+          className="h-full bg-forest transition-[width] duration-300 ease-out"
+          style={{ width: `${progressPct}%` }}
+        />
+      </div>
+
+      <main
+        ref={mainRef}
+        className="flex-1 overflow-y-auto px-6 py-10 max-w-[720px] mx-auto w-full flex flex-col gap-8">
         {/* Section label — shown above step text for multi-section recipes */}
         {multiSection && currentCookStep.sectionTitle && (
           <p className="label-overline text-forest">{currentCookStep.sectionTitle}</p>
@@ -192,6 +273,15 @@ export default function CookMode({ recipe, initialServings }: Props) {
         >
           {currentCookStep.step.text}
         </p>
+
+        {stepImageUrl && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={stepImageUrl}
+            alt=""
+            className="w-full rounded object-cover"
+          />
+        )}
 
         {timeLeft !== null && (
           <div className="flex flex-col gap-5">
@@ -237,41 +327,51 @@ export default function CookMode({ recipe, initialServings }: Props) {
         {showIngredients && (
           <div className="px-6 pb-5 bg-surface-secondary border-t border-stone">
             {multiSection
-              ? sections.map((section, sIdx) => (
-                  <div key={sIdx}>
-                    {section.title && (
-                      <p className="text-xs font-medium text-ink-tertiary uppercase tracking-wider pt-4 pb-2">
-                        {section.title}
-                      </p>
-                    )}
-                    <ul className="space-y-3">
-                      {section.ingredients.map((ing, i) => (
-                        <li key={i} className="flex gap-4 text-sm pt-1">
-                          {ing.amount > 0 && (
-                            <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                              {formatAmount(ing.amount, initialServings)}
-                              {ing.unit ? ` ${ing.unit}` : ""}
-                            </span>
-                          )}
-                          <span className="text-ink-secondary">{ing.name}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))
+              ? sections.map((section, sIdx) => {
+                  const sectionOffset = sections
+                    .slice(0, sIdx)
+                    .reduce((acc, s) => acc + s.ingredients.length, 0);
+                  return (
+                    <div key={sIdx}>
+                      {section.title && (
+                        <p className="text-xs font-medium text-ink-tertiary uppercase tracking-wider pt-4 pb-2">
+                          {section.title}
+                        </p>
+                      )}
+                      <ul className="space-y-3">
+                        {section.ingredients.map((ing, i) => {
+                          const globalIdx = sectionOffset + i;
+                          const checked = checkedIngredients.has(globalIdx);
+                          return (
+                            <IngredientRow
+                              key={i}
+                              ing={ing}
+                              checked={checked}
+                              servings={initialServings}
+                              onToggle={() => toggleIngredient(globalIdx)}
+                              paddingTopClass="pt-1"
+                            />
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })
               : (
                 <ul className="space-y-3">
-                  {allIngredients.map((ing, i) => (
-                    <li key={i} className="flex gap-4 text-sm pt-3">
-                      {ing.amount > 0 && (
-                        <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                          {formatAmount(ing.amount, initialServings)}
-                          {ing.unit ? ` ${ing.unit}` : ""}
-                        </span>
-                      )}
-                      <span className="text-ink-secondary">{ing.name}</span>
-                    </li>
-                  ))}
+                  {allIngredients.map((ing, i) => {
+                    const checked = checkedIngredients.has(i);
+                    return (
+                      <IngredientRow
+                        key={i}
+                        ing={ing}
+                        checked={checked}
+                        servings={initialServings}
+                        onToggle={() => toggleIngredient(i)}
+                        paddingTopClass="pt-3"
+                      />
+                    );
+                  })}
                 </ul>
               )
             }

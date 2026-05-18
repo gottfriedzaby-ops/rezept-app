@@ -4,7 +4,7 @@
 
 | Field | Value |
 |---|---|
-| Status | Draft |
+| Status | Caching: **Deferred** (prefix below 2048-tok minimum on every call site). Adjacent work AO-12-2 (Haiku 4.5 for nutrition): ✅ **Shipped** in PR #48. |
 | Effort | **S–M** (depends on which call sites and whether prompt restructuring is accepted) |
 | Priority | Medium |
 | Dependencies | None — purely an internal optimization of `lib/claude.ts` |
@@ -51,7 +51,7 @@ The following call sites have been identified in the codebase. Each is in scope 
 | CS-2 | `parseRecipeFromImage` | `claude-sonnet-4-6` | `lib/claude.ts:370` | `import-photo` (FormData/single base64) | Same `RECIPE_SCHEMA` + `RULES` text block (~1750 tok) | One base64 image (new per call); filename |
 | CS-3 | `parseRecipeFromImages` | `claude-sonnet-4-6` | `lib/claude.ts:332` | `import-photo` (JSON/multi-URL) | Same `RECIPE_SCHEMA` + `RULES` text block (~1750 tok) | One or more image URLs; filename |
 | CS-4 | `reviewAndImproveRecipe` | `claude-sonnet-4-6` | `lib/claude.ts:254` | All four import routes (URL, YouTube, Instagram, photo) | `REVIEW_SYSTEM` (~1100 tok, in `system:`) + `RECIPE_SCHEMA` header in user (~50 tok) | Recipe JSON to review |
-| CS-5 | `estimateNutrition` | `claude-sonnet-4-6` | `lib/claude.ts:521` | `recipes/confirm`, `recipes/[id]/nutrition` | Short instruction template (~150 tok) | Ingredient list |
+| CS-5 | `estimateNutrition` | `claude-haiku-4-5` *(migrated from Sonnet 4.6 per AO-12-2, PR #48)* | `lib/claude.ts:521` | `recipes/confirm`, `recipes/[id]/nutrition` | Short instruction template (~150 tok) | Ingredient list |
 
 **Daily call volume per user (worst case):** 20 imports × 3 calls + N nutrition recalculations ≈ 60–80 calls/day/user. Across all users globally the stable prefixes are byte-identical for every call of the same type, which is the cross-user cache-hit opportunity.
 
@@ -232,8 +232,8 @@ These were observed during the caching audit and are noted here for future plann
 ### AO-12-1 — Skip review-pass when JSON-LD is present and high-quality
 `parseRecipeFromText` already prioritizes schema.org JSON-LD over the supplementary text when present. If the JSON-LD is complete and the parse-pass result passes a structural check (e.g. all sections have ≥1 ingredient and ≥1 step, servings is non-zero), the review-pass could be skipped entirely. This would cut one Claude call per import for the URL path — a far larger cost reduction than caching alone.
 
-### AO-12-2 — Downgrade `estimateNutrition` to Haiku 4.5
-Nutrition estimation is a relatively simple inference task with a short prompt. Haiku 4.5 is ~3× cheaper per input token than Sonnet 4.6 and would likely produce acceptable accuracy for ballpark kcal/macro estimates (already disclaimed as "ca." in the UI per Feature 08). This would not require any caching work.
+### AO-12-2 — Downgrade `estimateNutrition` to Haiku 4.5 ✅ Shipped (PR #48, 2026-05-18)
+Nutrition estimation is a relatively simple inference task with a short prompt. Haiku 4.5 is ~3× cheaper per input token than Sonnet 4.6 and produces acceptable accuracy for ballpark kcal/macro estimates (already disclaimed as "ca." in the UI per Feature 08). One-line model swap in `lib/claude.ts:543` — no prompt changes; the existing try/catch fallback to null nutrition preserves graceful degradation on any error.
 
 ### AO-12-3 — Trim the `RULES` prompt
 The current `RULES` string (~1700 tokens) includes worked examples and edge-case clarifications. Some may be unnecessary given the maturity of Sonnet 4.6 on recipe extraction. Token reduction reduces cost on every uncached miss as well as the write-cost of the cached prefix.
@@ -252,7 +252,7 @@ The legacy single-image path converts the file to base64 and embeds it in the pr
 |---|---|---|---|---|
 | OQ-12-1 | Which call sites to enable caching on, given that none currently clear the 2048-token Sonnet 4.6 minimum on their own? | **(a)** Consolidate `RULES` + `RECIPE_SCHEMA` into a shared `system:` block and expand to ≥2048 tokens (e.g. by adding worked examples already valuable for quality); apply to CS-1, CS-2, CS-3. **(b)** Same as (a) plus separately raise `REVIEW_SYSTEM` to ≥2048 for CS-4. **(c)** Defer caching entirely until prefixes naturally grow. **(d)** Cache only CS-4 by adding worked review examples to `REVIEW_SYSTEM` until it clears 2048. | Determines whether savings are realised on parse-pass, review-pass, both, or neither | Engineering + Product |
 | OQ-12-2 | TTL choice: 5-minute default vs. 1-hour extended beta? | **(a)** 5-minute only. Cheaper writes, no beta flag, sufficient for cross-user hits during active hours. **(b)** 1-hour beta. Smooths off-peak gaps, doubles write premium, requires beta header. | Cost economics under bursty per-user traffic patterns | Engineering |
-| OQ-12-3 | Should adjacent optimizations (AO-12-1 to AO-12-5) be planned for the same release window as caching, or deferred to separate features? | **(a)** Bundle with caching. **(b)** Defer all. **(c)** Bundle only AO-12-1 (skip-review) since it has the largest impact. | Scope and release planning | Product |
+| ~~OQ-12-3~~ | ~~Should adjacent optimizations (AO-12-1 to AO-12-5) be planned for the same release window as caching, or deferred to separate features?~~ | **Decided 2026-05-18:** Caching deferred (no call site clears the 2048-tok minimum without artificial padding). AO-12-2 shipped standalone (PR #48). AO-12-1 remains deferred as the next-largest lever — re-evaluate before any caching work. | — | — |
 | OQ-12-4 | Acceptance threshold for SM-12-1 (≥30% cost reduction): is this the right target, or too aggressive / not aggressive enough? | Numeric — Engineering proposes 30%; Product to confirm | Defines what "success" means for the feature | Product |
 | OQ-12-5 | Should the team verify cache effectiveness with a staging-environment dry run before full production rollout? | **(a)** Yes — burn a few test calls to confirm `cache_read_input_tokens > 0` before deploying to all users. **(b)** No — ship and observe in production logs. | Risk vs. velocity tradeoff | Engineering |
 | OQ-12-6 | If OQ-12-1 path (a) is chosen, what content should be added to expand the prefix above 2048 tokens — and does that content also improve extraction quality? | Engineering proposal: additional worked examples for parenthetical metric values, additional negative examples for non-translation. Product to confirm content is non-controversial. | Could improve recipe quality as a side effect, or add no value beyond hitting the cache minimum | Engineering + Product |

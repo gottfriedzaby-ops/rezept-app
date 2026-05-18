@@ -25,7 +25,7 @@
 - **Styling:** Tailwind CSS
 - **Datenbank:** Supabase (PostgreSQL)
 - **Deployment:** Vercel
-- **KI:** Claude API — Modell: `claude-sonnet-4-6` (Rezept-Parsing, Review-Pass, Nährwertschätzung)
+- **KI:** Claude API — Modelle: `claude-sonnet-4-6` (Rezept-Parsing, Review-Pass), `claude-haiku-4-5` (Nährwertschätzung)
 
 ## Wichtige Befehle
 ```bash

@@ -30,6 +30,7 @@ This directory contains feature requirement documents for the **Rezept-App** —
 | 09b | Library Sharing | Read-only tokenised public library sharing at `/shared/[token]` and `/library-shares/[ownerId]` | ✅ Done | [09_library_sharing.md](./09_library_sharing.md) |
 | 10 | PDF Import | Import recipes from uploaded PDF files | ✅ Done | [10-pdf-import.md](./10-pdf-import.md) |
 | 11 | Unified Library Display | Unified view combining own + shared-library recipes | ✅ Done | [11-unified-library-display.md](./11-unified-library-display.md) |
+| 12 | Claude API Cost Optimization | Audit of all 5 Claude call sites + prompt-caching analysis. Caching itself deferred (prefixes below 2048-tok Sonnet 4.6 minimum); AO-12-2 (Haiku 4.5 for nutrition) shipped | ◐ Partial | [12-claude-prompt-caching.md](./12-claude-prompt-caching.md) |
 
 ### Frontend Improvements (no DB migrations)
 
@@ -91,4 +92,4 @@ Each feature doc follows this template:
 
 ---
 
-*Last updated: 2026-05-12 — 11 backend features + 10 frontend improvements shipped*
+*Last updated: 2026-05-18 — 11 backend features + 10 frontend improvements shipped; Feature 12 audit doc landed with AO-12-2 (Haiku 4.5 for nutrition)*

@@ -770,3 +770,111 @@ beforeEach(() => {
   });
 });
 ```
+
+---
+
+## 16. Production-Test Follow-Up — Test Cases for Spec Decisions (2026-05-18)
+
+These test cases trace back to the 8 stakeholder decisions made after the production test on 2026-05-18 (B1, B2, B4, B5, B8, D4, D5, S2). Each row links the decision, the requirement it now anchors to, and the suggested test surface.
+
+### 16.1 B1 — Import failure error page (FR-08, FR-15, FR-22)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| `POST /api/import-url` returns `{ data: null, error: 'EMPTY_PARSE' }` when parse pass yields `ingredients.length === 0 && steps.length === 0` | API (Jest) | Response shape and HTTP 200 |
+| `POST /api/import-url` returns `{ data: null, error: 'FETCH_BLOCKED' }` for Cloudflare-challenge HTML | API (Jest) | Mock the fetch to return a Cloudflare challenge body |
+| Equivalent empty-parse path exists for `/api/import-youtube`, `/api/import-photo`, `/api/import-instagram`, `/api/import-pdf` | API (Jest) | One small test per route; shared helper acceptable |
+| Import-error page component renders German message + "Manuell anlegen" CTA + source-specific retry CTA | Component (RTL) | Render with each error code; assert CTA labels and `href`s |
+| E2E: paste a URL that resolves to a Cloudflare-blocked response → error page is shown (no half-empty review form) | Playwright | Intercept the fetch via `page.route`; assert review form is NOT rendered |
+
+**Suggested test files:**
+- `__tests__/api/import-url-empty-parse.test.ts`
+- `__tests__/components/ImportErrorPage.test.tsx`
+- `tests/e2e/import-failure.spec.ts`
+
+### 16.2 B2 — Cook mode default servings (FR-90)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Opening `/(recipes)/[id]/cook` without `?servings=` initialises the in-page scaler to `recipe.servings` | Component (RTL) | Mount CookMode without query param; expect scaler value = recipe.servings |
+| Opening with `?servings=N` uses `N` (existing behaviour, regression guard) | Component (RTL) | Mount with `?servings=6`; expect scaler = 6 |
+| No client-side redirect is performed in either case | Component (RTL) | Assert `router.replace` / `push` is never called |
+
+**Suggested test file:** extend `__tests__/components/CookMode.test.tsx`.
+
+### 16.3 B5 — Detail meta scope of live scaling (FR-81)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Changing the servings counter updates the "X Portionen" label | Component (RTL) | Fire user event; assert label re-renders with new count |
+| Changing the servings counter does NOT mutate the rendered prep time or cook time | Component (RTL) | Capture text before/after; expect equality |
+| Changing the servings counter updates ingredient amounts for normal rows | Component (RTL) | Snapshot amounts with factor 2x |
+
+**Suggested test file:** extend or create `__tests__/components/RecipeDetail.test.tsx`.
+
+### 16.4 B8 — Non-scalable units on detail page (FR-81)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Ingredient with `amount = null` (e.g. "1 Prise Salz") is rendered unchanged at any scale factor | Component (RTL) | Render fixture, change scaler, assert row text stable |
+| Ingredient with `unit = ""` and integer `amount` (e.g. `{amount:1, unit:"", name:"Lorbeerblatt"}`) is rendered unchanged | Component (RTL) | Same fixture pattern |
+| Ingredient with scalable unit (`g`, `ml`, `EL`) is scaled normally on the same recipe | Component (RTL) | Verify the rule is per-item, not per-recipe |
+
+**Suggested test file:** `__tests__/components/RecipeDetail.test.tsx` (new file or extension).
+
+### 16.5 D4 — Source visibility above the fold (FR-89, BR-02)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Recipe with `source_type='url'` renders a "Quelle: <domain> →" link below the title, above the portion selector | Component (RTL) | Query by role `link`, assert `href === source_value` and `target="_blank"` |
+| Recipe with `source_type='photo'` / `'pdf'` / `'manual'` renders a non-clickable provenance label | Component (RTL) | Assert no anchor; assert label text matches expected German string |
+| The source element appears in the DOM **before** the portion selector | Component (RTL) | Use `compareDocumentPosition` or sibling ordering |
+| The source element is never hidden behind a `details`, `dialog`, or tab | Component (RTL) | Assert no ancestor matches `details, [role="dialog"], [role="tab"]` |
+
+**Suggested test file:** `__tests__/components/RecipeDetail.test.tsx`.
+
+### 16.6 D5 — Cover-image override in review form (FR-02-10, FR-10-53)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Multi-image review form preselects the first uploaded image as cover by default | Component (RTL) | Inspect the "Als Cover" radio state |
+| User can click a different thumbnail's "Als Cover" toggle and the preview updates | Component (RTL) | Simulate click; assert cover preview `src` changes |
+| On confirm, the selected image's storage URL is sent as `image_url` to `/api/recipes/confirm` | Component (RTL) | Spy on fetch; assert payload |
+| PDF review form preselects page 1 as cover by default | Component (RTL) | Same pattern for PDF review form |
+| PDF review form allows "Kein Titelbild" selection → `image_url` is `null` on save | Component (RTL) | Confirm payload omits `image_url` (or sends `null`) |
+
+**Suggested test files:** `__tests__/components/MultiImageReviewForm.test.tsx`, `__tests__/components/PdfReviewForm.test.tsx`.
+
+### 16.7 S2 — Manual recipe entry (FR-136, `12-manual-recipe-entry.md`)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| Home screen renders a "Manuell anlegen" button at the same visual level as import buttons | Component (RTL) | Query by accessible name; assert it exists |
+| Clicking "Manuell anlegen" opens the review form in empty state (no parsed data) | Component (RTL) | Assert title input is empty, ingredients list has 1 empty row, steps list has 1 empty step |
+| Save is blocked when title is empty | Component (RTL) | Click save, assert German error message and no API call |
+| Save is blocked when no ingredient has a `name` | Component (RTL) | Same pattern |
+| Save is blocked when no step has `text` | Component (RTL) | Same pattern |
+| `POST /api/recipes/confirm` accepts `source_type='manual'`, `source_value='manual'` and skips the parse/review pipeline | API (Jest) | Spy on Claude wrapper; assert it is never called |
+| `POST /api/recipes/confirm` for a manual entry runs duplicate-check stage 3 only (skip stages 1+2) | API (Jest) | Inject two manual recipes with `source_value='manual'`; expect no exact-match warning, fuzzy match still works |
+| A successful manual save increments the daily import counter exactly once | API (Jest) | Use `checkDailyImportLimit` mock; assert call count |
+| From the import-error page, "Manuell anlegen" CTA navigates to the empty form (no half-parsed data carried over) | E2E | Playwright: simulate failed import, click CTA, assert empty form |
+
+**Suggested test files:** `__tests__/components/ManualRecipeEntry.test.tsx`, `__tests__/components/HomeScreen.test.tsx`, extend `__tests__/api/recipes-confirm.test.ts`.
+
+### 16.8 B4 — Error pages (NFR-20, NFR-21, NFR-22, NFR-23)
+
+| Test | Layer | Assertion |
+|---|---|---|
+| `not-found.tsx` (404) renders German message and a "Zur Startseite" link to `/` | Component (RTL) | Render page; assert text + link |
+| `error.tsx` (500) renders German message and a "Zur Startseite" link to `/` | Component (RTL) | Same pattern |
+| 403 / unauthorised page renders German message and a "Zur Startseite" link to `/` | Component (RTL) | Same pattern |
+| Generic network-error fallback renders German message and a "Zur Startseite" link to `/` | Component (RTL) | Same pattern |
+| Error pages render no stack trace, no error code, no environment info | Component (RTL) | Assert page text does not contain `Error:`, `at `, `process.env` |
+| Error pages share the app shell (header, cream background, typography) | Visual / Component | Snapshot test or class-name assertion |
+| E2E: navigating to a non-existent route lands on the German 404 page with the "Zur Startseite" link | Playwright | One spec covers the happy path |
+
+**Suggested test files:** `__tests__/app/not-found.test.tsx`, `__tests__/app/error.test.tsx`, `tests/e2e/error-pages.spec.ts`.
+
+### 16.9 Priority
+
+All 8 decision-driven test sets are **High Priority** — they directly back up requirements that were considered missing or under-specified during the production test. They should land before the next production deploy that touches any of the affected paths (cook mode, detail page, import pipeline, error pages).

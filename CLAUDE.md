@@ -146,7 +146,10 @@ IMPORT_DEBUG=          # optional, set to "1" to log JSON-LD + Claude's parsed s
 - ✅ Multi-Abschnitt-Rezepte (benannte Sections mit eigenen Zutaten/Schritten)
 - ✅ PDF-Export
 - ✅ Authentifizierung (E-Mail + Google OAuth, Registrierung, Passwort-Reset, Middleware)
-- ✅ Sharing (tokenbasierte read-only Links, widerrufbar, kein Ablaufdatum)
+- ✅ Sharing — drei Modi parallel:
+  - Tokenbasierte read-only Links (`/shared/[token]`, widerrufbar, kein Ablaufdatum)
+  - Library-Sharing (E-Mail-basierter A→B-Zugriff auf die ganze Sammlung, siehe `docs/requirements/09_library_sharing.md`)
+  - Unified Library View (eingehende Sammlungen werden im Hauptscreen mit Badge angezeigt, siehe `docs/requirements/11-unified-library-display.md`)
 - ✅ Cookidoo-Export (schema.org JSON-LD Download + Plaintext-Kopie)
 - ✅ Einkaufsliste (localStorage, Portionsskalierung, manuelle Eingabe)
 - ✅ Nährwertberechnung (Claude-Schätzung, per Portion, Neu-berechnen-Button)

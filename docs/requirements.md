@@ -38,6 +38,12 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **FR-05** The user must be presented with an editable review form before any recipe is saved. Ingredient amounts must be displayed as totals for the current serving count and divided back to per-serving on save.
 - **FR-06** The confirm endpoint must run a final duplicate check immediately before insertion (defence against race conditions and edits made during review).
 - **FR-07** Each import must be testable in isolation; the system must return `{ data, error }` from API routes per the project convention.
+- **FR-08** Import failure handling (applies to all source types: `url`, `youtube`, `photo`, `instagram`, `pdf`). The system MUST NOT render a partially-populated review form when the parse or review pass produces no usable recipe. The following conditions count as a failed import and MUST surface a dedicated error page instead of the review form:
+  - The parse pass returns an empty `ParsedRecipe` (operational definition: `ingredients.length === 0 && steps.length === 0`).
+  - The parse pass throws or returns a non-recipe response (e.g. Claude refusal, JSON parse failure).
+  - The review pass throws or returns an empty result.
+  - The raw-content fetch fails in a non-retryable way (e.g. Cloudflare block on URL imports).
+  The error page MUST contain (a) a clear German message explaining what likely happened (source-type-specific where useful, e.g. "Konnten die Seite nicht lesen — evtl. Cloudflare-Block."), (b) a primary CTA "Manuell anlegen" that opens the manual-entry review form (see `12-manual-recipe-entry.md`), and (c) a secondary CTA appropriate to the source ("Andere URL versuchen", "Andere Bilder hochladen", "Anderes Video", etc.). API routes MUST signal this state with `{ error: 'EMPTY_PARSE' }` (or a comparable error code for fetch/review failures) so the UI can render the error component deterministically.
 
 ### 3.2 Recipe Import — URL Source
 
@@ -46,12 +52,13 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **FR-12** The importer must also extract Contentful rich-text attributes and parenthetical metric amounts (e.g. `4½ cups (500 grams)`) and pass these as ground-truth amounts to the Claude parse prompt.
 - **FR-13** Cover image extraction priority must be: JSON-LD image → `og:image` → `twitter:image` → largest `<img>` on the page.
 - **FR-14** Step images, when discoverable on the source page, must be associated with their respective steps.
+- **FR-15** URL-import error contract (concrete realisation of FR-08 for `source_type = 'url'`). The `/api/import-url` route MUST detect the empty-parse condition (`parsedRecipe.ingredients.length === 0 && parsedRecipe.steps.length === 0`) after the review pass and return `{ data: null, error: 'EMPTY_PARSE' }` with HTTP 200. Non-recoverable fetch errors (e.g. Cloudflare challenge, repeated 4xx/5xx from the origin) MUST return `{ data: null, error: 'FETCH_BLOCKED' }`. The UI MUST map both error codes to the import-failure page defined in FR-08, with `EMPTY_PARSE` carrying the message "Konnten die Seite nicht lesen — evtl. Cloudflare-Block. Manuell anlegen oder neu versuchen?" The page MUST offer the "Manuell anlegen" and "Andere URL versuchen" CTAs.
 
 ### 3.3 Recipe Import — YouTube Source
 
 - **FR-20** The YouTube importer must accept a video URL and retrieve transcript, video description, and channel metadata via the YouTube Data API v3.
 - **FR-21** The video thumbnail must be used as the recipe cover image.
-- **FR-22** Imports must fail gracefully with an actionable error message when no transcript is available.
+- **FR-22** Imports must fail gracefully with an actionable error message when no transcript is available. This is a special case of the general import-error contract in **FR-08** (no partially-populated review forms).
 
 ### 3.4 Recipe Import — Photo Source
 
@@ -94,18 +101,19 @@ This document is the project-wide functional requirements overview. Per-feature 
 ### 3.9 Recipe Detail
 
 - **FR-80** The detail page must display ingredients, steps, source, tags, prep/cook times, and cover image.
-- **FR-81** A serving counter on the detail page must dynamically scale all ingredient amounts.
-- **FR-82** Recipes flagged as non-scalable must lock the serving counter at the original yield.
+- **FR-81** A serving counter on the detail page must dynamically scale all ingredient amounts. Scope of the live sync: only the displayed serving count ("X Portionen") and the ingredient amounts MUST follow the scaler. Prep time and cook time MUST remain constant (cooking time is not linearly scalable). Individual ingredients that are inherently non-scalable MUST be displayed with the original text and amount preserved, following the same rule as the shopping list (see `07-shopping-list.md` FR-07-2): when `amount === null` OR `unit === ""` (e.g. "1 Prise Salz", "1 Stück Lorbeerblatt"), the ingredient row MUST NOT be multiplied by the scaling factor.
+- **FR-82** Recipes flagged as non-scalable (`scalable = false` at the recipe level) must lock the serving counter at the original yield. This is distinct from per-ingredient non-scalable units (FR-81), which applies item-by-item even within an otherwise scalable recipe.
 - **FR-83** Multi-section recipes (e.g. "Für die Soße" + "Für den Teig") must render their sections with separate ingredient and step lists, per `03-multi-section-recipes.md`.
 - **FR-84** A user must be able to mark/unmark a recipe as a favourite.
 - **FR-85** A user must be able to edit any recipe field after creation.
 - **FR-86** A user must be able to delete a recipe (with confirmation).
 - **FR-87** A user must be able to export a recipe as PDF (per `04-pdf-export.md`).
 - **FR-88** Recipe cards/details must adapt labels and CTAs based on `recipe_type` (Kochen / Backen / Grillen / Zubereiten), per `01-recipe-type.md`.
+- **FR-89** Source visibility (refinement of FR-80 and BR-02). The recipe source MUST be visible above the fold on the detail page, rendered directly below the recipe title and above the portion selector. The element MUST be a small, unobtrusive link (e.g. "Quelle: chefkoch.de →") that opens the original `source_value` in a new tab when `source_type` is `url`, `youtube`, or `instagram`. For `source_type = 'photo'` / `'pdf'` / `'manual'`, the element MUST still render a non-clickable label that communicates provenance (e.g. "Quelle: Foto-Import", "Quelle: rezept.pdf", "Quelle: Manuell angelegt"). Provenance is non-negotiable per BR-02 and MUST NOT be hidden behind a tab, modal, or "more details" disclosure.
 
 ### 3.10 Cook Mode
 
-- **FR-90** Cook mode must present steps one at a time with a clear focus on the current step.
+- **FR-90** Cook mode must present steps one at a time with a clear focus on the current step. When the cook-mode route is opened without a `?servings=` query parameter, the system MUST fall back to `recipe.servings` (the original yield) as the initial scaling value. No redirect to the detail page is required; cook mode is reachable directly without an explicit servings choice.
 - **FR-91** Steps with a `timerSeconds` value must show a countdown timer.
 - **FR-92** When a timer reaches zero, the system must play an audible beep.
 - **FR-93** Cook mode must hold the screen wake lock to prevent the device from sleeping while cooking.
@@ -134,10 +142,11 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **FR-133** Each authenticated user must be limited to 20 import operations per calendar day (UTC). The limit applies across all import source types (`url`, `youtube`, `photo`, `instagram`, `pdf`). When the cap is reached, the import API must return a user-actionable error message. The counter resets at midnight UTC.
 - **FR-134** User-scoped duplicate check across all source types per `09-user-scoped-duplicate-check.md`.
 - **FR-135** PDF recipe import per `10-pdf-import.md`: hybrid text + image multimodal extraction, max 10 MB / 10 pages, password-protected and short scanned PDFs supported, multi-recipe picker, no PDF retention.
+- **FR-136** Manual recipe entry per `12-manual-recipe-entry.md`: a first-class "Manuell anlegen" entry point on the home screen opens an empty review form; saved entries persist with `source_type = 'manual'`, `source_value = 'manual'` (per FR-01) and count against the daily import cap (FR-133).
 
 ## 4. Non-Functional Requirements
 
-- **NFR-01** All UI text must be in German. Code identifiers, comments, and stored canonical values that are not user-facing strings remain in English.
+- **NFR-01** All UI text must be in German. Code identifiers, comments, and stored canonical values that are not user-facing strings remain in English. This requirement explicitly covers system error pages (404, 500, 403) and network-error fallbacks (see Section 4.1).
 - **NFR-02** TypeScript strict mode is mandatory. The use of `any` is prohibited in new code.
 - **NFR-03** All API routes must conform to the `{ data, error }` response contract.
 - **NFR-04** All external API calls (Claude, YouTube, Supabase, scraping fetches) must be wrapped in `try/catch` and surface user-actionable error messages.
@@ -147,6 +156,13 @@ This document is the project-wide functional requirements overview. Per-feature 
 - **NFR-08** Full-text search must use PostgreSQL's German text search configuration (`to_tsvector('german', …)`).
 - **NFR-09** The cook mode must remain usable on touch devices held in landscape orientation at typical kitchen viewing distances.
 - **NFR-10** The serving-scale conversion must always store amounts per serving in the database to keep arithmetic deterministic.
+
+### 4.1 Error Pages
+
+- **NFR-20** All system error states — including `404` (not found), `500` (server error), `403` (forbidden / unauthorised) and the generic offline / network-error fallback — MUST render a dedicated error page in German. Placeholder strings, default framework messages, or English fallbacks are not acceptable.
+- **NFR-21** Every error page MUST contain a primary CTA "Zur Startseite" linking to the application root (`/`).
+- **NFR-22** Error pages MUST share the application's visual identity: the same typography, the same cream / neutral background, and the same header treatment as the rest of the app. Users must immediately recognise that they are still inside the Rezept-App, not on a generic platform error screen.
+- **NFR-23** Error pages MUST NOT expose stack traces, internal error codes, or environment information to end users. Diagnostic detail belongs in server logs only.
 
 ## 5. User Stories
 
@@ -176,6 +192,12 @@ This document is the project-wide functional requirements overview. Per-feature 
 
 - **US-09** *As a user, I want to share a read-only link to a recipe with a friend, so they can view it without an account.*
   Acceptance: a token-based public URL renders the recipe in read-only mode and is revocable.
+
+- **US-10** *As a home cook, I want to type a recipe in from scratch (e.g. a family recipe), so it can live in my library alongside imported ones.*
+  Acceptance: a "Manuell anlegen" entry point on the home screen opens an empty review form; on save, the recipe is persisted with `source_type = 'manual'` and `source_value = 'manual'`. See `12-manual-recipe-entry.md`.
+
+- **US-11** *As a home cook, when an import fails (Cloudflare block, empty parse, transcript missing), I want a clear error page that lets me either retry with another source or fall back to typing the recipe in, so I am never stuck.*
+  Acceptance: any failing import (per FR-08) replaces the review form with a German error page carrying a "Manuell anlegen" CTA and a source-specific retry CTA.
 
 ## 6. Out of Scope
 

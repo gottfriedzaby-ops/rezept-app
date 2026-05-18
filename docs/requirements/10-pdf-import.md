@@ -154,7 +154,11 @@ This feature adds a dedicated PDF import path that:
   - `source_title = <PDF document title metadata, if present>` (optional),
   - All other fields per FR-03 of `requirements.md`.
 - **FR-10-51** `estimateNutrition` must run on confirm, identical to all other import types (per `08-nutrition-calculation.md`).
-- **FR-10-52** The PDF cover image is **not** stored as a recipe `image_url`. PDF imports do not auto-derive a cover image; the user can attach one later via the existing edit flow. (See OQ-10-1.)
+- **FR-10-52** ~~The PDF cover image is **not** stored as a recipe `image_url`. PDF imports do not auto-derive a cover image; the user can attach one later via the existing edit flow.~~ **Superseded by FR-10-53.** OQ-10-1 is resolved: PDFs now ship with an auto-picked cover candidate and an explicit override.
+- **FR-10-53** Cover image selection (PDF imports). The review form MUST present a cover-image picker built from the rendered page images:
+  - Default (auto-pick heuristic): the first rendered page is preselected as the cover. The heuristic may be refined later (e.g. detect the page with the largest finished-dish photo via Claude), but the auto-pick must always produce a usable default so the import flow never blocks on this decision.
+  - Override: each rendered page thumbnail in the review form MUST render a "Als Cover" toggle (radio-style: exactly one page can be the cover at a time). The user may also choose "Kein Titelbild" to skip the cover, in which case `image_url` remains `null`.
+  - Persistence: on confirm, the selected page is rendered to a JPEG/PNG, uploaded to the `recipe-images` Supabase Storage bucket (per NFR-07 of `requirements.md`), and its public URL is written to `recipes.image_url`. The cover image is the only PDF-derived artefact retained after the session — all other in-memory PDF pages are still discarded per D7.
 
 ### 4.7 Duplicate check
 
@@ -367,7 +371,7 @@ No new columns are required on `recipes`.
 - **OOS-10-1** Importing more than one recipe in a single session from a multi-recipe PDF. The user must reupload (or pick again) for each additional recipe.
 - **OOS-10-2** PDFs > 10 pages or > 10 MB. Splitting a large PDF is the user's responsibility.
 - **OOS-10-3** Scanned PDFs > 5 pages. Users must use the photo import flow.
-- **OOS-10-4** Auto-deriving a cover image from the PDF (e.g. picking the first page or detecting a finished-dish photo).
+- ~~**OOS-10-4** Auto-deriving a cover image from the PDF (e.g. picking the first page or detecting a finished-dish photo).~~ **Now in scope per FR-10-53.**
 - **OOS-10-5** OCR as a separate explicit step. Image-only pages are handled by Claude's vision capability inside the multimodal call.
 - **OOS-10-6** Long-term PDF retention or "view original PDF" links from the saved recipe.
 - **OOS-10-7** Importing PDFs from URL (i.e. pasting a PDF URL). Only file uploads are supported.
@@ -379,7 +383,7 @@ No new columns are required on `recipes`.
 
 | # | Question | Impact | Owner |
 |---|---|---|---|
-| OQ-10-1 | Should the first page (or a specific page) be auto-saved as a cover image candidate that the user can opt into during review? | UX | Product |
+| ~~OQ-10-1~~ | ~~Should the first page (or a specific page) be auto-saved as a cover image candidate that the user can opt into during review?~~ **Resolved:** Auto-pick (first page) + explicit override in the review form. See FR-10-53. | UX | Product |
 | OQ-10-2 | Final choice of PDF parsing/rendering library (`pdfjs-dist` vs `pdf-parse` vs alternative). Implementation decision deferred to engineering. | Implementation | Engineering |
 | OQ-10-3 | Should the multi-recipe picker show a thumbnail of the candidate's first page? | UX | Product |
 | OQ-10-4 | Should the cleanup of `recipe-pdfs-temp` use a Supabase Storage TTL policy or a scheduled Vercel cron job? | Ops | Engineering |

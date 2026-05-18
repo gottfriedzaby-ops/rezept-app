@@ -60,6 +60,16 @@ This feature extends the photo import flow to accept **up to 6 images** in a sin
 
 ---
 
+### US-02-6 — Choose which uploaded image becomes the cover
+> Als Nutzer möchte ich im Review-Formular festlegen können, welches der hochgeladenen Bilder als Titelbild (Cover) für das Rezept verwendet wird, falls die automatische Auswahl nicht das beste Bild getroffen hat.
+
+**Acceptance criteria:**
+- The review form preselects a cover (auto-pick heuristic, see FR-02-10).
+- Each image thumbnail shows a "Als Cover" toggle; selecting it updates the preselected cover.
+- On save, the selected image URL is persisted as `recipes.image_url`.
+
+---
+
 ### US-02-5 — Send all images to Claude in one call
 > Als Nutzer möchte ich, dass alle meine Bilder gemeinsam analysiert werden, damit Claude aus dem Gesamtbild das vollständige Rezept extrahieren kann.
 
@@ -114,6 +124,13 @@ Images MUST appear in the user-specified order before the text prompt.
 
 ### FR-02-8 — Source metadata
 When multiple images are uploaded, `source_type` MUST remain `'photo'`. `source_value` MUST store the first image's filename (or a comma-separated list — see Open Questions).
+
+### FR-02-10 — Cover image selection
+When a multi-image import succeeds, the review form MUST allow the user to choose which of the uploaded images becomes the recipe's cover (`image_url`).
+- Default: an auto-pick heuristic selects the cover up front (proposed order: first image of the set, with a future refinement to prefer the largest image or a Claude-flagged "finished dish" image). The user is never forced to make the choice — the auto-pick is shown as preselected.
+- Override: each thumbnail in the review form MUST render a "Als Cover" toggle (radio-style: exactly one image can be the cover at a time). Selecting another thumbnail updates the previewed cover immediately.
+- Persistence: on confirm, the selected image's storage URL is written to `recipes.image_url`. The non-cover images are still uploaded to Supabase Storage (per FR-02-6) and remain available for future step-image association (out of scope v1, per Section 4).
+- A pflicht-selection (forced cover choice) is explicitly rejected: the auto-pick must always produce a usable default so the import flow never blocks on this decision.
 
 ### FR-02-9 — Error handling
 If one or more images fail compression, the import MUST:

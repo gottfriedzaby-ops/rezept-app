@@ -30,6 +30,7 @@ This directory contains feature requirement documents for the **Rezept-App** —
 | 09b | Library Sharing | Read-only tokenised public library sharing at `/shared/[token]` and `/library-shares/[ownerId]` | ✅ Done | [09_library_sharing.md](./09_library_sharing.md) |
 | 10 | PDF Import | Import recipes from uploaded PDF files | ✅ Done | [10-pdf-import.md](./10-pdf-import.md) |
 | 11 | Unified Library Display | Unified view combining own + shared-library recipes | ✅ Done | [11-unified-library-display.md](./11-unified-library-display.md) |
+| 12 | Manual Recipe Entry | First-class "Manuell anlegen" entry on the home screen; empty review form; `source_type='manual'` | 🔵 Draft | [12-manual-recipe-entry.md](./12-manual-recipe-entry.md) |
 
 ### Frontend Improvements (no DB migrations)
 

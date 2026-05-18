@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
+import ImportErrorPage from "@/components/ImportErrorPage";
 import { useImport } from "@/contexts/ImportContext";
 
 type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
@@ -93,8 +94,8 @@ export default function ImportUnified() {
 
   // Global import state (survives navigation)
   const {
-    phase, activeType, parseResult, error, duplicateId, duplicateTitle,
-    setPhase, setActiveType, setParseResult, setError,
+    phase, activeType, parseResult, error, errorCode, duplicateId, duplicateTitle,
+    setPhase, setActiveType, setParseResult, setError, setErrorCode,
     setDuplicateId, setDuplicateTitle, reset,
   } = useImport();
 
@@ -215,6 +216,9 @@ export default function ImportUnified() {
         setDuplicateId(json.existingRecipeId);
         setDuplicateTitle(json.existingTitle ?? null);
         setPhase("idle");
+      } else if (json.error === "EMPTY_PARSE" || json.error === "FETCH_BLOCKED") {
+        setErrorCode(json.error);
+        setPhase("error");
       } else if (json.error || !json.data) {
         setError(json.error ?? "Import fehlgeschlagen");
         setPhase("idle");
@@ -284,6 +288,16 @@ export default function ImportUnified() {
       <div className="py-4">
         <ImportProgress importType={activeType} />
       </div>
+    );
+  }
+
+  if (phase === "error" && errorCode) {
+    return (
+      <ImportErrorPage
+        sourceType={activeType ?? "url"}
+        errorCode={errorCode}
+        onRetry={handleReset}
+      />
     );
   }
 

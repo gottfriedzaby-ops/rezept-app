@@ -321,19 +321,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 403/503/429 from a CDN (Cloudflare, Akamai, …) is a bot-block, not a
-    // genuine "page missing" — surface the actionable manual-import message.
-    const BOT_BLOCK_STATUSES = new Set([403, 429, 503]);
-    const BLOCKED_MESSAGE = "Diese Website ist durch Cloudflare geschützt und kann leider nicht automatisch importiert werden. Bitte das Rezept manuell eingeben.";
-
+    // FR-15: all fetch failures (CDN bot-blocks AND genuine missing pages) map to
+    // FETCH_BLOCKED. The UI shows the same actionable error page either way.
     // Attempt 1: Googlebot UA — many sites whitelist it for SEO.
     let result = await fetchOnce(url, { "User-Agent": GOOGLEBOT_UA });
-    let sawBotBlock = BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
 
     // Attempt 2: Full Chrome headers — covers sites that just check UA + Sec-* hints.
     if (!result.html) {
       result = await fetchOnce(url, BROWSER_HEADERS);
-      sawBotBlock = sawBotBlock || BOT_BLOCK_STATUSES.has(result.status) || result.cfBlocked;
     }
 
     // Attempt 3: Jina Reader — proxies through a real headless browser, the
@@ -347,8 +342,8 @@ export async function POST(request: NextRequest) {
 
     if (!html) {
       return NextResponse.json(
-        { data: null, error: sawBotBlock ? BLOCKED_MESSAGE : "Seite konnte nicht geladen werden" },
-        { status: 400 }
+        { data: null, error: "FETCH_BLOCKED" },
+        { status: 200 }
       );
     }
 
@@ -422,6 +417,17 @@ export async function POST(request: NextRequest) {
     const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
     const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
 
+    // FR-15: empty parse → error page, never a half-empty review form.
+    // Multi-section recipes hold ingredients/steps inside `sections[]`.
+    const allIngredients = (reviewed.sections ?? []).flatMap((s) => s.ingredients);
+    const allSteps = (reviewed.sections ?? []).flatMap((s) => s.steps);
+    if (allIngredients.length === 0 && allSteps.length === 0) {
+      return NextResponse.json(
+        { data: null, error: "EMPTY_PARSE" },
+        { status: 200 }
+      );
+    }
+
     const duplicate = await findDuplicateRecipe(reviewed.title, url, rateLimit.userId!);
     if (duplicate) {
       return NextResponse.json(
@@ -435,7 +441,13 @@ export async function POST(request: NextRequest) {
       error: null,
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
-    return NextResponse.json({ data: null, error: message }, { status: 500 });
+    // FR-08: generic parser/Claude exceptions surface as EMPTY_PARSE to the user —
+    // the user-visible effect is identical ("no usable recipe extracted").
+    // Server log keeps the stack for diagnostics (NFR-23).
+    console.error("[import-url] unexpected error:", error);
+    return NextResponse.json(
+      { data: null, error: "EMPTY_PARSE" },
+      { status: 200 }
+    );
   }
 }

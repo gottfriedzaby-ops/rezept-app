@@ -92,8 +92,9 @@ describe("POST /api/import-url — request validation and error paths", () => {
     );
   });
 
-  it("returns the Cloudflare-blocked message when all fetch attempts return a bot-block status", async () => {
-    // All 3 attempts (Googlebot UA, Browser UA, Jina Reader) return 403
+  it("returns FETCH_BLOCKED (HTTP 200) when all fetch attempts return a bot-block status", async () => {
+    // FR-15: bot-block surfaces as the same actionable error page as other fetch failures.
+    // All 3 attempts (Googlebot UA, Browser UA, Jina Reader) return 403.
     global.fetch = jest
       .fn()
       .mockResolvedValue(fetchResponse(403)) as unknown as typeof fetch;
@@ -101,12 +102,14 @@ describe("POST /api/import-url — request validation and error paths", () => {
     const res = await POST(makeRequest({ url: "https://protected.example.com/recipe" }));
     const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(body.error).toMatch(/Cloudflare/);
+    expect(res.status).toBe(200);
+    expect(body.error).toBe("FETCH_BLOCKED");
+    expect(body.data).toBeNull();
   });
 
-  it("returns the generic load-failure message when fetches return a non-block error status", async () => {
-    // Status 404 — not a bot block, just a missing page. All attempts fail.
+  it("returns FETCH_BLOCKED (HTTP 200) when fetches return a non-block error status", async () => {
+    // Status 404 — not a bot block, just a missing page. Still maps to FETCH_BLOCKED
+    // because user-visible recovery is identical (manual entry or different URL).
     global.fetch = jest
       .fn()
       .mockResolvedValue(fetchResponse(404)) as unknown as typeof fetch;
@@ -114,19 +117,23 @@ describe("POST /api/import-url — request validation and error paths", () => {
     const res = await POST(makeRequest({ url: "https://example.com/missing" }));
     const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("Seite konnte nicht geladen werden");
+    expect(res.status).toBe(200);
+    expect(body.error).toBe("FETCH_BLOCKED");
+    expect(body.data).toBeNull();
   });
 
-  it("returns 500 when an unexpected error is thrown during processing", async () => {
-    // Force checkUrlDuplicate to throw
+  it("returns EMPTY_PARSE (HTTP 200) when an unexpected error is thrown during processing", async () => {
+    // FR-08: generic exceptions surface as EMPTY_PARSE to the user; stack stays in server log.
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     checkUrlDuplicateMock.mockRejectedValueOnce(new Error("unexpected DB failure"));
 
     const res = await POST(makeRequest({ url: "https://example.com/recipe" }));
     const body = await res.json();
 
-    expect(res.status).toBe(500);
-    expect(body.error).toBe("unexpected DB failure");
+    expect(res.status).toBe(200);
+    expect(body.error).toBe("EMPTY_PARSE");
+    expect(body.data).toBeNull();
+    consoleSpy.mockRestore();
   });
 
   it("does not call Claude when the URL fetch fails entirely", async () => {

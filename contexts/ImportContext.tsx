@@ -3,8 +3,10 @@
 import { createContext, useContext, useState } from "react";
 import type { ParsedRecipe } from "@/types/recipe";
 
-type Phase = "idle" | "loading" | "review" | "success";
+type Phase = "idle" | "loading" | "review" | "success" | "error";
 type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
+
+export type ImportErrorCode = "EMPTY_PARSE" | "FETCH_BLOCKED";
 
 export interface ParseResult {
   recipe: ParsedRecipe;
@@ -18,12 +20,14 @@ interface ImportState {
   activeType: ImportType | null;
   parseResult: ParseResult | null;
   error: string | null;
+  errorCode: ImportErrorCode | null;
   duplicateId: string | null;
   duplicateTitle: string | null;
   setPhase: (p: Phase) => void;
   setActiveType: (t: ImportType | null) => void;
   setParseResult: (r: ParseResult | null) => void;
   setError: (e: string | null) => void;
+  setErrorCode: (c: ImportErrorCode | null) => void;
   setDuplicateId: (id: string | null) => void;
   setDuplicateTitle: (t: string | null) => void;
   reset: () => void;
@@ -36,6 +40,7 @@ export function ImportProvider({ children }: { children: React.ReactNode }) {
   const [activeType, setActiveType] = useState<ImportType | null>(null);
   const [parseResult, setParseResult] = useState<ParseResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<ImportErrorCode | null>(null);
   const [duplicateId, setDuplicateId] = useState<string | null>(null);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
 
@@ -44,6 +49,7 @@ export function ImportProvider({ children }: { children: React.ReactNode }) {
     setActiveType(null);
     setParseResult(null);
     setError(null);
+    setErrorCode(null);
     setDuplicateId(null);
     setDuplicateTitle(null);
   }
@@ -55,12 +61,14 @@ export function ImportProvider({ children }: { children: React.ReactNode }) {
         activeType,
         parseResult,
         error,
+        errorCode,
         duplicateId,
         duplicateTitle,
         setPhase,
         setActiveType,
         setParseResult,
         setError,
+        setErrorCode,
         setDuplicateId,
         setDuplicateTitle,
         reset,

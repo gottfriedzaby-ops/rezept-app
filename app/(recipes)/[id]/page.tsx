@@ -12,7 +12,7 @@ import RecipeExportMenu from "@/components/RecipeExportMenu";
 import NutritionDisplay from "@/components/NutritionDisplay";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import { getTagColor } from "@/lib/tag-colors";
-import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
+import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
 
 export const dynamic = "force-dynamic";
@@ -33,7 +33,31 @@ export default async function RecipeDetailPage({
 
   const isOwner = user?.id === recipe.user_id;
 
-  const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
+  // FR-89: derive a compact provenance label per source type.
+  // URL/YouTube/Instagram → clickable link with domain.
+  // Photo/PDF/Manual → non-clickable label.
+  const sourceDisplay = (() => {
+    if (recipe.source_type === "url") {
+      let host = recipe.source_value;
+      try { host = new URL(recipe.source_value).hostname.replace(/^www\./, ""); } catch { /* not a parseable URL */ }
+      return { href: recipe.source_value, label: host };
+    }
+    if (recipe.source_type === "youtube") {
+      return {
+        href: `https://www.youtube.com/watch?v=${recipe.source_value}`,
+        label: "youtube.com",
+      };
+    }
+    if (recipe.source_type === "instagram") {
+      return {
+        href: `https://www.instagram.com/p/${recipe.source_value}`,
+        label: "instagram.com",
+      };
+    }
+    if (recipe.source_type === "photo") return { href: null, label: "Foto" };
+    if (recipe.source_type === "pdf") return { href: null, label: "PDF" };
+    return { href: null, label: "Manuell" };
+  })();
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -81,16 +105,22 @@ export default async function RecipeDetailPage({
           )}
         </div>
 
-        <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
-          {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
-          {recipe.cook_time ? (
-            <span>{cookTimeLabelFor(recipe.recipe_type ?? "kochen")} {recipe.cook_time} Min.</span>
-          ) : null}
-          {totalTime > 0 ? (
-            <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span>
-          ) : null}
-          {recipe.servings ? <span>{recipe.servings} Portionen</span> : null}
-        </div>
+        {/* FR-89: provenance directly under title, above the portion selector.
+            BR-02 ("Provenance non-negotiable") makes this above-the-fold. */}
+        <p className="text-sm text-ink-secondary mb-4">
+          {sourceDisplay.href ? (
+            <a
+              href={sourceDisplay.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-ink-primary transition-colors"
+            >
+              Quelle: {sourceDisplay.label} →
+            </a>
+          ) : (
+            <span>Quelle: {sourceDisplay.label}</span>
+          )}
+        </p>
 
         <div className="flex gap-1.5 flex-wrap mb-4">
           {(() => {
@@ -115,39 +145,8 @@ export default async function RecipeDetailPage({
           })}
         </div>
 
-        {recipe.source_type === "url" && (
-          <a
-            href={recipe.source_value}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
-          >
-            {(recipe.source_title ?? recipe.source_value).slice(0, 120)}
-          </a>
-        )}
-
-        {recipe.source_type === "youtube" && (
-          <a
-            href={`https://www.youtube.com/watch?v=${recipe.source_value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
-          >
-            {recipe.source_title ? `YouTube · ${recipe.source_title}` : "YouTube"}
-          </a>
-        )}
-
-        {recipe.source_type === "instagram" && (
-          <a
-            href={`https://www.instagram.com/p/${recipe.source_value}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-ink-tertiary hover:text-ink-primary transition-colors"
-          >
-            {recipe.source_title ? `Instagram · @${recipe.source_title}` : "Instagram"}
-          </a>
-        )}
-
+        {/* RecipeDetail owns the meta-row + portion-stepper because the "X Portionen" cell
+            in the meta-row syncs with the scaler state (FR-81). */}
         <RecipeDetail recipe={recipe} />
 
         <NutritionDisplay recipe={recipe} />

@@ -283,7 +283,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
               <span className={`font-medium ${showServingsWarning ? "text-amber-600" : "text-ink-primary"}`}>
                 {showServingsWarning ? "?" : currentServings}
               </span>{" "}
-              Portionen
+              {currentServings === 1 ? "Portion" : "Portionen"}
             </label>
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (

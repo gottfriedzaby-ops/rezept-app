@@ -11,11 +11,21 @@ function formatTime(s: number): string {
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 }
 
-function formatAmount(perServing: number, servings: number): string {
-  const total = perServing * servings;
-  if (total <= 0) return "";
+// FR-81 + FR-07-2: per-ingredient non-scalable rule.
+// amount=null OR unit="" → do NOT multiply by servings (e.g. "1 Prise Salz", "1 Lorbeerblatt").
+function renderIngredientAmount(
+  amount: number | null,
+  unit: string,
+  servings: number
+): string {
+  if (amount == null) return unit;
+  if (amount <= 0) return unit;
+  const scale = unit === "" ? 1 : servings;
+  const total = amount * scale;
+  if (total <= 0) return unit;
   const r = Math.round(total * 10) / 10;
-  return r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
+  const amountStr = r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
+  return unit ? `${amountStr} ${unit}` : amountStr;
 }
 
 function playBeep() {
@@ -52,6 +62,7 @@ interface IngredientRowProps {
 }
 
 function IngredientRow({ ing, checked, servings, onToggle, paddingTopClass }: IngredientRowProps) {
+  const amountText = renderIngredientAmount(ing.amount, ing.unit, servings);
   return (
     <li className={paddingTopClass}>
       <button
@@ -60,14 +71,13 @@ function IngredientRow({ ing, checked, servings, onToggle, paddingTopClass }: In
         aria-pressed={checked}
         className="w-full flex gap-4 text-sm text-left items-baseline"
       >
-        {ing.amount > 0 && (
+        {amountText && (
           <span
             className={`font-medium tabular-nums w-20 shrink-0 ${
               checked ? "line-through text-ink-tertiary" : "text-ink-primary"
             }`}
           >
-            {formatAmount(ing.amount, servings)}
-            {ing.unit ? ` ${ing.unit}` : ""}
+            {amountText}
           </span>
         )}
         <span className={`flex-1 ${checked ? "line-through text-ink-tertiary" : "text-ink-secondary"}`}>

@@ -2,15 +2,39 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { Recipe } from "@/types/recipe";
+import type { Ingredient, Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
-import { ctaLabelFor } from "@/lib/recipeTypeLabels";
+import { ctaLabelFor, cookTimeLabelFor } from "@/lib/recipeTypeLabels";
 
-function formatAmount(amountPerServing: number, servings: number): string {
-  const total = amountPerServing * servings;
-  if (total <= 0) return "";
+// FR-81 + FR-07-2: per-ingredient non-scalable rule.
+// `amount === null` (parser stored a quantity word like "Prise" without a count)
+// OR `unit === ""` (integer count like "1 Lorbeerblatt") → do NOT multiply by servings.
+// Returns the complete "amount unit" string (or just one of them); empty string means hide the cell.
+function renderIngredientAmount(
+  amount: number | null,
+  unit: string,
+  servings: number
+): string {
+  if (amount == null) return unit; // "Prise" — no numeric quantity to display
+  if (amount <= 0) return unit;
+  const scale = unit === "" ? 1 : servings;
+  const total = amount * scale;
+  if (total <= 0) return unit;
   const rounded = Math.round(total * 10) / 10;
-  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+  const amountStr = rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
+  return unit ? `${amountStr} ${unit}` : amountStr;
+}
+
+function IngredientRow({ ing, servings }: { ing: Ingredient; servings: number }) {
+  const text = renderIngredientAmount(ing.amount, ing.unit, servings);
+  return (
+    <li className="flex gap-4 text-sm">
+      {text && (
+        <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">{text}</span>
+      )}
+      <span className="text-ink-secondary">{ing.name}</span>
+    </li>
+  );
 }
 
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
@@ -20,9 +44,27 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const sections = getRecipeSections(recipe);
   const showSectionHeaders = sections.length > 1 || sections[0]?.title !== null;
   const ctaLabel = ctaLabelFor(recipe.recipe_type ?? "kochen");
+  const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
 
   return (
     <>
+      {/* Meta row — only the "X Portionen" cell syncs with the scaler (FR-81 scope).
+          Prep and cook times remain constant: cooking time is not linearly scalable. */}
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
+        {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
+        {recipe.cook_time ? (
+          <span>
+            {cookTimeLabelFor(recipe.recipe_type ?? "kochen")} {recipe.cook_time} Min.
+          </span>
+        ) : null}
+        {totalTime > 0 ? (
+          <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span>
+        ) : null}
+        <span>
+          {servings} {servings === 1 ? "Portion" : "Portionen"}
+        </span>
+      </div>
+
       {/* Servings + Cook button */}
       <div className="mt-10 pt-8 border-t border-stone">
         <div className="flex items-center justify-between mb-6">
@@ -76,15 +118,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
               )}
               <ul className="space-y-3">
                 {section.ingredients.map((ing, i) => (
-                  <li key={i} className="flex gap-4 text-sm">
-                    {ing.amount > 0 && (
-                      <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                        {formatAmount(ing.amount, servings)}
-                        {ing.unit ? ` ${ing.unit}` : ""}
-                      </span>
-                    )}
-                    <span className="text-ink-secondary">{ing.name}</span>
-                  </li>
+                  <IngredientRow key={i} ing={ing} servings={servings} />
                 ))}
               </ul>
             </div>
@@ -108,15 +142,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
             )}
             <ul className="space-y-3">
               {section.ingredients.map((ing, i) => (
-                <li key={i} className="flex gap-4 text-sm">
-                  {ing.amount > 0 && (
-                    <span className="font-medium text-ink-primary tabular-nums w-20 shrink-0">
-                      {formatAmount(ing.amount, servings)}
-                      {ing.unit ? ` ${ing.unit}` : ""}
-                    </span>
-                  )}
-                  <span className="text-ink-secondary">{ing.name}</span>
-                </li>
+                <IngredientRow key={i} ing={ing} servings={servings} />
               ))}
             </ul>
           </section>

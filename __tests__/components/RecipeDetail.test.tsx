@@ -170,6 +170,106 @@ describe("RecipeDetail — step rendering", () => {
   });
 });
 
+describe("RecipeDetail — meta-row scope (FR-81 / B5)", () => {
+  it("updates the 'X Portionen' label when the scaler changes", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 4 })} />);
+    expect(screen.getByText("4 Portionen")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    expect(screen.getByText("5 Portionen")).toBeInTheDocument();
+  });
+
+  it("does NOT mutate Vorbereitung when the scaler changes", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 4, prep_time: 10 })} />);
+    expect(screen.getByText("Vorbereitung 10 Min.")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    expect(screen.getByText("Vorbereitung 10 Min.")).toBeInTheDocument();
+  });
+
+  it("does NOT mutate Kochzeit when the scaler changes", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 4, cook_time: 30 })} />);
+    expect(screen.getByText("Kochzeit 30 Min.")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    expect(screen.getByText("Kochzeit 30 Min.")).toBeInTheDocument();
+  });
+
+  it("does NOT mutate Gesamt time when the scaler changes", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 4, prep_time: 10, cook_time: 30 })} />);
+    expect(screen.getByText("Gesamt 40 Min.")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    expect(screen.getByText("Gesamt 40 Min.")).toBeInTheDocument();
+  });
+});
+
+describe("RecipeDetail — Portion singular/plural (B6)", () => {
+  it("renders 'Portion' (singular) when scaler is at 1", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 1 })} />);
+    expect(screen.getByText("1 Portion")).toBeInTheDocument();
+    expect(screen.queryByText("1 Portionen")).not.toBeInTheDocument();
+  });
+
+  it("renders 'Portionen' (plural) when scaler is above 1", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 2 })} />);
+    expect(screen.getByText("2 Portionen")).toBeInTheDocument();
+  });
+
+  it("flips to singular when scaling down to 1", () => {
+    render(<RecipeDetail recipe={makeRecipe({ servings: 2 })} />);
+    expect(screen.getByText("2 Portionen")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Weniger Portionen"));
+    expect(screen.getByText("1 Portion")).toBeInTheDocument();
+  });
+});
+
+describe("RecipeDetail — non-scalable units (FR-81 / B8)", () => {
+  it("does NOT multiply ingredients with empty unit", () => {
+    // Mix scalable + non-scalable so the test can assert against the scalable row's change
+    // without colliding with the stepper "1"/"3" text.
+    const recipe = makeRecipe({
+      servings: 1,
+      ingredients: [
+        { amount: 100, unit: "g", name: "Tomaten" },
+        { amount: 1, unit: "", name: "Lorbeerblatt" },
+      ],
+    });
+    render(<RecipeDetail recipe={recipe} />);
+    expect(screen.getByText("100 g")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    // Scaler now at 3 → scalable row scales (300 g), non-scalable row stays at "1"
+    expect(screen.getByText("300 g")).toBeInTheDocument();
+    expect(screen.queryByText("3 Lorbeerblatt")).not.toBeInTheDocument();
+  });
+
+  it("DOES multiply ingredients with a non-empty unit (regression guard)", () => {
+    const recipe = makeRecipe({
+      servings: 1,
+      ingredients: [{ amount: 100, unit: "g", name: "Tomaten" }],
+    });
+    render(<RecipeDetail recipe={recipe} />);
+    expect(screen.getByText("100 g")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    expect(screen.getByText("200 g")).toBeInTheDocument();
+  });
+
+  it("treats amount=null (cast) as non-scalable, rendering only the unit", () => {
+    // amount=null can occur at runtime (JSONB stores null for non-numeric quantities
+    // like "Prise"). The Ingredient TS type says number, so we cast.
+    const recipe = makeRecipe({
+      servings: 1,
+      ingredients: [
+        { amount: null as unknown as number, unit: "Prise", name: "Salz" },
+      ],
+    });
+    const { container } = render(<RecipeDetail recipe={recipe} />);
+    expect(screen.getByText("Prise")).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText("Mehr Portionen"));
+    // Still "Prise" at any scale — the amount cell never shows a multiplier.
+    expect(container.textContent).toMatch(/Prise.*Salz/);
+    expect(container.textContent).not.toMatch(/2 Prise/);
+  });
+});
+
 describe("RecipeDetail — multi-section recipe", () => {
   it("renders section headers for named sections", () => {
     const recipe = makeRecipe({

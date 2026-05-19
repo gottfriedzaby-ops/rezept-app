@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
 import CookMode from "@/components/CookMode";
+import { resolveCookServings } from "@/lib/cookServings";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +22,7 @@ export default async function CookPage({
   const recipe = data as Recipe | null;
   if (!recipe) notFound();
 
-  const servings = Math.max(1, parseInt(searchParams.servings ?? "1", 10) || 1);
+  const servings = resolveCookServings(searchParams.servings, recipe.servings);
 
   return <CookMode recipe={recipe} initialServings={servings} />;
 }

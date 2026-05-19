@@ -138,5 +138,34 @@ describe("RecipeCover", () => {
       expect(title.className).toMatch(/text-3xl/);
       expect(title.className).toMatch(/sm:text-4xl/);
     });
+
+    // PR-G: chef-hat placeholder icon
+    it("renders the chef-hat placeholder icon in the card fallback", () => {
+      render(<RecipeCover imageUrl={null} title="No Image" tags={[]} />);
+      const icon = screen.getByTestId("recipe-cover-placeholder-icon");
+      expect(icon).toBeInTheDocument();
+      expect(icon.getAttribute("aria-hidden")).toBe("true");
+      expect(icon.getAttribute("class")).toMatch(/w-10 h-10/);
+    });
+
+    it("renders a larger chef-hat icon in the hero fallback", () => {
+      render(
+        <RecipeCover imageUrl={null} title="No Image" tags={[]} variant="hero" />
+      );
+      const icon = screen.getByTestId("recipe-cover-placeholder-icon");
+      expect(icon.getAttribute("class")).toMatch(/w-16 h-16/);
+      expect(icon.getAttribute("class")).toMatch(/sm:w-20 sm:h-20/);
+    });
+
+    it("does NOT render the placeholder icon when an image is present", () => {
+      render(
+        <RecipeCover
+          imageUrl="https://test.supabase.co/storage/v1/object/public/recipe-images/x.jpg"
+          title="Has Image"
+          tags={[]}
+        />
+      );
+      expect(screen.queryByTestId("recipe-cover-placeholder-icon")).toBeNull();
+    });
   });
 });

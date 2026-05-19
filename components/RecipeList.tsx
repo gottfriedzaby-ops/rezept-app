@@ -200,6 +200,7 @@ export default function RecipeList({
           </svg>
           <input
             type="search"
+            aria-label="Rezepte durchsuchen"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Suchen…"

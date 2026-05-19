@@ -41,6 +41,7 @@ export default function PrivacyToggle({ recipeId, initialIsPrivate }: Props) {
         type="button"
         role="switch"
         aria-checked={isPrivate}
+        aria-label="Rezept privat halten"
         onClick={handleToggle}
         disabled={saving}
         className={[

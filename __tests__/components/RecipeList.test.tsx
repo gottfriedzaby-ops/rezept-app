@@ -105,6 +105,13 @@ describe("RecipeList — empty state (FE-03)", () => {
     ).toBeInTheDocument();
   });
 
+  // PR-F: a11y
+  it("the search input has an accessible name", () => {
+    setSearchParams("");
+    render(<RecipeList recipes={[]} />);
+    expect(screen.getByLabelText("Rezepte durchsuchen")).toBeInTheDocument();
+  });
+
   // RL-E-02
   it("'Filter zurücksetzen' calls router.replace with no filter params", () => {
     setSearchParams("q=xxxx&fav=1&tag=pasta");

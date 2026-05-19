@@ -41,6 +41,7 @@ export default function TagMergeToggle({ initialValue }: Props) {
           type="button"
           role="switch"
           aria-checked={enabled}
+          aria-label="Geteilte Rezepte in meiner Bibliothek anzeigen"
           onClick={handleToggle}
           disabled={saving}
           className={[

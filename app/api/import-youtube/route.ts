@@ -99,8 +99,8 @@ export async function POST(request: NextRequest) {
       .filter(Boolean)
       .join("\n\n");
 
-    const { recipe: parsed } = await parseRecipeFromText(combined, "youtube", videoId);
-    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
+    const { recipe: parsed } = await parseRecipeFromText(combined, "youtube", videoId, undefined, undefined, rateLimit.userId);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, videoId, rateLimit.userId!);
     if (duplicate) {

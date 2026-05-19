@@ -6,6 +6,11 @@ import UserSettingsActions from "@/components/UserSettingsActions";
 import LibraryShareManager from "@/components/LibraryShareManager";
 import IncomingSharesManager from "@/components/IncomingSharesManager";
 import TagMergeToggle from "@/components/TagMergeToggle";
+import InvitedEmailsManager, {
+  type InvitedEmail,
+} from "@/components/admin/InvitedEmailsManager";
+import { isAdmin } from "@/lib/admin";
+import { isInviteOnlyEnabled } from "@/lib/invited-emails";
 import type { LibraryShareOutbound, LibraryShareInbound, ReshareRequest } from "@/types/library-sharing";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +20,16 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const userIsAdmin = isAdmin(user);
+  const inviteOnly = isInviteOnlyEnabled();
+
+  const { data: invitedEmailsRaw } = userIsAdmin
+    ? await supabaseAdmin
+        .from("invited_emails")
+        .select("email, invited_at, registered_at")
+        .order("invited_at", { ascending: false })
+    : { data: [] as InvitedEmail[] };
 
   const [
     { data: shares },
@@ -144,6 +159,19 @@ export default async function SettingsPage() {
           </h2>
           <ShareManager initialShares={shares ?? []} />
         </section>
+
+        {/* Admin — only rendered when the current user's email is in ADMIN_EMAILS */}
+        {userIsAdmin && (
+          <section className="mb-10">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+              Admin · Eingeladene E-Mail-Adressen
+            </h2>
+            <InvitedEmailsManager
+              initialInvites={(invitedEmailsRaw ?? []) as InvitedEmail[]}
+              inviteOnlyEnabled={inviteOnly}
+            />
+          </section>
+        )}
       </div>
     </div>
   );

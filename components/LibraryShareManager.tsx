@@ -112,9 +112,12 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
     <div className="space-y-6">
       {/* Send invitation */}
       <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
-        <p className="text-sm font-medium text-ink-primary mb-3">Einladung senden</p>
+        <label htmlFor="library-share-invite-email" className="block text-sm font-medium text-ink-primary mb-3">
+          Einladung senden
+        </label>
         <form onSubmit={handleSendInvitation} className="flex flex-col sm:flex-row gap-3">
           <input
+            id="library-share-invite-email"
             type="email"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}

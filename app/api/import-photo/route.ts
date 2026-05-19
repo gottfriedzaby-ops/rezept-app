@@ -63,8 +63,8 @@ export async function POST(request: NextRequest) {
       }
 
       const sourceValue = fileNames?.[0] ?? "photo";
-      const { recipe: parsed } = await parseRecipeFromImages(urls, sourceValue);
-      const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
+      const { recipe: parsed } = await parseRecipeFromImages(urls, sourceValue, rateLimit.userId);
+      const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
 
       const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue, rateLimit.userId!);
       if (duplicate) {
@@ -129,10 +129,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[import-photo] calling Claude vision, buffer size:", buffer.length);
     const base64 = buffer.toString("base64");
-    const { recipe: parsed } = await parseRecipeFromImage(base64, finalMediaType, fileName);
+    const { recipe: parsed } = await parseRecipeFromImage(base64, finalMediaType, fileName, rateLimit.userId);
     console.log("[import-photo] parsed title:", parsed.title);
 
-    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
     console.log("[import-photo] review complete, returning response");
 
     const duplicate = await findDuplicateRecipe(reviewed.title, fileName, rateLimit.userId!);

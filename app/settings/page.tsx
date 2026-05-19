@@ -162,15 +162,35 @@ export default async function SettingsPage() {
 
         {/* Admin — only rendered when the current user's email is in ADMIN_EMAILS */}
         {userIsAdmin && (
-          <section className="mb-10">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-              Admin · Eingeladene E-Mail-Adressen
-            </h2>
-            <InvitedEmailsManager
-              initialInvites={(invitedEmailsRaw ?? []) as InvitedEmail[]}
-              inviteOnlyEnabled={inviteOnly}
-            />
-          </section>
+          <>
+            <section className="mb-10">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+                Admin · Dashboard
+              </h2>
+              <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
+                <p className="text-sm text-ink-secondary mb-3">
+                  Nutzerstatistiken, Claude-API-Verbrauch, geschätzte Kosten und
+                  Nutzerverwaltung.
+                </p>
+                <a
+                  href="/settings/admin"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-forest hover:text-forest-deep transition-colors"
+                >
+                  Dashboard öffnen →
+                </a>
+              </div>
+            </section>
+
+            <section className="mb-10">
+              <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+                Admin · Eingeladene E-Mail-Adressen
+              </h2>
+              <InvitedEmailsManager
+                initialInvites={(invitedEmailsRaw ?? []) as InvitedEmail[]}
+                inviteOnlyEnabled={inviteOnly}
+              />
+            </section>
+          </>
         )}
       </div>
     </div>

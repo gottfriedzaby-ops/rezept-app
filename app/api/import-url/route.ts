@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
     const knownAmounts = buildKnownAmountsPreamble(richTextContent);
     const textForClaude = knownAmounts + cleanedText;
 
-    const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
+    const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined, rateLimit.userId);
 
     // AO-12-1: skip the review pass when JSON-LD is solid and the parse pass
     // produced a structurally complete recipe — saves one Claude call per
@@ -434,7 +434,7 @@ export async function POST(request: NextRequest) {
 
     const reviewed = skipDecision.skip
       ? parsed
-      : (await reviewAndImproveRecipe(parsed)).recipe;
+      : (await reviewAndImproveRecipe(parsed, rateLimit.userId)).recipe;
 
     const duplicate = await findDuplicateRecipe(reviewed.title, url, rateLimit.userId!);
     if (duplicate) {

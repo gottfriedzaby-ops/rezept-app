@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { estimateNutrition } from "@/lib/claude";
 import { getRecipeSections } from "@/types/recipe";
 import type { Recipe } from "@/types/recipe";
@@ -12,6 +13,11 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     const { data, error } = await supabaseAdmin
       .from("recipes")
       .select("*")
@@ -33,7 +39,7 @@ export async function POST(
       );
     }
 
-    const nutrition = await estimateNutrition(allIngredients, recipe.servings);
+    const nutrition = await estimateNutrition(allIngredients, recipe.servings, user?.id ?? null);
 
     const { error: updateError } = await supabaseAdmin
       .from("recipes")

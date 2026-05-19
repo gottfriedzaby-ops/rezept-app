@@ -145,7 +145,7 @@ IMPORT_DEBUG=          # optional, set to "1" to log JSON-LD + Claude's parsed s
 - ✅ Rezept-Typ-Unterscheidung (kochen / backen / grillen / zubereiten)
 - ✅ Multi-Abschnitt-Rezepte (benannte Sections mit eigenen Zutaten/Schritten)
 - ✅ PDF-Export
-- ✅ Authentifizierung (E-Mail + Google OAuth, Registrierung, Passwort-Reset, Middleware)
+- ✅ Authentifizierung (E-Mail, Registrierung, Passwort-Reset, Middleware)
 - ✅ Sharing (tokenbasierte read-only Links, widerrufbar, kein Ablaufdatum)
 - ✅ Cookidoo-Export (schema.org JSON-LD Download + Plaintext-Kopie)
 - ✅ Einkaufsliste (localStorage, Portionsskalierung, manuelle Eingabe)
@@ -158,6 +158,7 @@ IMPORT_DEBUG=          # optional, set to "1" to log JSON-LD + Claude's parsed s
 ## Was noch NICHT implementiert ist
 - Mehrsprachigkeit
 - Meal Planning
+- Google OAuth (Code-Gerüst aus Branch entfernt; Aktivierung erfordert Google-Cloud- + Supabase-Dashboard-Setup — siehe `docs/requirements/google-auth-golive.md`)
 
 ## Datenmigrations-Entscheidungen
 - Beim Rollout von Multi-User werden alle vor der Auth-Einführung importierten Rezepte gelöscht. Jeder Nutzer startet mit einer leeren Datenbank.</pre>

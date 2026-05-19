@@ -236,10 +236,12 @@ export default function CookMode({ recipe, initialServings }: Props) {
           ← Beenden
         </Link>
         <div className="text-center">
-          <p className="text-xs text-ink-tertiary uppercase tracking-widest mb-0.5 hidden sm:block truncate max-w-[240px]">
+          {/* h1 is always in the DOM for screen readers + document outline,
+              but visually shown only on sm+ where there's room. */}
+          <h1 className="text-xs text-ink-tertiary uppercase tracking-widest mb-0.5 sr-only sm:not-sr-only sm:block truncate max-w-[240px]">
             {recipe.title}
-          </p>
-          <p className="text-lg font-medium text-ink-primary tabular-nums">
+          </h1>
+          <p className="text-lg font-medium text-ink-primary tabular-nums" aria-label={`Schritt ${stepIndex + 1} von ${cookSteps.length}`}>
             {stepIndex + 1} / {cookSteps.length}
           </p>
         </div>

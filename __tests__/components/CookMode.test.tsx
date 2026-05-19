@@ -246,6 +246,12 @@ describe("CookMode — recipe title display", () => {
     render(<CookMode recipe={makeRecipe()} initialServings={2} />);
     expect(screen.getByText("Pasta")).toBeInTheDocument();
   });
+
+  it("renders the recipe title as the page's h1", () => {
+    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(heading).toHaveTextContent("Pasta");
+  });
 });
 
 // ---------------------------------------------------------------------------

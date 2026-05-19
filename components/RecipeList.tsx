@@ -143,11 +143,34 @@ export default function RecipeList({
     return result;
   }, [allRecipes, query, activeTags, showFavoritesOnly, favoriteIds, sort]);
 
+  // Tags shown in the filter bar, ranked: active tags first, then by usage
+  // count desc (alphabetical tiebreaker). Counts come from the currently
+  // filtered recipe set so the bar shrinks consistently with the result list.
   const availableTags = useMemo(() => {
-    const seen = new Set<string>(activeTags);
-    filtered.forEach((r) => r.tags.forEach((t) => seen.add(t)));
-    return Array.from(seen).sort();
+    const counts = new Map<string, number>();
+    filtered.forEach((r) =>
+      r.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1))
+    );
+    activeTags.forEach((t) => {
+      if (!counts.has(t)) counts.set(t, 0);
+    });
+    return Array.from(counts.entries())
+      .sort(([a, ca], [b, cb]) => {
+        const aActive = activeTags.has(a) ? 1 : 0;
+        const bActive = activeTags.has(b) ? 1 : 0;
+        if (aActive !== bActive) return bActive - aActive;
+        if (cb !== ca) return cb - ca;
+        return a.localeCompare(b, "de");
+      })
+      .map(([t]) => t);
   }, [filtered, activeTags]);
+
+  const [tagsExpanded, setTagsExpanded] = useState(false);
+  const COLLAPSED_TAG_COUNT = 12;
+  const visibleTags = tagsExpanded
+    ? availableTags
+    : availableTags.slice(0, COLLAPSED_TAG_COUNT);
+  const hiddenTagCount = availableTags.length - visibleTags.length;
 
   function toggleTag(tag: string) {
     updateParams((p) => {
@@ -214,7 +237,7 @@ export default function RecipeList({
           </button>
         )}
 
-        {availableTags.map((tag) => {
+        {visibleTags.map((tag) => {
             const { bg, text } = getTagColor(tag);
             const active = activeTags.has(tag);
             return (
@@ -230,6 +253,25 @@ export default function RecipeList({
               </button>
             );
           })}
+
+        {hiddenTagCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setTagsExpanded(true)}
+            className="text-xs px-3 py-1 rounded border border-dashed border-ink-tertiary text-ink-secondary hover:text-ink-primary hover:border-ink-secondary transition-colors"
+          >
+            + {hiddenTagCount} weitere
+          </button>
+        )}
+        {tagsExpanded && availableTags.length > COLLAPSED_TAG_COUNT && (
+          <button
+            type="button"
+            onClick={() => setTagsExpanded(false)}
+            className="text-xs px-3 py-1 rounded border border-dashed border-ink-tertiary text-ink-secondary hover:text-ink-primary hover:border-ink-secondary transition-colors"
+          >
+            Weniger anzeigen
+          </button>
+        )}
       </div>
 
       {/* Grid */}

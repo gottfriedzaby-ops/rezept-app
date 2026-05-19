@@ -31,6 +31,8 @@ This directory contains feature requirement documents for the **Rezept-App** —
 | 10 | PDF Import | Import recipes from uploaded PDF files | ✅ Done | [10-pdf-import.md](./10-pdf-import.md) |
 | 11 | Unified Library Display | Unified view combining own + shared-library recipes | ✅ Done | [11-unified-library-display.md](./11-unified-library-display.md) |
 | 12 | Claude API Cost Optimization | Audit of all 5 Claude call sites + prompt-caching analysis. Caching itself deferred (prefixes below 2048-tok Sonnet 4.6 minimum); AO-12-2 (Haiku 4.5 for nutrition) shipped | ◐ Partial | [12-claude-prompt-caching.md](./12-claude-prompt-caching.md) |
+| 13 | Admin Dashboard | Read-only Admin tab in `/settings` with user activity, Claude API & token usage, estimated USD cost, per-user drilldown, and user management (invite allowlist, disable, delete, password-reset) | 📝 Draft | [13-admin-dashboard.md](./13-admin-dashboard.md) |
+| 14 | Equal-Height Recipe Tiles | Per-row equal-height tiles in the library grid at ≥ `sm`, achieved by reserving heights for optional title/tag/metadata rows. CSS-only | 📝 Draft | [14-equal-height-recipe-tiles.md](./14-equal-height-recipe-tiles.md) |
 
 ### Frontend Improvements (no DB migrations)
 
@@ -92,4 +94,4 @@ Each feature doc follows this template:
 
 ---
 
-*Last updated: 2026-05-18 — 11 backend features + 10 frontend improvements shipped; Feature 12 audit doc landed with AO-12-2 (Haiku 4.5 for nutrition)*
+*Last updated: 2026-05-19 — 11 backend features + 10 frontend improvements shipped; Features 13 (Admin Dashboard) and 14 (Equal-Height Recipe Tiles) drafted*

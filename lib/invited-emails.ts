@@ -13,16 +13,24 @@ export function isInviteOnlyEnabled(): boolean {
 export async function isEmailInvited(email: string): Promise<boolean> {
   if (!isInviteOnlyEnabled()) return true;
   if (!email) return false;
-  const { data, error } = await supabaseAdmin
-    .from("invited_emails")
-    .select("email")
-    .eq("email", normalizeEmail(email))
-    .maybeSingle();
-  if (error) {
-    console.error("[invited-emails] lookup failed:", error);
+  // Fail closed: any error (table missing during a partial migration,
+  // network issue, malformed query) blocks the signup rather than allowing
+  // a random email through.
+  try {
+    const { data, error } = await supabaseAdmin
+      .from("invited_emails")
+      .select("email")
+      .eq("email", normalizeEmail(email))
+      .maybeSingle();
+    if (error) {
+      console.error("[invited-emails] lookup failed:", error);
+      return false;
+    }
+    return !!data;
+  } catch (err) {
+    console.error("[invited-emails] lookup threw:", err);
     return false;
   }
-  return !!data;
 }
 
 export async function markInvitedRegistered(email: string): Promise<void> {

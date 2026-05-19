@@ -314,3 +314,84 @@ describe("RecipeList — URL-bound filter state (FE-10)", () => {
     expect(getCardTitles()).toEqual(["Mein Favorit"]);
   });
 });
+
+describe("RecipeList — collapsible tag bar (PR-C)", () => {
+  beforeEach(() => {
+    mockReplace.mockReset();
+    setSearchParams("");
+  });
+
+  /** Build N recipes such that tag-K appears in recipes 0..K — gives tag-0
+   * the highest count and tag-(N-1) the lowest. */
+  function recipesWithRankedTags(numTags: number) {
+    return Array.from({ length: numTags }, (_, i) =>
+      makeRecipe({
+        id: `r-${i}`,
+        title: `Rezept ${i}`,
+        tags: Array.from({ length: numTags - i }, (_, k) => `tag-${k}`),
+      })
+    );
+  }
+
+  function getTagBarButton(name: string): HTMLButtonElement | undefined {
+    return screen
+      .queryAllByRole("button", { name })
+      .find((b) => b.className.includes("border")) as HTMLButtonElement | undefined;
+  }
+
+  it("collapses long tag lists to 12 + shows a '+ N weitere' affordance", () => {
+    render(<RecipeList recipes={recipesWithRankedTags(20)} />);
+
+    // tag-0..tag-11 visible
+    for (let i = 0; i < 12; i++) {
+      expect(getTagBarButton(`tag-${i}`)).toBeDefined();
+    }
+    // tag-12..tag-19 hidden
+    for (let i = 12; i < 20; i++) {
+      expect(getTagBarButton(`tag-${i}`)).toBeUndefined();
+    }
+    expect(screen.getByRole("button", { name: /\+ 8 weitere/ })).toBeInTheDocument();
+  });
+
+  it("does NOT render the '+ weitere' button when tag count is at or below 12", () => {
+    render(<RecipeList recipes={recipesWithRankedTags(12)} />);
+
+    expect(screen.queryByRole("button", { name: /weitere/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Weniger anzeigen/ })).toBeNull();
+  });
+
+  it("clicking '+ N weitere' reveals all tags and swaps to 'Weniger anzeigen'", () => {
+    render(<RecipeList recipes={recipesWithRankedTags(20)} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ 8 weitere/ }));
+
+    for (let i = 0; i < 20; i++) {
+      expect(getTagBarButton(`tag-${i}`)).toBeDefined();
+    }
+    expect(screen.getByRole("button", { name: /Weniger anzeigen/ })).toBeInTheDocument();
+  });
+
+  it("ranks tags by usage count desc — most-used appears first", () => {
+    render(<RecipeList recipes={recipesWithRankedTags(5)} />);
+
+    const tagButtons = screen
+      .getAllByRole("button")
+      .filter((b) => /^tag-\d+$/.test(b.textContent ?? ""));
+
+    expect(tagButtons.map((b) => b.textContent)).toEqual([
+      "tag-0",
+      "tag-1",
+      "tag-2",
+      "tag-3",
+      "tag-4",
+    ]);
+  });
+
+  it("always shows an active tag in the bar, even if it would fall past the cutoff", () => {
+    // tag-15 has the lowest count; without pinning it would be hidden.
+    setSearchParams("tag=tag-15");
+    render(<RecipeList recipes={recipesWithRankedTags(20)} />);
+
+    expect(getTagBarButton("tag-15")).toBeDefined();
+  });
+});

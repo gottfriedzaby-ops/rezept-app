@@ -167,14 +167,15 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
     <div className="flex flex-col gap-6">
       {/* Title */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Titel</label>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} className={fieldCls} />
+        <label htmlFor="recipe-title" className="block text-xs text-ink-tertiary mb-1.5">Titel</label>
+        <input id="recipe-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} className={fieldCls} />
       </div>
 
       {/* Description */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Beschreibung <span className="text-ink-tertiary/60">(optional)</span></label>
+        <label htmlFor="recipe-description" className="block text-xs text-ink-tertiary mb-1.5">Beschreibung <span className="text-ink-tertiary/60">(optional)</span></label>
         <textarea
+          id="recipe-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
@@ -209,10 +210,11 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
       {/* Meta */}
       <div className="grid grid-cols-3 gap-3">
         <div>
-          <label className="block text-xs text-ink-tertiary mb-1.5">
+          <label htmlFor="recipe-servings" className="block text-xs text-ink-tertiary mb-1.5">
             Portionen{showServingsWarning && <span className="text-amber-600 ml-0.5">*</span>}
           </label>
           <input
+            id="recipe-servings"
             type="number"
             value={servings}
             onChange={(e) => setServings(e.target.value)}
@@ -223,12 +225,12 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
           />
         </div>
         {[
-          { label: "Vorbereitung (Min.)", value: prepTime, set: setPrepTime },
-          { label: "Kochen (Min.)", value: cookTime, set: setCookTime },
-        ].map(({ label, value, set }) => (
-          <div key={label}>
-            <label className="block text-xs text-ink-tertiary mb-1.5">{label}</label>
-            <input type="number" value={value} onChange={(e) => set(e.target.value)} min={0} disabled={saving} className={smallCls} />
+          { id: "recipe-prep-time", label: "Vorbereitung (Min.)", value: prepTime, set: setPrepTime },
+          { id: "recipe-cook-time", label: "Kochen (Min.)", value: cookTime, set: setCookTime },
+        ].map(({ id, label, value, set }) => (
+          <div key={id}>
+            <label htmlFor={id} className="block text-xs text-ink-tertiary mb-1.5">{label}</label>
+            <input id={id} type="number" value={value} onChange={(e) => set(e.target.value)} min={0} disabled={saving} className={smallCls} />
           </div>
         ))}
       </div>
@@ -246,6 +248,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
             <div className="flex gap-2 items-center">
               <input
                 type="text"
+                aria-label={`Titel von Abschnitt ${sIdx + 1}`}
                 value={section.title}
                 onChange={(e) => setSections((prev) => prev.map((s, i) => i !== sIdx ? s : { ...s, title: e.target.value }))}
                 placeholder="Abschnitt (z.B. Für den Teig)"
@@ -288,10 +291,10 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (
                 <div key={iIdx} className="flex gap-2 items-center">
-                  <input type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder="Menge" min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <button type="button" onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={rmCls}>×</button>
+                  <input aria-label={`Menge für Zutat ${iIdx + 1}`} type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder="Menge" min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`Einheit für Zutat ${iIdx + 1}`} type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`Name für Zutat ${iIdx + 1}`} type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <button type="button" aria-label={`Zutat ${iIdx + 1} entfernen`} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={rmCls}>×</button>
                 </div>
               ))}
               <button type="button" onClick={() => addIngredient(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
@@ -307,8 +310,8 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
               {section.steps.map((step, stIdx) => (
                 <div key={stIdx} className="flex gap-2 items-start">
                   <span className="text-xs text-ink-tertiary mt-2 w-5 shrink-0 text-right tabular-nums">{stIdx + 1}.</span>
-                  <textarea value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
-                  <button type="button" onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${rmCls} mt-1.5`}>×</button>
+                  <textarea aria-label={`Schritt ${stIdx + 1}`} value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
+                  <button type="button" aria-label={`Schritt ${stIdx + 1} entfernen`} onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${rmCls} mt-1.5`}>×</button>
                 </div>
               ))}
               <button type="button" onClick={() => addStep(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
@@ -342,8 +345,8 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
 
       {/* Cover image URL */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Titelbild-URL <span className="text-ink-tertiary/60">(optional)</span></label>
-        <input type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" disabled={saving} className={fieldCls} />
+        <label htmlFor="recipe-image-url" className="block text-xs text-ink-tertiary mb-1.5">Titelbild-URL <span className="text-ink-tertiary/60">(optional)</span></label>
+        <input id="recipe-image-url" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" disabled={saving} className={fieldCls} />
       </div>
 
       {error && <p className="text-sm text-red-700">{error}</p>}

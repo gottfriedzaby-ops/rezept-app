@@ -89,6 +89,7 @@ export default function TagInput({ value, onChange, disabled, placeholder }: Pro
         <input
           ref={inputRef}
           type="text"
+          aria-label="Tags hinzufügen"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
+import { decideSkipReviewPass } from "@/lib/canSkipReviewPass";
 import type { JsonLdRecipeData } from "@/lib/claude";
 import { findDuplicateRecipe, checkUrlDuplicate } from "@/lib/duplicate-check";
 import { buildKnownAmountsPreamble, UNICODE_FRACTIONS } from "@/lib/amounts";
@@ -420,7 +421,20 @@ export async function POST(request: NextRequest) {
     const textForClaude = knownAmounts + cleanedText;
 
     const { recipe: parsed } = await parseRecipeFromText(textForClaude, "url", url, jsonLd ?? undefined, titleHint ?? undefined);
-    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed);
+
+    // AO-12-1: skip the review pass when JSON-LD is solid and the parse pass
+    // produced a structurally complete recipe — saves one Claude call per
+    // URL import. See lib/canSkipReviewPass.ts for the predicate.
+    const skipDecision = decideSkipReviewPass(parsed, jsonLd);
+    console.info("[import-url] review pass", {
+      url,
+      action: skipDecision.skip ? "skipped" : "applied",
+      reason: skipDecision.reason,
+    });
+
+    const reviewed = skipDecision.skip
+      ? parsed
+      : (await reviewAndImproveRecipe(parsed)).recipe;
 
     const duplicate = await findDuplicateRecipe(reviewed.title, url, rateLimit.userId!);
     if (duplicate) {

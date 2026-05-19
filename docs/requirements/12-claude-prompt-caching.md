@@ -229,8 +229,10 @@ P50 and P95 latency of `parseRecipeFromText`, `parseRecipeFromImage`, `parseReci
 
 These were observed during the caching audit and are noted here for future planning. None are part of this feature.
 
-### AO-12-1 — Skip review-pass when JSON-LD is present and high-quality
+### AO-12-1 — Skip review-pass when JSON-LD is present and high-quality ✅ Shipped (PR #56, 2026-05-19)
 `parseRecipeFromText` already prioritizes schema.org JSON-LD over the supplementary text when present. If the JSON-LD is complete and the parse-pass result passes a structural check (e.g. all sections have ≥1 ingredient and ≥1 step, servings is non-zero), the review-pass could be skipped entirely. This would cut one Claude call per import for the URL path — a far larger cost reduction than caching alone.
+
+**Shipped:** `lib/canSkipReviewPass.ts` exposes `decideSkipReviewPass(parsed, jsonLd)` returning `{ skip, reason }`. The URL import route logs the decision each call so cost impact is observable in Vercel logs. Skip conditions: JSON-LD has non-empty `recipeIngredient` AND non-empty `recipeInstructions`; parse-pass output has `servings > 0`, ≥1 section, every section has ≥1 non-blank ingredient and ≥1 non-blank step. Fallback path (review applied) is unchanged for any failing condition.
 
 ### AO-12-2 — Downgrade `estimateNutrition` to Haiku 4.5 ✅ Shipped (PR #48, 2026-05-18)
 Nutrition estimation is a relatively simple inference task with a short prompt. Haiku 4.5 is ~3× cheaper per input token than Sonnet 4.6 and produces acceptable accuracy for ballpark kcal/macro estimates (already disclaimed as "ca." in the UI per Feature 08). One-line model swap in `lib/claude.ts:543` — no prompt changes; the existing try/catch fallback to null nutrition preserves graceful degradation on any error.

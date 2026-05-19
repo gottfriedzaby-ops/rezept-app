@@ -140,3 +140,108 @@ describe("POST /api/import-url — request validation and error paths", () => {
     expect(reviewMock).not.toHaveBeenCalled();
   });
 });
+
+// AO-12-1: review pass skipped when JSON-LD is solid and parse output is sound
+describe("POST /api/import-url — review-pass skip (AO-12-1)", () => {
+  function htmlWithJsonLd(jsonLd: object): string {
+    return `<!doctype html><html><head><title>R</title><script type="application/ld+json">${JSON.stringify(
+      { "@type": "Recipe", ...jsonLd }
+    )}</script></head><body><h1>R</h1><p>some text</p></body></html>`;
+  }
+
+  function htmlWithoutJsonLd(): string {
+    return `<!doctype html><html><head><title>R</title></head><body><h1>R</h1><p>plain html, no schema.org data, ingredients: 200 g Tomaten. Steps: kochen.</p></body></html>`;
+  }
+
+  function structurallySoundParse() {
+    return {
+      recipe: {
+        title: "Tomatensoße",
+        servings: 4,
+        prepTime: 10,
+        cookTime: 30,
+        recipe_type: "kochen",
+        sections: [
+          {
+            title: null,
+            ingredients: [{ amount: 50, unit: "g", name: "Tomaten" }],
+            steps: [{ order: 1, text: "Kochen.", timerSeconds: null }],
+          },
+        ],
+        tags: ["einfach"],
+        source: { type: "url", value: "https://example.com/recipe" },
+      },
+      meta: {},
+    };
+  }
+
+  it("skips the review pass when JSON-LD has ingredients + instructions and parse pass is sound", async () => {
+    const jsonLd = {
+      name: "Tomatensoße",
+      recipeIngredient: ["200 g Tomaten", "1 Zwiebel"],
+      recipeInstructions: [{ "@type": "HowToStep", text: "Kochen." }],
+      recipeYield: "4",
+    };
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(fetchResponse(200, htmlWithJsonLd(jsonLd))) as unknown as typeof fetch;
+    parseRecipeMock.mockResolvedValueOnce(structurallySoundParse());
+
+    const res = await POST(makeRequest({ url: "https://example.com/recipe" }));
+
+    expect(res.status).toBe(200);
+    expect(parseRecipeMock).toHaveBeenCalledTimes(1);
+    expect(reviewMock).not.toHaveBeenCalled();
+  });
+
+  it("still runs the review pass when JSON-LD is absent (HTML-only source)", async () => {
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(fetchResponse(200, htmlWithoutJsonLd())) as unknown as typeof fetch;
+    parseRecipeMock.mockResolvedValueOnce(structurallySoundParse());
+    reviewMock.mockResolvedValueOnce(structurallySoundParse());
+
+    const res = await POST(makeRequest({ url: "https://example.com/recipe" }));
+
+    expect(res.status).toBe(200);
+    expect(parseRecipeMock).toHaveBeenCalledTimes(1);
+    expect(reviewMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still runs the review pass when JSON-LD is missing recipeInstructions", async () => {
+    const jsonLd = {
+      name: "Tomatensoße",
+      recipeIngredient: ["200 g Tomaten"],
+      // recipeInstructions intentionally absent
+      recipeYield: "4",
+    };
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(fetchResponse(200, htmlWithJsonLd(jsonLd))) as unknown as typeof fetch;
+    parseRecipeMock.mockResolvedValueOnce(structurallySoundParse());
+    reviewMock.mockResolvedValueOnce(structurallySoundParse());
+
+    await POST(makeRequest({ url: "https://example.com/recipe" }));
+
+    expect(reviewMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("still runs the review pass when parse-pass returns a section with no ingredients", async () => {
+    const jsonLd = {
+      recipeIngredient: ["X"],
+      recipeInstructions: [{ text: "Y" }],
+      recipeYield: "4",
+    };
+    global.fetch = jest
+      .fn()
+      .mockResolvedValue(fetchResponse(200, htmlWithJsonLd(jsonLd))) as unknown as typeof fetch;
+    const broken = structurallySoundParse();
+    broken.recipe.sections[0].ingredients = [];
+    parseRecipeMock.mockResolvedValueOnce(broken);
+    reviewMock.mockResolvedValueOnce(structurallySoundParse());
+
+    await POST(makeRequest({ url: "https://example.com/recipe" }));
+
+    expect(reviewMock).toHaveBeenCalledTimes(1);
+  });
+});

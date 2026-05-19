@@ -59,9 +59,23 @@ beforeEach(() => {
   signUp.mockReset();
   signInWithOAuth.mockReset();
   mockSearchParams.mockReturnValue(new URLSearchParams(""));
-  // Component fetches invitation metadata in a useEffect when ?invitation= is set.
-  // jsdom has no fetch — stub it to reject so the component falls through quietly.
-  global.fetch = jest.fn().mockRejectedValue(new Error("no network")) as unknown as typeof fetch;
+  // The component fetches in two situations:
+  //   1. Invitation metadata via useEffect when ?invitation= is set
+  //   2. The /api/auth/preflight-register endpoint before signUp
+  // Default: preflight allows registration; invitation lookup falls through.
+  global.fetch = jest.fn().mockImplementation((input: string | URL | Request) => {
+    const url = typeof input === "string" ? input : input.toString();
+    if (url.includes("/api/auth/preflight-register")) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ data: { allowed: true }, error: null }),
+      });
+    }
+    return Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+  }) as unknown as typeof fetch;
 });
 
 describe("RegisterForm (register page)", () => {

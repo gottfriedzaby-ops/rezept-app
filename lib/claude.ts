@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Ingredient, ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
+import { logClaudeCall, truncateError } from "@/lib/claude-api-tracking";
 
 export interface ClaudeCallMeta {
   timestamp: string;
@@ -8,6 +9,8 @@ export interface ClaudeCallMeta {
   model: string;
   inputTokens: number;
   outputTokens: number;
+  cacheReadInputTokens?: number;
+  cacheCreationInputTokens?: number;
   durationMs: number;
   status: "success" | "error";
   error?: string;
@@ -61,19 +64,25 @@ function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.Message
 
 async function claudeCreate(
   functionName: ClaudeFunctionName,
-  params: Parameters<typeof client.messages.create>[0]
+  params: Parameters<typeof client.messages.create>[0],
+  userId: string | null = null,
 ): Promise<{ message: Anthropic.Message; meta: ClaudeCallMeta }> {
   const start = Date.now();
   try {
     const message = (await client.messages.create(params)) as Anthropic.Message;
+    const durationMs = Date.now() - start;
     const resultBlock = message.content[0];
+    const cacheRead = message.usage.cache_read_input_tokens ?? null;
+    const cacheCreation = message.usage.cache_creation_input_tokens ?? null;
     const meta: ClaudeCallMeta = {
       timestamp: new Date().toISOString(),
       function: functionName,
       model: params.model,
       inputTokens: message.usage.input_tokens,
       outputTokens: message.usage.output_tokens,
-      durationMs: Date.now() - start,
+      cacheReadInputTokens: cacheRead ?? undefined,
+      cacheCreationInputTokens: cacheCreation ?? undefined,
+      durationMs,
       status: "success",
       prompt: {
         system: typeof params.system === "string" ? params.system : undefined,
@@ -81,13 +90,39 @@ async function claudeCreate(
       },
       result: resultBlock?.type === "text" ? resultBlock.text : undefined,
     };
+    logClaudeCall({
+      user_id: userId,
+      function: functionName,
+      model: params.model,
+      input_tokens: message.usage.input_tokens,
+      output_tokens: message.usage.output_tokens,
+      cache_read_tokens: cacheRead,
+      cache_creation_tokens: cacheCreation,
+      duration_ms: durationMs,
+      status: "success",
+      error_message: null,
+    });
     return { message, meta };
   } catch (err) {
+    const durationMs = Date.now() - start;
+    const errMessage = err instanceof Error ? err.message : String(err);
     console.error("[Claude API error]", {
       function: functionName,
       model: params.model,
-      durationMs: Date.now() - start,
-      error: err instanceof Error ? err.message : String(err),
+      durationMs,
+      error: errMessage,
+    });
+    logClaudeCall({
+      user_id: userId,
+      function: functionName,
+      model: params.model,
+      input_tokens: 0,
+      output_tokens: 0,
+      cache_read_tokens: null,
+      cache_creation_tokens: null,
+      duration_ms: durationMs,
+      status: "error",
+      error_message: truncateError(errMessage),
     });
     throw err;
   }
@@ -251,18 +286,25 @@ Review checklist:
 7. FINAL STEP — Translation into German: Translate ALL text fields (title, ingredient names, step texts) into German. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon (e.g. use "große Schüssel" not "Teigtonne", "Pfanne" not "Sautoir", "Topf" not "Marmite"). STRICT RULES for this step: (a) translate only — do NOT add, remove, merge, or split any ingredient; the ingredient count after translation must be identical to before; (b) do NOT change any amount or unit during translation; (c) if the recipe is already in German, skip this step entirely and return it unchanged.
 `.trim();
 
-export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
-  const { message, meta } = await claudeCreate("reviewAndImproveRecipe", {
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    system: REVIEW_SYSTEM,
-    messages: [
-      {
-        role: "user",
-        content: `Review and improve this recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRecipe to review:\n${JSON.stringify(recipe, null, 2)}`,
-      },
-    ],
-  });
+export async function reviewAndImproveRecipe(
+  recipe: ParsedRecipe,
+  userId: string | null = null,
+): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
+  const { message, meta } = await claudeCreate(
+    "reviewAndImproveRecipe",
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      system: REVIEW_SYSTEM,
+      messages: [
+        {
+          role: "user",
+          content: `Review and improve this recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRecipe to review:\n${JSON.stringify(recipe, null, 2)}`,
+        },
+      ],
+    },
+    userId,
+  );
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
@@ -331,7 +373,8 @@ export async function reviewAndImproveRecipe(recipe: ParsedRecipe): Promise<{ re
 
 export async function parseRecipeFromImages(
   imageUrls: string[],
-  sourceValue: string
+  sourceValue: string,
+  userId: string | null = null,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const multi = imageUrls.length > 1;
   const content = [
@@ -345,11 +388,15 @@ export async function parseRecipeFromImages(
     },
   ];
 
-  const { message, meta } = await claudeCreate("parseRecipeFromImages", {
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    messages: [{ role: "user", content }],
-  });
+  const { message, meta } = await claudeCreate(
+    "parseRecipeFromImages",
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      messages: [{ role: "user", content }],
+    },
+    userId,
+  );
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
@@ -370,27 +417,32 @@ export async function parseRecipeFromImages(
 export async function parseRecipeFromImage(
   base64: string,
   mediaType: ImageMediaType,
-  sourceValue: string
+  sourceValue: string,
+  userId: string | null = null,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
-  const { message, meta } = await claudeCreate("parseRecipeFromImage", {
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: { type: "base64", media_type: mediaType, data: base64 },
-          },
-          {
-            type: "text",
-            text: `Read all recipe text visible in this image and extract the recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
-          },
-        ],
-      },
-    ],
-  });
+  const { message, meta } = await claudeCreate(
+    "parseRecipeFromImage",
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "image",
+              source: { type: "base64", media_type: mediaType, data: base64 },
+            },
+            {
+              type: "text",
+              text: `Read all recipe text visible in this image and extract the recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
+            },
+          ],
+        },
+      ],
+    },
+    userId,
+  );
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
@@ -413,7 +465,8 @@ export async function parseRecipeFromText(
   sourceType: SourceType,
   sourceValue: string,
   jsonLd?: JsonLdRecipeData,
-  titleHint?: string
+  titleHint?: string,
+  userId: string | null = null,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   let content: string;
 
@@ -451,11 +504,15 @@ export async function parseRecipeFromText(
       `Text:\n${text.slice(0, 15000)}`;
   }
 
-  const { message, meta } = await claudeCreate("parseRecipeFromText", {
-    model: "claude-sonnet-4-6",
-    max_tokens: 4096,
-    messages: [{ role: "user", content }],
-  });
+  const { message, meta } = await claudeCreate(
+    "parseRecipeFromText",
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      messages: [{ role: "user", content }],
+    },
+    userId,
+  );
 
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
@@ -520,7 +577,8 @@ export interface NutritionEstimate {
 
 export async function estimateNutrition(
   ingredients: Ingredient[],
-  servings: number
+  servings: number,
+  userId: string | null = null,
 ): Promise<NutritionEstimate> {
   const ingredientList = ingredients
     .map((ing) =>
@@ -539,11 +597,15 @@ export async function estimateNutrition(
     `Round all values to the nearest integer. If an ingredient's contribution is unknown, approximate it as 0.`;
 
   try {
-    const { message } = await claudeCreate("estimateNutrition", {
-      model: "claude-haiku-4-5",
-      max_tokens: 256,
-      messages: [{ role: "user", content: prompt }],
-    });
+    const { message } = await claudeCreate(
+      "estimateNutrition",
+      {
+        model: "claude-haiku-4-5",
+        max_tokens: 256,
+        messages: [{ role: "user", content: prompt }],
+      },
+      userId,
+    );
 
     const block = message.content[0];
     if (block.type !== "text") return { kcal_per_serving: null, protein_g: null, carbs_g: null, fat_g: null };

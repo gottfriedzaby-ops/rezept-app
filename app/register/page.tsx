@@ -60,6 +60,32 @@ function RegisterForm() {
     setFormState("loading");
     const origin = window.location.origin;
 
+    // Invite-only gate: ask the server whether this email is on the allowlist
+    // before we hit Supabase. Skipped server-side when INVITE_ONLY_REGISTRATION
+    // is "false", so the response is always allowed in that mode.
+    try {
+      const preflight = await fetch("/api/auth/preflight-register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      const preflightJson = await preflight.json().catch(() => ({}));
+      if (!preflight.ok) {
+        setError(
+          (preflightJson?.error as string | undefined) ??
+            "Registrierung derzeit nicht möglich. Bitte später erneut versuchen.",
+        );
+        setFormState("idle");
+        return;
+      }
+    } catch {
+      setError(
+        "Registrierung derzeit nicht möglich. Bitte später erneut versuchen.",
+      );
+      setFormState("idle");
+      return;
+    }
+
     const callbackUrl = invitationToken
       ? `${origin}/auth/callback?invitation=${invitationToken}`
       : `${origin}/auth/callback`;

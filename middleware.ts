@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdmin } from "@/lib/admin";
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -32,13 +33,28 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
+  // Gate /api/admin/* — admins only. Returns JSON 403, not a redirect, so
+  // fetch() callers see a clean error. Service-role queries inside the route
+  // bypass RLS, so this middleware gate is the only authorisation barrier.
+  if (pathname.startsWith("/api/admin")) {
+    if (!user || !isAdmin(user)) {
+      return NextResponse.json(
+        { data: null, error: "Forbidden" },
+        { status: 403 },
+      );
+    }
+    return supabaseResponse;
+  }
+
   const isPublic =
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/auth") ||
     pathname.startsWith("/shared") ||
     // Public: invitation token lookup (GET only — claim enforces auth internally)
-    pathname.startsWith("/api/library-shares/invitation");
+    pathname.startsWith("/api/library-shares/invitation") ||
+    // Public: registration preflight (anonymous visitors must reach this)
+    pathname === "/api/auth/preflight-register";
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

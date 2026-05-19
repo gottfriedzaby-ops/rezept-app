@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
     // import always succeeds regardless of Claude availability.
     if (saved?.id && recipe.servings > 0 && allIngredients.length > 0) {
       try {
-        const nutrition = await estimateNutrition(allIngredients, recipe.servings);
+        const nutrition = await estimateNutrition(allIngredients, recipe.servings, user?.id ?? null);
         if (nutrition.kcal_per_serving !== null) {
           const { error: nutritionUpdateError } = await supabaseAdmin
             .from("recipes")

@@ -6,6 +6,14 @@ jest.mock("@/lib/supabase", () => ({
   supabaseAdmin: { from: jest.fn() },
 }));
 
+jest.mock("@/lib/supabase/server", () => ({
+  createSupabaseServerClient: jest.fn().mockResolvedValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user" } } }),
+    },
+  }),
+}));
+
 jest.mock("@/lib/claude", () => ({
   estimateNutrition: jest.fn(),
 }));

@@ -8,6 +8,10 @@ jest.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: jest.fn(),
 }));
 
+jest.mock("@/lib/invited-emails", () => ({
+  markInvitedRegistered: jest.fn().mockResolvedValue(undefined),
+}));
+
 import { GET } from "@/app/auth/callback/route";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -40,6 +44,8 @@ beforeEach(() => {
   fromMock.mockReset();
   exchangeMock.mockReset();
   getUserMock.mockReset();
+  // Default: callback paths that don't otherwise set a user receive `null`.
+  getUserMock.mockResolvedValue({ data: { user: null } });
   createServerClientMock.mockResolvedValue({
     auth: {
       exchangeCodeForSession: exchangeMock,

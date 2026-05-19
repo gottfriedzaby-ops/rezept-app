@@ -349,7 +349,7 @@ export default function RecipeList({
                 )}
                 <Link
                   href={cardHref}
-                  className="group block border border-stone rounded overflow-hidden bg-white hover:border-ink-tertiary transition-colors"
+                  className="group flex flex-col h-full border border-stone rounded overflow-hidden bg-white hover:border-ink-tertiary transition-colors"
                 >
                   <RecipeCover
                     imageUrl={recipe.image_url}
@@ -357,36 +357,42 @@ export default function RecipeList({
                     tags={recipe.tags}
                     variant="card"
                   />
-                  <div className="p-4">
-                    <h3 className="font-serif font-medium text-ink-primary text-lg leading-tight tracking-[-0.01em] group-hover:text-forest transition-colors line-clamp-2">
+                  <div className="flex flex-col flex-1 p-4">
+                    <h3
+                      title={recipe.title}
+                      className="font-serif font-medium text-ink-primary text-lg leading-tight tracking-[-0.01em] group-hover:text-forest transition-colors line-clamp-2 min-h-[2.8125rem]"
+                    >
                       {recipe.title}
                     </h3>
-                    {recipe.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 mt-2.5">
-                        {recipe.tags.slice(0, 3).map((tag) => {
-                          const { bg, text } = getTagColor(tag);
-                          return (
-                            <span
-                              key={tag}
-                              style={{ backgroundColor: bg, color: text }}
-                              className="text-xs px-2 py-0.5 rounded"
-                            >
-                              {tag}
-                            </span>
-                          );
-                        })}
-                      </div>
-                    )}
-                    {(totalTime > 0 || recipe.servings) && (
-                      <p className="text-xs text-ink-tertiary mt-3">
-                        {[
-                          totalTime > 0 ? `${totalTime} Min.` : null,
-                          recipe.servings ? `${recipe.servings} Portionen` : null,
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    )}
+                    <div
+                      aria-hidden={recipe.tags.length === 0 || undefined}
+                      className="flex flex-wrap gap-1.5 mt-2.5 min-h-[1.25rem]"
+                    >
+                      {recipe.tags.slice(0, 3).map((tag) => {
+                        const { bg, text } = getTagColor(tag);
+                        return (
+                          <span
+                            key={tag}
+                            style={{ backgroundColor: bg, color: text }}
+                            className="text-xs px-2 py-0.5 rounded"
+                          >
+                            {tag}
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <div className="flex-1" aria-hidden="true" />
+                    <p
+                      aria-hidden={totalTime > 0 || recipe.servings ? undefined : true}
+                      className="text-xs text-ink-tertiary mt-3 min-h-[1rem]"
+                    >
+                      {[
+                        totalTime > 0 ? `${totalTime} Min.` : null,
+                        recipe.servings ? `${recipe.servings} Portionen` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
                   </div>
                 </Link>
               </li>

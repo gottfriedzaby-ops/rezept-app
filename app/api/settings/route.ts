@@ -11,18 +11,35 @@ export async function GET() {
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ data: null, error: "Unauthorized" }, { status: 401 });
 
-  const { data, error } = await supabaseAdmin
+  // Select first, insert defaults only if missing. Avoids the
+  // upsert+ignoreDuplicates+.single() combination, which returns zero rows on
+  // every subsequent call (because the conflict is silently ignored) and then
+  // .single() throws.
+  const { data: existing, error: selectError } = await supabaseAdmin
     .from("user_settings")
-    .upsert(
-      { user_id: user.id, show_shared_in_main_library: true },
-      { onConflict: "user_id", ignoreDuplicates: true }
-    )
+    .select()
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (selectError) {
+    console.error("[api/settings] GET select failed:", selectError);
+    return NextResponse.json({ data: null, error: selectError.message }, { status: 500 });
+  }
+
+  if (existing) return NextResponse.json({ data: existing, error: null });
+
+  const { data: created, error: insertError } = await supabaseAdmin
+    .from("user_settings")
+    .insert({ user_id: user.id, show_shared_in_main_library: true })
     .select()
     .single();
 
-  if (error) return NextResponse.json({ data: null, error: error.message }, { status: 500 });
+  if (insertError) {
+    console.error("[api/settings] GET insert failed:", insertError);
+    return NextResponse.json({ data: null, error: insertError.message }, { status: 500 });
+  }
 
-  return NextResponse.json({ data, error: null });
+  return NextResponse.json({ data: created, error: null });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -49,7 +66,10 @@ export async function PATCH(request: NextRequest) {
     .select()
     .single();
 
-  if (error) return NextResponse.json({ data: null, error: error.message }, { status: 500 });
+  if (error) {
+    console.error("[api/settings] PATCH upsert failed:", error);
+    return NextResponse.json({ data: null, error: error.message }, { status: 500 });
+  }
 
   return NextResponse.json({ data, error: null });
 }

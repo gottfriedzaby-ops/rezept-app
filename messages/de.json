@@ -41,7 +41,12 @@
     "resetFilters": "Filter zurücksetzen",
     "sharedBy": "Geteilt von {name}",
     "totalTime": "{time} Min.",
-    "portionen": "{count} Portionen"
+    "portionen": "{count} Portionen",
+    "pageTitle": "Meine Rezepte",
+    "importSection": "Rezept importieren",
+    "allRecipesSection": "Alle Rezepte",
+    "emptyState": "Noch keine Rezepte. Importiere das erste!",
+    "unknownOwner": "Unbekannt"
   },
   "RecipeDetail": {
     "servings": "Portionen",

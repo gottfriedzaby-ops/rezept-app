@@ -41,7 +41,12 @@
     "resetFilters": "Filters resetten",
     "sharedBy": "Gedeeld door {name}",
     "totalTime": "{time} min.",
-    "portionen": "{count} porties"
+    "portionen": "{count} porties",
+    "pageTitle": "Mijn recepten",
+    "importSection": "Recept importeren",
+    "allRecipesSection": "Alle recepten",
+    "emptyState": "Nog geen recepten. Importeer het eerste!",
+    "unknownOwner": "Onbekend"
   },
   "RecipeDetail": {
     "servings": "Porties",

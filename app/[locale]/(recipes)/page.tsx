@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import type { Recipe } from "@/types/recipe";
@@ -9,6 +10,7 @@ import UserNav from "@/components/UserNav";
 export const dynamic = "force-dynamic";
 
 export default async function RecipesPage() {
+  const t = await getTranslations("RecipeList");
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -61,7 +63,7 @@ export default async function RecipesPage() {
           const name =
             (data.user?.user_metadata?.full_name as string) ||
             data.user?.email ||
-            "Unbekannt";
+            t("unknownOwner");
           ownerNames.set(ownerId, name);
         })
       );
@@ -69,7 +71,7 @@ export default async function RecipesPage() {
       if (showSharedInMainLibrary) {
         sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({
           ...r,
-          _ownerName: ownerNames.get(r.user_id ?? "") ?? "Unbekannt",
+          _ownerName: ownerNames.get(r.user_id ?? "") ?? t("unknownOwner"),
         }));
       }
     }
@@ -81,23 +83,23 @@ export default async function RecipesPage() {
 
         <header className="mb-12 sm:mb-16 flex items-center justify-between gap-3">
           <h1 className="font-serif text-4xl sm:text-5xl font-medium text-ink-primary tracking-[-0.02em] leading-tight">
-            Meine Rezepte
+            {t("pageTitle")}
           </h1>
           <UserNav />
         </header>
 
         <section className="mb-16">
-          <p className="label-overline mb-8">Rezept importieren</p>
+          <p className="label-overline mb-8">{t("importSection")}</p>
           <div className="max-w-lg">
             <ImportTabs />
           </div>
         </section>
 
         <section>
-          <p className="label-overline mb-8">Alle Rezepte</p>
+          <p className="label-overline mb-8">{t("allRecipesSection")}</p>
           {!recipes || recipes.length === 0 ? (
             <p className="text-ink-secondary">
-              Noch keine Rezepte. Importiere das erste!
+              {t("emptyState")}
             </p>
           ) : (
             <Suspense fallback={null}>

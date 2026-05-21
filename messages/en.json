@@ -41,7 +41,12 @@
     "resetFilters": "Reset filters",
     "sharedBy": "Shared by {name}",
     "totalTime": "{time} min.",
-    "portionen": "{count} servings"
+    "portionen": "{count} servings",
+    "pageTitle": "My Recipes",
+    "importSection": "Import recipe",
+    "allRecipesSection": "All Recipes",
+    "emptyState": "No recipes yet. Import the first one!",
+    "unknownOwner": "Unknown"
   },
   "RecipeDetail": {
     "servings": "Servings",

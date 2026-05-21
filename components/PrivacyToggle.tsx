@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   recipeId: string;
@@ -8,13 +9,14 @@ interface Props {
 }
 
 export default function PrivacyToggle({ recipeId, initialIsPrivate }: Props) {
+  const t = useTranslations("Settings");
   const [isPrivate, setIsPrivate] = useState(initialIsPrivate);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleToggle() {
     const next = !isPrivate;
-    setIsPrivate(next); // optimistic
+    setIsPrivate(next);
     setSaving(true);
     setError(null);
     try {
@@ -24,12 +26,12 @@ export default function PrivacyToggle({ recipeId, initialIsPrivate }: Props) {
         body: JSON.stringify({ is_private: next }),
       });
       if (!res.ok) {
-        setIsPrivate(!next); // revert
-        setError("Konnte nicht gespeichert werden.");
+        setIsPrivate(!next);
+        setError(t("saveFailed"));
       }
     } catch {
       setIsPrivate(!next);
-      setError("Konnte nicht gespeichert werden.");
+      setError(t("saveFailed"));
     } finally {
       setSaving(false);
     }
@@ -41,7 +43,7 @@ export default function PrivacyToggle({ recipeId, initialIsPrivate }: Props) {
         type="button"
         role="switch"
         aria-checked={isPrivate}
-        aria-label="Rezept privat halten"
+        aria-label={t("togglePrivateLabel")}
         onClick={handleToggle}
         disabled={saving}
         className={[
@@ -57,7 +59,7 @@ export default function PrivacyToggle({ recipeId, initialIsPrivate }: Props) {
         />
       </button>
       <span className="text-sm text-ink-secondary">
-        {isPrivate ? "Privat (nicht geteilt)" : "Öffentlich (für Eingeladene sichtbar)"}
+        {isPrivate ? t("recipePrivate") : t("recipePublic")}
       </span>
       {error && <span className="text-xs text-red-600">{error}</span>}
     </div>

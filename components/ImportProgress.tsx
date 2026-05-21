@@ -1,23 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTranslations } from "next-intl";
 
 type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
-
-const FIRST_STAGE: Record<ImportType, string> = {
-  url: "Website wird abgerufen…",
-  youtube: "Transkript wird abgerufen…",
-  photo: "Foto wird verarbeitet…",
-  instagram: "Caption wird abgerufen…",
-  pdf: "PDF wird verarbeitet…",
-};
-
-const LATER_STAGES = [
-  "Inhalt wird extrahiert…",
-  "Rezept wird strukturiert…",
-  "Qualitätsprüfung läuft…",
-  "Fast fertig…",
-];
 
 // ms after mount to advance to stage 1, 2, 3, 4
 const STAGE_DELAYS = [1000, 4000, 8000, 20000];
@@ -28,6 +14,7 @@ interface Props {
 }
 
 export default function ImportProgress({ importType }: Props) {
+  const t = useTranslations("Import");
   const [activeStage, setActiveStage] = useState(0);
   const [overdue, setOverdue] = useState(false);
 
@@ -42,7 +29,21 @@ export default function ImportProgress({ importType }: Props) {
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const stages = [FIRST_STAGE[importType], ...LATER_STAGES];
+  const firstStageKeys: Record<ImportType, string> = {
+    url: t("progressUrl"),
+    youtube: t("progressYoutube"),
+    photo: t("progressPhoto"),
+    instagram: t("progressInstagram"),
+    pdf: t("progressPdf"),
+  };
+
+  const stages = [
+    firstStageKeys[importType],
+    t("progressExtract"),
+    t("progressStructure"),
+    t("progressQuality"),
+    t("progressAlmost"),
+  ];
 
   return (
     <div className="flex flex-col gap-3 py-2">
@@ -89,7 +90,7 @@ export default function ImportProgress({ importType }: Props) {
 
       {overdue && (
         <p className="text-xs text-ink-tertiary mt-1 animate-pulse pl-7">
-          Dauert etwas länger als gewohnt… noch einen Moment
+          {t("progressOverdue")}
         </p>
       )}
     </div>

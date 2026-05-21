@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { addRecipeItems } from "@/lib/shopping-list";
@@ -10,6 +11,8 @@ interface AddToShoppingListButtonProps {
 }
 
 export default function AddToShoppingListButton({ recipe }: AddToShoppingListButtonProps) {
+  const t = useTranslations("ShoppingList");
+  const tCommon = useTranslations("Common");
   const defaultServings = recipe.servings ?? 1;
   const [modalOpen, setModalOpen] = useState(false);
   const [desiredServings, setDesiredServings] = useState(defaultServings);
@@ -21,7 +24,6 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
 
   function getPreviewText(): string {
     if (!firstIngredient) return "";
-    // Amounts are stored per portion; total = amount * desired servings.
     const scaled =
       firstIngredient.amount > 0
         ? Math.round(firstIngredient.amount * desiredServings * 10) / 10
@@ -30,7 +32,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
     if (scaled != null && scaled > 0) parts.push(String(scaled));
     if (firstIngredient.unit) parts.push(firstIngredient.unit);
     parts.push(firstIngredient.name);
-    return `z.B. ${parts.join(" ")}`;
+    return `${t("previewExample")} ${parts.join(" ")}`;
   }
 
   function handleOpen() {
@@ -45,7 +47,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
       desiredServings
     );
     setModalOpen(false);
-    setToastMessage(`${count} Zutaten zur Einkaufsliste hinzugefügt`);
+    setToastMessage(t("addedToast", { count }));
     setTimeout(() => setToastMessage(null), 3000);
   }
 
@@ -71,7 +73,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
             d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
           />
         </svg>
-        Zur Einkaufsliste
+        {t("addToList")}
       </button>
 
       {modalOpen && (
@@ -82,7 +84,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
           />
           <div className="relative bg-white rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4">
             <h2 className="font-serif text-lg font-medium text-ink-primary mb-5">
-              Zur Einkaufsliste hinzufügen
+              {t("modalTitle")}
             </h2>
 
             <div className="mb-4">
@@ -90,14 +92,14 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
                 htmlFor="servings-input"
                 className="block text-sm font-medium text-ink-secondary mb-2"
               >
-                Portionen
+                {t("servingsLabel")}
               </label>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setDesiredServings((v) => Math.max(1, v - 1))}
                   className="w-9 h-9 flex items-center justify-center rounded border border-stone text-ink-secondary hover:bg-surface-hover transition-colors text-lg leading-none"
-                  aria-label="Portionen verringern"
+                  aria-label={t("decreaseServings")}
                 >
                   −
                 </button>
@@ -117,7 +119,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
                   type="button"
                   onClick={() => setDesiredServings((v) => Math.min(20, v + 1))}
                   className="w-9 h-9 flex items-center justify-center rounded border border-stone text-ink-secondary hover:bg-surface-hover transition-colors text-lg leading-none"
-                  aria-label="Portionen erhöhen"
+                  aria-label={t("increaseServings")}
                 >
                   +
                 </button>
@@ -134,14 +136,14 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
                 onClick={() => setModalOpen(false)}
                 className="btn-ghost flex-1"
               >
-                Abbrechen
+                {tCommon("cancel")}
               </button>
               <button
                 type="button"
                 onClick={handleConfirm}
                 className="btn-primary flex-1"
               >
-                Hinzufügen
+                {t("addItem")}
               </button>
             </div>
           </div>

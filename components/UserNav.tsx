@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl';
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUncheckedCount } from "@/lib/shopping-list";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import type { LibraryShareInbound } from "@/types/library-sharing";
 
 export default function UserNav() {
@@ -139,7 +138,6 @@ export default function UserNav() {
         <span className="hidden sm:inline">{t('settings')}</span>
       </Link>
 
-      <LanguageSwitcher />
     </div>
   );
 }

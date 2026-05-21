@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import {
@@ -42,6 +43,7 @@ function formatAmount(item: ShoppingListItem): string {
 }
 
 export default function ShoppingListPage() {
+  const t = useTranslations("ShoppingList");
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [hideChecked, setHideCheckedState] = useState(false);
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
@@ -102,18 +104,18 @@ export default function ShoppingListPage() {
           href="/"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← Zurück
+          ← {t("backToRecipes")}
         </Link>
 
         {/* Header row */}
         <div className="flex items-center justify-between gap-4 mb-6 flex-wrap">
           <div className="flex items-center gap-3">
             <h1 className="font-serif text-[2rem] font-medium text-ink-primary tracking-[-0.02em]">
-              Einkaufsliste
+              {t("title")}
             </h1>
             {uncheckedCount > 0 && (
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface-secondary text-ink-secondary border border-stone">
-                {uncheckedCount} offen
+                {t("unchecked", { count: uncheckedCount })}
               </span>
             )}
           </div>
@@ -141,7 +143,7 @@ export default function ShoppingListPage() {
                         d="M3.98 8.223A10.477 10.477 0 001.934 10C3.226 13.307 6.368 15.6 10 15.6c.9 0 1.765-.12 2.586-.34M6.228 6.228A3 3 0 0113.772 13.772M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L18 18m-3.228-3.228l-3.65-3.65m0 0a3 3 0 01-4.243-4.243m4.242 4.243L9.88 9.88"
                       />
                     </svg>
-                    Erledigte einblenden
+                    {t("showChecked")}
                   </>
                 ) : (
                   <>
@@ -159,7 +161,7 @@ export default function ShoppingListPage() {
                         d="M3.98 8.223A10.477 10.477 0 001.934 10C3.226 13.307 6.368 15.6 10 15.6c.9 0 1.765-.12 2.586-.34M6.228 6.228A3 3 0 0113.772 13.772m-7.544 0L3 17m3.228-3.228 3.65 3.65M9.88 9.88l4.11 4.11M17.657 10C16.364 6.693 13.223 4.4 9.59 4.4c-.9 0-1.764.12-2.586.34"
                       />
                     </svg>
-                    Erledigte ausblenden
+                    {t("hideChecked")}
                   </>
                 )}
               </button>
@@ -190,7 +192,7 @@ export default function ShoppingListPage() {
                   <line strokeLinecap="round" x1="10" y1="8.5" x2="10" y2="14.5" />
                   <line strokeLinecap="round" x1="12" y1="8.5" x2="12" y2="14.5" />
                 </svg>
-                Liste leeren
+                {t("clearAll")}
               </button>
             )}
           </div>
@@ -199,7 +201,7 @@ export default function ShoppingListPage() {
         {/* Empty state */}
         {items.length === 0 && (
           <p className="text-sm text-ink-tertiary py-8 text-center">
-            Deine Einkaufsliste ist leer. Füge Zutaten über eine Rezeptdetailseite hinzu.
+            {t("emptyTitle")} {t("emptyHint")}
           </p>
         )}
 
@@ -222,7 +224,7 @@ export default function ShoppingListPage() {
                         checked={item.checked}
                         onChange={() => handleToggle(item.id)}
                         className="w-4 h-4 rounded accent-forest shrink-0 cursor-pointer"
-                        aria-label={`${formatAmount(item)} abhaken`}
+                        aria-label={formatAmount(item)}
                       />
                       <span
                         className={`flex-1 text-sm text-ink-primary transition-colors ${
@@ -234,7 +236,7 @@ export default function ShoppingListPage() {
                       <button
                         type="button"
                         onClick={() => handleRemove(item.id)}
-                        aria-label="Zutat entfernen"
+                        aria-label={t("removeItem")}
                         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-secondary transition-all shrink-0 text-base leading-none"
                       >
                         ×
@@ -253,7 +255,7 @@ export default function ShoppingListPage() {
             htmlFor="manual-input"
             className="block text-sm font-medium text-ink-secondary mb-2"
           >
-            Artikel hinzufügen
+            {t("addItemLabel")}
           </label>
           <div className="flex gap-2">
             <input
@@ -265,7 +267,7 @@ export default function ShoppingListPage() {
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAddManual();
               }}
-              placeholder="z.B. Kaffee"
+              placeholder={t("addItemPlaceholder")}
               className="flex-1 px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
             />
             <button
@@ -274,7 +276,7 @@ export default function ShoppingListPage() {
               disabled={!manualInput.trim()}
               className="btn-primary"
             >
-              Hinzufügen
+              {t("addItem")}
             </button>
           </div>
         </div>
@@ -282,9 +284,9 @@ export default function ShoppingListPage() {
 
       <ConfirmDialog
         open={confirmClearOpen}
-        title="Liste leeren"
-        message={`Alle ${totalCount} Einträge löschen?`}
-        confirmLabel="Alles löschen"
+        title={t("confirmClearTitle")}
+        message={t("confirmClearMessage", { count: totalCount })}
+        confirmLabel={t("clearAll")}
         destructive
         onConfirm={handleClear}
         onCancel={() => setConfirmClearOpen(false)}

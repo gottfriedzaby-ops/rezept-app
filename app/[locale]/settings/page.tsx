@@ -1,4 +1,6 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import ShareManager from "@/components/ShareManager";
@@ -20,6 +22,8 @@ export default async function SettingsPage() {
   const { data: { user } } = await supabase.auth.getUser();
 
   if (!user) redirect("/login");
+
+  const t = await getTranslations('Settings');
 
   const userIsAdmin = isAdmin(user);
   const inviteOnly = isInviteOnlyEnabled();
@@ -105,30 +109,40 @@ export default async function SettingsPage() {
           href="/"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← Alle Rezepte
+          ← {t('backLink')}
         </a>
 
         <h1 className="font-serif text-4xl font-medium text-ink-primary tracking-[-0.02em] mb-10">
-          Einstellungen
+          {t('title')}
         </h1>
 
         {/* Account info */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Konto
+            {t('account')}
           </h2>
           <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
             <p className="text-sm text-ink-secondary">
-              Angemeldet als <span className="text-ink-primary font-medium">{user.email}</span>
+              {t('loggedInAs', { email: user.email ?? "" })}
             </p>
             <UserSettingsActions />
+          </div>
+        </section>
+
+        {/* Language */}
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+            {t('language')}
+          </h2>
+          <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
+            <LanguageSwitcher />
           </div>
         </section>
 
         {/* Library sharing — outbound */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Bibliothek teilen
+            {t('shareLibrary')}
           </h2>
           <LibraryShareManager
             initialShares={libraryShares}
@@ -139,7 +153,7 @@ export default async function SettingsPage() {
         {/* Library sharing — inbound */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Geteilte Sammlungen (Eingehend)
+            {t('incomingShares')}
           </h2>
           <IncomingSharesManager initialShares={incomingShares} />
         </section>
@@ -147,7 +161,7 @@ export default async function SettingsPage() {
         {/* Library display settings */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Bibliotheksansicht
+            {t('libraryView')}
           </h2>
           <TagMergeToggle initialValue={showSharedDefault} />
         </section>
@@ -155,7 +169,7 @@ export default async function SettingsPage() {
         {/* Share links */}
         <section className="mb-10">
           <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-            Geteilte Links
+            {t('shareLinks')}
           </h2>
           <ShareManager initialShares={shares ?? []} />
         </section>
@@ -165,25 +179,24 @@ export default async function SettingsPage() {
           <>
             <section className="mb-10">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-                Admin · Dashboard
+                {t('adminDashboard')}
               </h2>
               <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
                 <p className="text-sm text-ink-secondary mb-3">
-                  Nutzerstatistiken, Claude-API-Verbrauch, geschätzte Kosten und
-                  Nutzerverwaltung.
+                  {t('adminDashboardDesc')}
                 </p>
                 <a
                   href="/settings/admin"
                   className="inline-flex items-center gap-1 text-sm font-medium text-forest hover:text-forest-deep transition-colors"
                 >
-                  Dashboard öffnen →
+                  {t('adminDashboardLink')}
                 </a>
               </div>
             </section>
 
             <section className="mb-10">
               <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
-                Admin · Eingeladene E-Mail-Adressen
+                {t('adminEmails')}
               </h2>
               <InvitedEmailsManager
                 initialInvites={(invitedEmailsRaw ?? []) as InvitedEmail[]}

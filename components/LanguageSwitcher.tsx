@@ -17,17 +17,23 @@ export default function LanguageSwitcher() {
   }
 
   return (
-    <select
-      value={currentLocale}
-      onChange={(e) => handleChange(e.target.value)}
-      aria-label={t('label')}
-      className="text-xs bg-transparent text-ink-tertiary border-none cursor-pointer focus:outline-none hover:text-ink-primary transition-colors"
-    >
+    <div className="flex gap-2 flex-wrap" role="radiogroup" aria-label={t('label')}>
       {routing.locales.map((locale) => (
-        <option key={locale} value={locale}>
+        <button
+          key={locale}
+          type="button"
+          role="radio"
+          aria-checked={locale === currentLocale}
+          onClick={() => handleChange(locale)}
+          className={`px-4 py-2 text-sm rounded border transition-colors ${
+            locale === currentLocale
+              ? "bg-ink-primary text-white border-ink-primary"
+              : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
+          }`}
+        >
           {t(locale)}
-        </option>
+        </button>
       ))}
-    </select>
+    </div>
   );
 }

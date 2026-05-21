@@ -1,19 +1,21 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface Props {
   initialValue: boolean;
 }
 
 export default function TagMergeToggle({ initialValue }: Props) {
+  const t = useTranslations("Settings");
   const [enabled, setEnabled] = useState(initialValue);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleToggle() {
     const next = !enabled;
-    setEnabled(next); // optimistic
+    setEnabled(next);
     setSaving(true);
     setError(null);
     try {
@@ -23,12 +25,12 @@ export default function TagMergeToggle({ initialValue }: Props) {
         body: JSON.stringify({ show_shared_in_main_library: next }),
       });
       if (!res.ok) {
-        setEnabled(!next); // revert
-        setError("Einstellung konnte nicht gespeichert werden.");
+        setEnabled(!next);
+        setError(t("settingsSaveError"));
       }
     } catch {
       setEnabled(!next);
-      setError("Einstellung konnte nicht gespeichert werden.");
+      setError(t("settingsSaveError"));
     } finally {
       setSaving(false);
     }
@@ -41,7 +43,7 @@ export default function TagMergeToggle({ initialValue }: Props) {
           type="button"
           role="switch"
           aria-checked={enabled}
-          aria-label="Geteilte Rezepte in meiner Bibliothek anzeigen"
+          aria-label={t("showSharedInLibrary")}
           onClick={handleToggle}
           disabled={saving}
           className={[
@@ -58,12 +60,10 @@ export default function TagMergeToggle({ initialValue }: Props) {
         </button>
         <div>
           <p className="text-sm font-medium text-ink-primary">
-            Geteilte Rezepte in meiner Bibliothek anzeigen
+            {t("showSharedInLibrary")}
           </p>
           <p className="text-xs text-ink-tertiary mt-1 leading-relaxed">
-            Wenn aktiviert, erscheinen Rezepte aus mit dir geteilten Sammlungen gemeinsam mit
-            deinen eigenen Rezepten in der Bibliothek – erkennbar an einem Badge mit dem Namen
-            der Person. Wenn deaktiviert, sind sie nur unter &bdquo;Geteilte Sammlungen&ldquo; erreichbar.
+            {t("showSharedInLibraryDesc")}
           </p>
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         </div>

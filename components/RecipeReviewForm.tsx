@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { ParsedRecipe, RecipeType } from "@/types/recipe";
 import TagInput from "@/components/TagInput";
 import { normalizeTags } from "@/lib/tags";
@@ -22,14 +23,16 @@ function scaleAmount(amount: number, factor: number): string {
   return String(parseFloat(result.toPrecision(6)));
 }
 
-const RECIPE_TYPES: { value: RecipeType; label: string; emoji: string }[] = [
-  { value: "kochen", label: "Kochen", emoji: "🍳" },
-  { value: "backen", label: "Backen", emoji: "🍞" },
-  { value: "grillen", label: "Grillen", emoji: "🔥" },
-  { value: "zubereiten", label: "Zubereiten", emoji: "🥗" },
+const RECIPE_TYPE_VALUES: { value: RecipeType; emoji: string }[] = [
+  { value: "kochen", emoji: "🍳" },
+  { value: "backen", emoji: "🍞" },
+  { value: "grillen", emoji: "🔥" },
+  { value: "zubereiten", emoji: "🥗" },
 ];
 
 export default function RecipeReviewForm({ initial, saving, error, onSave, onDiscard }: Props) {
+  const t = useTranslations("RecipeReviewForm");
+  const tTypes = useTranslations("RecipeTypes");
   const initServings = initial.servings > 0 ? initial.servings : 1;
 
   const [title, setTitle] = useState(initial.title);
@@ -125,19 +128,19 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
   return (
     <div className="flex flex-col gap-6 p-6 bg-surface-secondary border border-stone rounded">
-      <p className="label-overline">Rezept überprüfen</p>
+      <p className="label-overline">{t("reviewTitle")}</p>
 
       {/* Title */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Titel</label>
+        <label className="block text-xs text-ink-tertiary mb-1.5">{t("title")}</label>
         <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} className={fieldCls} />
       </div>
 
       {/* Recipe type */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Rezepttyp</label>
+        <label className="block text-xs text-ink-tertiary mb-1.5">{t("recipeType")}</label>
         <div className="flex gap-2 flex-wrap">
-          {RECIPE_TYPES.map(({ value, label, emoji }) => (
+          {RECIPE_TYPE_VALUES.map(({ value, emoji }) => (
             <button
               key={value}
               type="button"
@@ -149,7 +152,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
                   : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
               }`}
             >
-              {emoji} {label}
+              {emoji} {tTypes(value)}
             </button>
           ))}
         </div>
@@ -159,21 +162,21 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-xs text-ink-tertiary mb-1.5">
-            Portionen{showServingsWarning && <span className="text-amber-600 ml-0.5">*</span>}
+            {t("servings")}{showServingsWarning && <span className="text-amber-600 ml-0.5">{t("servingsWarning")}</span>}
           </label>
           <input
             type="number"
             value={servings}
             onChange={(e) => setServings(e.target.value)}
             min={1}
-            placeholder="z.B. 4"
+            placeholder="4"
             disabled={saving}
             className={`${smallFieldCls} ${showServingsWarning ? "border-amber-400 bg-amber-50/50" : ""}`}
           />
         </div>
         {[
-          { label: "Vorbereitung (Min.)", value: prepTime, set: setPrepTime },
-          { label: "Kochen (Min.)", value: cookTime, set: setCookTime },
+          { label: t("prepTime"), value: prepTime, set: setPrepTime },
+          { label: t("cookTime"), value: cookTime, set: setCookTime },
         ].map(({ label, value, set }) => (
           <div key={label}>
             <label className="block text-xs text-ink-tertiary mb-1.5">{label}</label>
@@ -184,7 +187,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {showServingsWarning && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 -mt-3">
-          Die Portionsangabe fehlt. Bitte ergänze sie oben, damit die Mengen korrekt skaliert werden können.
+          {t("servingsHint")}
         </p>
       )}
 
@@ -196,7 +199,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
               type="text"
               value={section.title}
               onChange={(e) => setSections((prev) => prev.map((s, i) => i !== sIdx ? s : { ...s, title: e.target.value }))}
-              placeholder="Abschnitt (z.B. Für den Teig)"
+              placeholder={t("sectionPlaceholder")}
               disabled={saving}
               className="font-medium text-sm px-2.5 py-1.5 bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
             />
@@ -205,30 +208,30 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
           {/* Ingredients */}
           <div>
             <label className="block text-xs text-ink-tertiary mb-2">
-              Zutaten für{" "}
+              {t("ingredientsFor")}{" "}
               <span className={`font-medium ${showServingsWarning ? "text-amber-600" : "text-ink-primary"}`}>
                 {showServingsWarning ? "?" : currentServings}
               </span>{" "}
-              Portionen
+              {t("servings")}
             </label>
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (
                 <div key={iIdx} className="flex gap-2 items-center">
-                  <input type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder="Menge" min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <button type="button" onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={removeBtnCls}>×</button>
+                  <input type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <button type="button" aria-label={t("addIngredient")} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={removeBtnCls}>×</button>
                 </div>
               ))}
               <button type="button" onClick={() => addIngredient(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
-                + Zutat hinzufügen
+                {t("addIngredient")}
               </button>
             </div>
           </div>
 
           {/* Steps */}
           <div>
-            <label className="block text-xs text-ink-tertiary mb-2">Schritte</label>
+            <label className="block text-xs text-ink-tertiary mb-2">{t("steps")}</label>
             <div className="flex flex-col gap-2">
               {section.steps.map((step, stIdx) => (
                 <div key={stIdx} className="flex gap-2 items-start">
@@ -238,7 +241,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
                 </div>
               ))}
               <button type="button" onClick={() => addStep(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
-                + Schritt hinzufügen
+                {t("addStep")}
               </button>
             </div>
           </div>
@@ -247,12 +250,12 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       {/* Tags */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Tags</label>
+        <label className="block text-xs text-ink-tertiary mb-1.5">{t("tags")}</label>
         <TagInput
           value={tags}
           onChange={setTags}
           disabled={saving}
-          placeholder="Tag eingeben (Enter oder Komma)"
+          placeholder={t("tagPlaceholder")}
         />
       </div>
 
@@ -260,10 +263,10 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
 
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={handleSave} disabled={saving || !title.trim()} className="btn-primary">
-          {saving ? "Wird gespeichert…" : "Speichern"}
+          {saving ? t("saving") : t("saveRecipe")}
         </button>
         <button type="button" onClick={onDiscard} disabled={saving} className="btn-ghost">
-          Verwerfen
+          {t("discard")}
         </button>
       </div>
     </div>

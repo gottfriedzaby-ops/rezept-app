@@ -53,9 +53,10 @@ export async function POST(request: NextRequest) {
 
     // ── New path: JSON body with pre-uploaded Supabase Storage URLs ──────────
     if (contentType.includes("application/json")) {
-      const { urls, fileNames } = (await request.json()) as {
+      const { urls, fileNames, locale = "de" } = (await request.json()) as {
         urls: string[];
         fileNames: string[];
+        locale?: string;
       };
 
       if (!urls || urls.length === 0) {
@@ -63,8 +64,8 @@ export async function POST(request: NextRequest) {
       }
 
       const sourceValue = fileNames?.[0] ?? "photo";
-      const { recipe: parsed } = await parseRecipeFromImages(urls, sourceValue, rateLimit.userId);
-      const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
+      const { recipe: parsed } = await parseRecipeFromImages(urls, sourceValue, rateLimit.userId, locale);
+      const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId, locale);
 
       const duplicate = await findDuplicateRecipe(reviewed.title, sourceValue, rateLimit.userId!);
       if (duplicate) {
@@ -129,10 +130,10 @@ export async function POST(request: NextRequest) {
 
     console.log("[import-photo] calling Claude vision, buffer size:", buffer.length);
     const base64 = buffer.toString("base64");
-    const { recipe: parsed } = await parseRecipeFromImage(base64, finalMediaType, fileName, rateLimit.userId);
+    const { recipe: parsed } = await parseRecipeFromImage(base64, finalMediaType, fileName, rateLimit.userId, "de");
     console.log("[import-photo] parsed title:", parsed.title);
 
-    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId, "de");
     console.log("[import-photo] review complete, returning response");
 
     const duplicate = await findDuplicateRecipe(reviewed.title, fileName, rateLimit.userId!);

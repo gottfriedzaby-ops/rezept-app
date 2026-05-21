@@ -153,6 +153,28 @@ function parseRecipeYield(value: unknown): number | null {
   return null;
 }
 
+const LOCALE_CONFIG: Record<string, { language: string; nachBedarf: string; unitNote: string }> = {
+  de: {
+    language: "German",
+    nachBedarf: "nach Bedarf",
+    unitNote: 'EL (Esslöffel) and TL (Teelöffel) are German cooking units — keep them exactly as written; do NOT convert to ml. Store "3 EL Olivenöl" as amount: 3, unit: "EL". Store "1 TL Salz" as amount: 1, unit: "TL". Prise is also a valid unit; store as amount: 1, unit: "Prise". Only the ingredient list/table is authoritative for unit and amount — do NOT derive amounts from EL/TL mentions inside step text',
+  },
+  en: {
+    language: "English",
+    nachBedarf: "to taste",
+    unitNote: 'tbsp (tablespoon) and tsp (teaspoon) — when a source recipe uses these, keep them exactly as written; do NOT convert to ml. Only the ingredient list/table is authoritative for unit and amount — do NOT derive amounts from tbsp/tsp mentions inside step text',
+  },
+  nl: {
+    language: "Dutch",
+    nachBedarf: "naar smaak",
+    unitNote: 'EL (eetlepel) and TL (theelepel) are Dutch cooking units — keep them exactly as written; do NOT convert to ml. Only the ingredient list/table is authoritative for unit and amount — do NOT derive amounts from EL/TL mentions inside step text',
+  },
+};
+
+function getLocaleConfig(locale?: string) {
+  return LOCALE_CONFIG[locale ?? "de"] ?? LOCALE_CONFIG.de;
+}
+
 const RECIPE_SCHEMA = `{
   "title": "string",
   "recipe_type": "kochen | backen | grillen | zubereiten",
@@ -171,7 +193,9 @@ const RECIPE_SCHEMA = `{
   "source": { "type": "url" | "photo" | "youtube" | "instagram" | "manual", "value": "string" }
 }`;
 
-const RULES = `
+function buildRules(locale?: string): string {
+  const cfg = getLocaleConfig(locale);
+  return `
 - Return ONLY valid JSON — no markdown fences, no extra text, no content after the closing brace
 - All double-quote characters that appear inside JSON string values must be escaped as \" — never output raw unescaped " inside a string
 - METRIC PRIORITY (read first, applies before any other amount/unit rule): when an ingredient line states a metric value (g, kg, ml, l) anywhere — most commonly in parentheses after a non-metric leader, e.g. "1 ¼ cups plus 4 tablespoons (320 grams) water" — store that parenthetical metric value AS-IS and IGNORE the non-metric leader entirely. Do NOT perform your own cup/tbsp/tsp/oz/lb → g/ml conversion when a parenthetical metric is present, even if the leader's quantity seems primary. The parenthetical metric is authoritative even when:
@@ -184,21 +208,21 @@ const RULES = `
     "2 scant teaspoons (10 grams) fine sea salt"        → { amount: 10,  unit: "g", name: "feines Meersalz" }
     "½ of ¼ teaspoons (½ gram) instant dried yeast"     → { amount: 0.5, unit: "g", name: "Trockenhefe" }
     "4 ½ cups (500 grams) strong white flour"           → { amount: 500, unit: "g", name: "Weizenmehl" }
-- Translate ALL text fields (title, ingredient names, step texts, tags) into German, regardless of the source language
+- Translate ALL text fields (title, ingredient names, step texts) into ${cfg.language}, regardless of the source language. tags are ALWAYS lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never Dutch, never capitalised
 - Unicode fraction characters represent exact values: ½=0.5, ¼=0.25, ¾=0.75, ⅓≈0.333, ⅔≈0.667, ⅛=0.125 — apply these when they appear in amounts (e.g. "½ gram" = 0.5 g, "¼ tsp" = 0.25 tsp)
 - For ingredients WITHOUT a parenthetical metric value, convert non-metric measurements to metric units: g for grams, kg for kilograms, ml for millilitres, l for litres, cm for centimetres (convert cups, ounces, pounds, inches, Fahrenheit → Celsius accordingly). This fallback never overrides the METRIC PRIORITY rule above
-- EL (Esslöffel) and TL (Teelöffel) are German cooking units — keep them exactly as written; do NOT convert to ml. Store "3 EL Olivenöl" as amount: 3, unit: "EL". Store "1 TL Salz" as amount: 1, unit: "TL". Prise is also a valid unit; store as amount: 1, unit: "Prise". Only the ingredient list/table is authoritative for unit and amount — do NOT derive amounts from EL/TL mentions inside step text
+- ${cfg.unitNote}
 - Store ingredient amounts as the TOTAL quantity for the complete recipe as written — do NOT divide by serving count (e.g. recipe serves 4, needs 400 g flour → store 400, not 100). If the source lists amounts "per serving" or "for 1 person", multiply each amount by the total number of servings before storing. Never output per-serving amounts — always total amounts for all servings combined
 - The "servings" field must reflect the recipe's actual yield (number of portions the total amounts produce)
 - scalable: set to false when the recipe requires a whole indivisible unit that cannot reasonably be prepared in a smaller fraction (e.g. a whole roast, whole fish, a full cake baked as one). Set to true for all other recipes (pasta, pizza, soups, doughs, etc.)
 - timerSeconds: null if the step has no specific time, otherwise the duration in seconds
 - If a numeric field is unknown use 0; infer tags from ingredients and title
-- tags: always lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never capitalised
 - recipe_type: classify as "backen" for oven-baked goods requiring precise temperature/timing (bread, cakes, cookies, quiche), "grillen" for open-flame or griddle cooking (BBQ, Grillgemüse), "zubereiten" for no-heat assembly recipes (salads, smoothies, overnight oats, sandwiches), "kochen" for everything else. Default to "kochen" when uncertain
 - sections: if the recipe has distinct named components (e.g. "Für die Soße", "Für den Teig", "Für die Füllung"), create one section object per component with a non-null title. If no distinct components exist, return a single section with title: null. Never split arbitrarily — only create multiple sections when the original recipe explicitly names separate parts with their own ingredient lists and steps
 - Copy ingredient names EXACTLY as they appear in the source text. Do NOT substitute, rename, or omit any ingredient based on your knowledge of the dish type. Include every ingredient explicitly listed, even if the combination seems unusual for the recipe (e.g. sausages in lentil soup, bacon in a vegetable stew).
 - Do NOT draw on your training knowledge of how a dish is typically prepared. Extract ONLY what is explicitly written in the provided text — nothing more, nothing less. If an ingredient is not mentioned in the text, do not add it.
 `.trim();
+}
 
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
@@ -269,33 +293,37 @@ function parseClaudeJson<T>(raw: string): T {
 }
 
 
-const REVIEW_SYSTEM = `
+function buildReviewSystem(locale?: string): string {
+  const cfg = getLocaleConfig(locale);
+  return `
 You are a professional recipe editor. You will receive a parsed recipe as JSON and must review and improve it.
 Return ONLY the improved recipe as valid JSON in the exact same schema — no markdown fences, no extra text, no content after the closing brace.
 All double-quote characters inside JSON string values must be escaped as \" — never output raw unescaped " inside a string.
 
-WORKING LANGUAGE: Perform all review steps below (1–6) while keeping every text field in the original source language of the recipe. Do NOT translate anything during the review phase — translation introduces errors and makes it harder to verify correctness. Only after all review steps are complete, apply step 7 (translation into German) as a final pass.
+WORKING LANGUAGE: Perform all review steps below (1–6) while keeping every text field in the original source language of the recipe. Do NOT translate anything during the review phase — translation introduces errors and makes it harder to verify correctness. Only after all review steps are complete, apply step 7 (translation into ${cfg.language}) as a final pass.
 
 Review checklist:
-1. Ingredients completeness: every ingredient mentioned in steps must appear in the ingredients list. Add missing ones (amount 0, unit "nach Bedarf"). Remove an ingredient from the list ONLY if it is genuinely never referenced anywhere in the step text. Do NOT add ingredients based on your knowledge of the dish type; do NOT remove ingredients that seem atypical — unusual combinations (e.g. smoked sausages in lentil soup, bacon in a vegetable stew) are intentional and must be preserved exactly.
+1. Ingredients completeness: every ingredient mentioned in steps must appear in the ingredients list. Add missing ones (amount 0, unit "${cfg.nachBedarf}"). Remove an ingredient from the list ONLY if it is genuinely never referenced anywhere in the step text. Do NOT add ingredients based on your knowledge of the dish type; do NOT remove ingredients that seem atypical — unusual combinations (e.g. smoked sausages in lentil soup, bacon in a vegetable stew) are intentional and must be preserved exactly.
 2. Realistic amounts: amounts are stored as TOTAL quantities for the complete recipe (for the stated servings count). Verify plausibility against that yield — e.g. 320 g water for 3 pizzas is correct; 500 g salt for any recipe is wrong. Do NOT halve or multiply amounts; only correct clear extraction errors.
 3. Step quality: steps must be in logical cooking order, clearly written, include temperatures in °C, and include timerSeconds wherever a recipe would normally specify a time. If step text mentions non-metric units (cups, oz, °F), add the metric equivalent in parentheses within that step's text.
-4. Ingredient amounts: Do NOT change any ingredient's amount or unit — treat them as authoritative values already extracted from the source. You may add a missing ingredient (one mentioned in steps but absent from the list) with amount 0 and unit "nach Bedarf". Never re-derive amounts from cup/tablespoon/teaspoon measurements in the step text.
+4. Ingredient amounts: Do NOT change any ingredient's amount or unit — treat them as authoritative values already extracted from the source. You may add a missing ingredient (one mentioned in steps but absent from the list) with amount 0 and unit "${cfg.nachBedarf}". Never re-derive amounts from cup/tablespoon/teaspoon measurements in the step text.
 5. Ingredient fidelity: the input recipe JSON is the authoritative source. Preserve every ingredient name exactly as given in steps 1–4. Do NOT replace names with synonyms or "more typical" alternatives. Do NOT add ingredients absent from the input just because they are commonly found in this dish type.
-6. Tags: provide accurate, useful tags covering cuisine type, meal type (Frühstück, Mittagessen, Abendessen, Dessert, Snack, Beilage), dietary info (vegetarisch, vegan, glutenfrei, laktosefrei), and difficulty (einfach, mittel, aufwändig). Use lowercase German (tags are always in German regardless of source language).
-7. FINAL STEP — Translation into German: Translate ALL text fields (title, ingredient names, step texts) into German. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon (e.g. use "große Schüssel" not "Teigtonne", "Pfanne" not "Sautoir", "Topf" not "Marmite"). STRICT RULES for this step: (a) translate only — do NOT add, remove, merge, or split any ingredient; the ingredient count after translation must be identical to before; (b) do NOT change any amount or unit during translation; (c) if the recipe is already in German, skip this step entirely and return it unchanged.
+6. Tags: provide accurate, useful tags covering cuisine type, meal type (Frühstück, Mittagessen, Abendessen, Dessert, Snack, Beilage), dietary info (vegetarisch, vegan, glutenfrei, laktosefrei), and difficulty (einfach, mittel, aufwändig). Tags are ALWAYS lowercase German regardless of source or target language.
+7. FINAL STEP — Translation into ${cfg.language}: Translate ALL text fields (title, ingredient names, step texts) into ${cfg.language}. Use everyday home-cooking vocabulary, not professional bakery or restaurant jargon. STRICT RULES for this step: (a) translate only — do NOT add, remove, merge, or split any ingredient; the ingredient count after translation must be identical to before; (b) do NOT change any amount or unit during translation; (c) if the recipe is already in ${cfg.language}, skip this step entirely and return it unchanged.
 `.trim();
+}
 
 export async function reviewAndImproveRecipe(
   recipe: ParsedRecipe,
   userId: string | null = null,
+  locale?: string,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const { message, meta } = await claudeCreate(
     "reviewAndImproveRecipe",
     {
       model: "claude-sonnet-4-6",
       max_tokens: 4096,
-      system: REVIEW_SYSTEM,
+      system: buildReviewSystem(locale),
       messages: [
         {
           role: "user",
@@ -375,6 +403,7 @@ export async function parseRecipeFromImages(
   imageUrls: string[],
   sourceValue: string,
   userId: string | null = null,
+  locale?: string,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const multi = imageUrls.length > 1;
   const content = [
@@ -384,7 +413,7 @@ export async function parseRecipeFromImages(
     })),
     {
       type: "text" as const,
-      text: `Read all recipe text visible in ${multi ? `these ${imageUrls.length} images` : "this image"} and extract the${multi ? " complete" : ""} recipe.${multi ? ` The images may show different parts of the same recipe (e.g. ingredients list, steps, different pages). Combine all information into one complete recipe.` : ""} Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
+      text: `Read all recipe text visible in ${multi ? `these ${imageUrls.length} images` : "this image"} and extract the${multi ? " complete" : ""} recipe.${multi ? ` The images may show different parts of the same recipe (e.g. ingredients list, steps, different pages). Combine all information into one complete recipe.` : ""} Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${buildRules(locale)}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
     },
   ];
 
@@ -419,6 +448,7 @@ export async function parseRecipeFromImage(
   mediaType: ImageMediaType,
   sourceValue: string,
   userId: string | null = null,
+  locale?: string,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   const { message, meta } = await claudeCreate(
     "parseRecipeFromImage",
@@ -435,7 +465,7 @@ export async function parseRecipeFromImage(
             },
             {
               type: "text",
-              text: `Read all recipe text visible in this image and extract the recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
+              text: `Read all recipe text visible in this image and extract the recipe. Return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${buildRules(locale)}\n- source.type must be "photo", source.value must be "${sourceValue}"`,
             },
           ],
         },
@@ -467,6 +497,7 @@ export async function parseRecipeFromText(
   jsonLd?: JsonLdRecipeData,
   titleHint?: string,
   userId: string | null = null,
+  locale?: string,
 ): Promise<{ recipe: ParsedRecipe; meta: ClaudeCallMeta }> {
   let content: string;
 
@@ -484,7 +515,7 @@ export async function parseRecipeFromText(
     const structuredData = JSON.stringify(cleanJsonLd);
     content =
       `Extract a recipe from the structured data below and return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\n` +
-      `Rules:\n${RULES}\n` +
+      `Rules:\n${buildRules(locale)}\n` +
       `- source.type must be "${sourceType}", source.value must be "${sourceValue}"\n` +
       `- The STRUCTURED DATA section contains machine-readable recipe data — prioritise it over the supplementary text\n` +
       `- recipeInstructions in the structured data are in the correct order; preserve that order in your output steps\n` +
@@ -498,7 +529,7 @@ export async function parseRecipeFromText(
       : "";
     content =
       `Extract the recipe from the following text and return it as valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\n` +
-      `Rules:\n${RULES}\n` +
+      `Rules:\n${buildRules(locale)}\n` +
       `${titleRule}` +
       `- source.type must be "${sourceType}", source.value must be "${sourceValue}"\n\n` +
       `Text:\n${text.slice(0, 15000)}`;

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { url } = (await request.json()) as { url: string };
+    const { url, locale = "de" } = (await request.json()) as { url: string; locale?: string };
 
     if (!url) {
       return NextResponse.json({ data: null, error: "url is required" }, { status: 400 });
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { recipe: parsed } = await parseRecipeFromText(caption, "instagram", shortcode, undefined, undefined, rateLimit.userId);
+    const { recipe: parsed } = await parseRecipeFromText(caption, "instagram", shortcode, undefined, undefined, rateLimit.userId, locale);
 
     // Require at least 3 ingredients and 2 steps to guard against Claude hallucinating
     // a recipe from a dish name alone
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId);
+    const { recipe: reviewed } = await reviewAndImproveRecipe(parsed, rateLimit.userId, locale);
 
     const duplicate = await findDuplicateRecipe(reviewed.title, shortcode, rateLimit.userId!);
     if (duplicate) {

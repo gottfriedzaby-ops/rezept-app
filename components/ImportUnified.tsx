@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations, useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
@@ -82,6 +82,7 @@ async function compressImage(file: File, canvasError: string, compressionError: 
 
 export default function ImportUnified() {
   const t = useTranslations("Import");
+  const locale = useLocale();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -168,6 +169,7 @@ export default function ImportUnified() {
       if (inputType === "pdf" && pdfFile) {
         const fd = new FormData();
         fd.append("file", pdfFile);
+        fd.append("locale", locale);
         const res = await fetch("/api/import-pdf", { method: "POST", body: fd });
         json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       } else if (inputType === "photo" && images.length > 0) {
@@ -198,7 +200,7 @@ export default function ImportUnified() {
         const res = await fetch("/api/import-photo", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ urls, fileNames }),
+          body: JSON.stringify({ urls, fileNames, locale }),
         });
         json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       } else {
@@ -209,7 +211,7 @@ export default function ImportUnified() {
         const res = await fetch(endpoint, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: urlInput.trim() }),
+          body: JSON.stringify({ url: urlInput.trim(), locale }),
         });
         json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       }

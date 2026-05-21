@@ -63,8 +63,11 @@ export async function middleware(request: NextRequest) {
     return applySupabaseCookies(NextResponse.next({ request }));
   }
 
-  // Auth routes (Supabase callbacks): skip locale routing
-  if (pathname.startsWith('/auth/')) {
+  // Only the Supabase auth-code exchange callback must stay locale-agnostic
+  // (Supabase hardcodes the redirectTo URL without a locale prefix in emails).
+  // All other /auth/* pages (e.g. reset-password) live under [locale] and
+  // should go through normal intl routing.
+  if (pathname === '/auth/callback') {
     return applySupabaseCookies(NextResponse.next({ request }));
   }
 

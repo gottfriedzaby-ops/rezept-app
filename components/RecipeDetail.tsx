@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useTranslations } from 'next-intl';
+import { Link } from "@/i18n/navigation";
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
-import { ctaLabelFor } from "@/lib/recipeTypeLabels";
 
 function formatAmount(amountPerServing: number, servings: number): string {
   const total = amountPerServing * servings;
@@ -13,26 +13,36 @@ function formatAmount(amountPerServing: number, servings: number): string {
   return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
 }
 
+const ctaKeys = {
+  kochen: 'ctaKochen',
+  backen: 'ctaBacken',
+  grillen: 'ctaGrillen',
+  zubereiten: 'ctaZubereiten',
+} as const;
+
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
+  const t = useTranslations('RecipeDetail');
+  const tTypes = useTranslations('RecipeTypes');
   const [servings, setServings] = useState(recipe.servings ?? 1);
   const minServings = recipe.scalable === false ? (recipe.servings ?? 1) : 1;
 
   const sections = getRecipeSections(recipe);
   const showSectionHeaders = sections.length > 1 || sections[0]?.title !== null;
-  const ctaLabel = ctaLabelFor(recipe.recipe_type ?? "kochen");
+  const recipeType = (recipe.recipe_type ?? 'kochen') as keyof typeof ctaKeys;
+  const ctaLabel = tTypes(ctaKeys[recipeType] ?? ctaKeys.kochen);
 
   return (
     <>
       {/* Servings + Cook button */}
       <div className="mt-10 pt-8 border-t border-stone">
         <div className="flex items-center justify-between mb-6">
-          <span className="label-overline">Portionen</span>
+          <span className="label-overline">{t('servings')}</span>
           <div className="flex items-center gap-4">
             <button
               onClick={() => setServings((s) => Math.max(minServings, s - 1))}
               disabled={servings <= minServings}
               className="w-8 h-8 rounded border border-stone flex items-center justify-center text-ink-secondary hover:bg-surface-hover transition-colors text-base leading-none disabled:opacity-30 disabled:cursor-not-allowed"
-              aria-label="Weniger Portionen"
+              aria-label={t('lessServings')}
             >
               −
             </button>
@@ -42,7 +52,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
             <button
               onClick={() => setServings((s) => s + 1)}
               className="w-8 h-8 rounded border border-stone flex items-center justify-center text-ink-secondary hover:bg-surface-hover transition-colors text-base leading-none"
-              aria-label="Mehr Portionen"
+              aria-label={t('moreServings')}
             >
               +
             </button>
@@ -51,7 +61,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
 
         {recipe.scalable === false && servings <= minServings && (
           <p className="text-xs text-ink-tertiary mb-4">
-            Dieses Rezept ist für {minServings} Portion{minServings !== 1 ? "en" : ""} ausgelegt und kann nicht weiter reduziert werden.
+            {t('scalingNotice', { count: minServings, plural: minServings !== 1 ? 'en' : '' })}
           </p>
         )}
 
@@ -66,7 +76,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
       {/* All-ingredients summary — only for multi-section recipes */}
       {showSectionHeaders && (
         <section className="mt-12">
-          <h2 className="label-overline mb-6">Alle Zutaten</h2>
+          <h2 className="label-overline mb-6">{t('allIngredients')}</h2>
           {sections.map((section, sIdx) => (
             <div key={sIdx}>
               {section.title && (
@@ -104,7 +114,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
 
           <section className={showSectionHeaders && section.title ? "mt-6" : "mt-12"}>
             {(showSectionHeaders || sIdx === 0) && (
-              <h2 className="label-overline mb-6">Zutaten</h2>
+              <h2 className="label-overline mb-6">{t('ingredients')}</h2>
             )}
             <ul className="space-y-3">
               {section.ingredients.map((ing, i) => (
@@ -123,7 +133,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
 
           <section className="mt-8">
             {(!showSectionHeaders || sIdx === 0) && (
-              <h2 className="label-overline mb-6">Zubereitung</h2>
+              <h2 className="label-overline mb-6">{t('preparation')}</h2>
             )}
             <ol className="space-y-8">
               {section.steps.map((step, i) => {

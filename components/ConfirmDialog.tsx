@@ -1,5 +1,7 @@
 "use client";
 
+import { useTranslations } from 'next-intl';
+
 interface Props {
   open: boolean;
   title: string;
@@ -14,11 +16,12 @@ export default function ConfirmDialog({
   open,
   title,
   message,
-  confirmLabel = "Bestätigen",
+  confirmLabel,
   destructive = false,
   onConfirm,
   onCancel,
 }: Props) {
+  const t = useTranslations('ConfirmDialog');
   if (!open) return null;
 
   return (
@@ -32,7 +35,7 @@ export default function ConfirmDialog({
         <p className="text-sm text-ink-secondary mb-6">{message}</p>
         <div className="flex gap-3">
           <button type="button" onClick={onCancel} className="btn-ghost flex-1">
-            Abbrechen
+            {t('cancel')}
           </button>
           <button
             type="button"
@@ -43,7 +46,7 @@ export default function ConfirmDialog({
                 : "btn-primary"
             }`}
           >
-            {confirmLabel}
+            {confirmLabel ?? t('confirm')}
           </button>
         </div>
       </div>

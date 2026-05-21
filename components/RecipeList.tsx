@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
+import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Link } from "@/i18n/navigation";
 import type { Recipe } from "@/types/recipe";
 import RecipeCover from "@/components/RecipeCover";
 import { getTagColor } from "@/lib/tag-colors";
@@ -25,6 +26,7 @@ export default function RecipeList({
   sharedCollectionOwnerId,
   sharedRecipes,
 }: Props) {
+  const t = useTranslations('RecipeList');
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -200,22 +202,22 @@ export default function RecipeList({
           </svg>
           <input
             type="search"
-            aria-label="Rezepte durchsuchen"
+            aria-label={t('searchAriaLabel')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Suchen…"
+            placeholder={t('searchPlaceholder')}
             className="input-field pl-9"
           />
         </div>
         <select
-          aria-label="Sortierung"
+          aria-label={t('sortAriaLabel')}
           value={sort}
           onChange={(e) => setSort(e.target.value as "newest" | "az" | "time")}
           className="input-field w-auto"
         >
-          <option value="newest">Neueste zuerst</option>
-          <option value="az">A–Z</option>
-          <option value="time">Kochzeit</option>
+          <option value="newest">{t('sortNewest')}</option>
+          <option value="az">{t('sortAZ')}</option>
+          <option value="time">{t('sortTime')}</option>
         </select>
       </div>
 
@@ -234,7 +236,7 @@ export default function RecipeList({
             <svg viewBox="0 0 16 16" className="w-3.5 h-3.5 shrink-0" fill={showFavoritesOnly ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M8 2.5l1.545 3.13 3.455.5-2.5 2.435.59 3.435L8 10.25l-3.09 1.75.59-3.435L3 6.13l3.455-.5L8 2.5z" />
             </svg>
-            Favoriten
+            {t('favorites')}
           </button>
         )}
 
@@ -261,7 +263,7 @@ export default function RecipeList({
             onClick={() => setTagsExpanded(true)}
             className="text-xs px-3 py-1 rounded border border-dashed border-ink-tertiary text-ink-secondary hover:text-ink-primary hover:border-ink-secondary transition-colors"
           >
-            + {hiddenTagCount} weitere
+            {t('showMore', { count: hiddenTagCount })}
           </button>
         )}
         {tagsExpanded && availableTags.length > COLLAPSED_TAG_COUNT && (
@@ -270,7 +272,7 @@ export default function RecipeList({
             onClick={() => setTagsExpanded(false)}
             className="text-xs px-3 py-1 rounded border border-dashed border-ink-tertiary text-ink-secondary hover:text-ink-primary hover:border-ink-secondary transition-colors"
           >
-            Weniger anzeigen
+            {t('showLess')}
           </button>
         )}
       </div>
@@ -294,18 +296,18 @@ export default function RecipeList({
               <path d="M14 24h12M14 30h12M14 36h8M38 24h12M38 30h12M38 36h8" />
             </svg>
             <h3 className="font-serif text-xl font-medium text-ink-primary mb-2">
-              Nichts gefunden
+              {t('noResults')}
             </h3>
             <button
               type="button"
               onClick={resetFilters}
               className="mt-3 text-sm px-4 py-1.5 rounded border border-stone text-ink-secondary hover:bg-surface-hover transition-colors"
             >
-              Filter zurücksetzen
+              {t('resetFilters')}
             </button>
           </div>
         ) : (
-          <p className="text-ink-tertiary text-sm">Keine Rezepte gefunden.</p>
+          <p className="text-ink-tertiary text-sm">{t('noRecipes')}</p>
         )
       ) : (
         <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -324,7 +326,7 @@ export default function RecipeList({
               <li key={recipe.id} className="relative">
                 {isShared ? (
                   <div
-                    title={`Geteilt von ${ownerName}`}
+                    title={t('sharedBy', { name: ownerName ?? '' })}
                     className="absolute top-2 right-2 z-10 flex items-center gap-1 px-2 py-0.5 rounded bg-white/85 shadow-sm text-xs text-ink-secondary max-w-[140px]"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-3 h-3 shrink-0">
@@ -337,7 +339,7 @@ export default function RecipeList({
                     <button
                       type="button"
                       onClick={() => toggleFavorite(recipe.id)}
-                      aria-label={favoriteIds.has(recipe.id) ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+                      aria-label={favoriteIds.has(recipe.id) ? t('removeFavorite') : t('addFavorite')}
                       className="absolute top-2 right-2 z-10 w-8 h-8 flex items-center justify-center rounded bg-white/80 hover:bg-white transition-colors shadow-sm"
                     >
                       <svg viewBox="0 0 16 16" className="w-4 h-4" fill={favoriteIds.has(recipe.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth={1.5}
@@ -387,8 +389,8 @@ export default function RecipeList({
                       className="text-xs text-ink-tertiary mt-3 min-h-[1rem]"
                     >
                       {[
-                        totalTime > 0 ? `${totalTime} Min.` : null,
-                        recipe.servings ? `${recipe.servings} Portionen` : null,
+                        totalTime > 0 ? t('totalTime', { time: totalTime }) : null,
+                        recipe.servings ? t('portionen', { count: recipe.servings }) : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}

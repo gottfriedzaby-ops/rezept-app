@@ -1,78 +1,105 @@
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from '@/i18n/routing';
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isAdmin } from "@/lib/admin";
 
+const intlMiddleware = createIntlMiddleware(routing);
+
+function getLocale(pathname: string): string {
+  for (const locale of routing.locales) {
+    if (pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`) {
+      return locale;
+    }
+  }
+  return routing.defaultLocale;
+}
+
+function stripLocale(pathname: string, locale: string): string {
+  if (pathname === `/${locale}`) return '/';
+  if (pathname.startsWith(`/${locale}/`)) return pathname.slice(`/${locale}`.length);
+  return pathname;
+}
+
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const { pathname } = request.nextUrl;
+
+  type CookieEntry = { name: string; value: string; options: Record<string, unknown> };
+  const pendingCookies: CookieEntry[] = [];
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co",
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key",
     {
       cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
+        getAll() { return request.cookies.getAll(); },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          cookiesToSet.forEach((c) => pendingCookies.push(c as CookieEntry));
         },
       },
     }
   );
 
-  // Refresh session — must be called before any route checks
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  // Gate /api/admin/* — admins only. Returns JSON 403, not a redirect, so
-  // fetch() callers see a clean error. Service-role queries inside the route
-  // bypass RLS, so this middleware gate is the only authorisation barrier.
-  if (pathname.startsWith("/api/admin")) {
-    if (!user || !isAdmin(user)) {
-      return NextResponse.json(
-        { data: null, error: "Forbidden" },
-        { status: 403 },
-      );
-    }
-    return supabaseResponse;
+  function applySupabaseCookies(res: NextResponse): NextResponse {
+    pendingCookies.forEach(({ name, value, options }) => {
+      res.cookies.set(name, value, options as Parameters<typeof res.cookies.set>[2]);
+    });
+    return res;
   }
 
+  // API routes: auth gate only, no locale routing
+  if (pathname.startsWith('/api/')) {
+    // Gate /api/admin/* — admins only. Returns JSON 403, not a redirect, so
+    // fetch() callers see a clean error. Service-role queries inside the route
+    // bypass RLS, so this middleware gate is the only authorisation barrier.
+    if (pathname.startsWith("/api/admin")) {
+      if (!user || !isAdmin(user)) {
+        return NextResponse.json({ data: null, error: "Forbidden" }, { status: 403 });
+      }
+    }
+    return applySupabaseCookies(NextResponse.next({ request }));
+  }
+
+  // Only the Supabase auth-code exchange callback must stay locale-agnostic
+  // (Supabase hardcodes the redirectTo URL without a locale prefix in emails).
+  // All other /auth/* pages (e.g. reset-password) live under [locale] and
+  // should go through normal intl routing.
+  if (pathname === '/auth/callback') {
+    return applySupabaseCookies(NextResponse.next({ request }));
+  }
+
+  // For page routes: auth checks with locale-aware paths
+  const locale = getLocale(pathname);
+  const strippedPath = stripLocale(pathname, locale);
+
   const isPublic =
-    pathname.startsWith("/login") ||
-    pathname.startsWith("/register") ||
-    pathname.startsWith("/auth") ||
-    pathname.startsWith("/shared") ||
-    // Public: invitation token lookup (GET only — claim enforces auth internally)
-    pathname.startsWith("/api/library-shares/invitation") ||
-    // Public: registration preflight (anonymous visitors must reach this)
-    pathname === "/api/auth/preflight-register";
+    strippedPath.startsWith("/login") ||
+    strippedPath.startsWith("/register") ||
+    strippedPath.startsWith("/auth") ||
+    strippedPath.startsWith("/shared");
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    if (pathname !== "/") {
-      url.searchParams.set("redirect", pathname);
+    url.pathname = `/${locale}/login`;
+    url.searchParams.delete('redirect');
+    if (strippedPath !== '/') {
+      url.searchParams.set("redirect", strippedPath);
     }
-    return NextResponse.redirect(url);
+    return applySupabaseCookies(NextResponse.redirect(url));
   }
 
   // Redirect logged-in users away from auth pages
-  if (user && (pathname === "/login" || pathname === "/register")) {
+  if (user && (strippedPath === '/login' || strippedPath === '/register')) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
-    return NextResponse.redirect(url);
+    url.pathname = `/${locale}`;
+    return applySupabaseCookies(NextResponse.redirect(url));
   }
 
-  return supabaseResponse;
+  // Locale routing for all page routes
+  return applySupabaseCookies(intlMiddleware(request));
 }
 
 export const config = {

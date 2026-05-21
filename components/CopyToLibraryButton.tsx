@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 
 interface Props {
   recipeId: string;
@@ -10,6 +11,7 @@ interface Props {
 type State = "idle" | "loading" | "done" | "error";
 
 export default function CopyToLibraryButton({ recipeId }: Props) {
+  const t = useTranslations("RecipeActions");
   const [state, setState] = useState<State>("idle");
   const [newId, setNewId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -21,14 +23,14 @@ export default function CopyToLibraryButton({ recipeId }: Props) {
       const res = await fetch(`/api/recipes/${recipeId}/duplicate`, { method: "POST" });
       const json = await res.json();
       if (!res.ok || json.error) {
-        setError(json.error ?? "Fehler beim Kopieren.");
+        setError(json.error ?? t("copyError"));
         setState("error");
         return;
       }
       setNewId(json.data.id);
       setState("done");
     } catch {
-      setError("Fehler beim Kopieren.");
+      setError(t("copyError"));
       setState("error");
     }
   }
@@ -36,12 +38,12 @@ export default function CopyToLibraryButton({ recipeId }: Props) {
   if (state === "done" && newId) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-sm text-emerald-700">In deine Sammlung kopiert!</span>
+        <span className="text-sm text-emerald-700">{t("copiedMessage")}</span>
         <Link
           href={`/${newId}`}
           className="text-sm font-medium text-forest hover:text-forest-deep transition-colors"
         >
-          Rezept ansehen →
+          {t("viewRecipe")}
         </Link>
       </div>
     );
@@ -55,7 +57,7 @@ export default function CopyToLibraryButton({ recipeId }: Props) {
         disabled={state === "loading"}
         className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {state === "loading" ? "Wird kopiert…" : "In meine Sammlung kopieren"}
+        {state === "loading" ? t("copying") : t("copyToLibrary")}
       </button>
       {state === "error" && error && (
         <p className="text-red-600 text-sm mt-2">{error}</p>

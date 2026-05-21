@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
@@ -33,22 +34,22 @@ const INSTAGRAM_RE = /(?:instagram\.com|instagr\.am)\/(?:p|reel|tv)\//i;
 const YOUTUBE_RE = /(?:youtube\.com|youtu\.be)/i;
 const URL_RE = /^https?:\/\//i;
 
-async function safeParseJson(res: Response): Promise<ImportApiResponse> {
+async function safeParseJson(res: Response, errorServerMsg: string, errorInvalidMsg: string): Promise<ImportApiResponse> {
   const ct = res.headers.get("content-type") ?? "";
   if (!ct.includes("application/json")) {
     const body = await res.text().catch(() => "");
     console.error("[safeParseJson] non-JSON response", res.status, body.slice(0, 200));
-    return { data: null, error: `Server-Fehler (${res.status})` };
+    return { data: null, error: errorServerMsg.replace("{code}", String(res.status)) };
   }
   try {
     return await res.json();
   } catch {
-    return { data: null, error: "Ungültige Server-Antwort" };
+    return { data: null, error: errorInvalidMsg };
   }
 }
 
 
-async function compressImage(file: File): Promise<File> {
+async function compressImage(file: File, canvasError: string, compressionError: string, imageLoadError: string): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const objectUrl = URL.createObjectURL(file);
@@ -62,36 +63,35 @@ async function compressImage(file: File): Promise<File> {
       const canvas = document.createElement("canvas");
       canvas.width = width; canvas.height = height;
       const ctx = canvas.getContext("2d");
-      if (!ctx) { reject(new Error("Canvas nicht verfügbar")); return; }
+      if (!ctx) { reject(new Error(canvasError)); return; }
       ctx.drawImage(img, 0, 0, width, height);
       canvas.toBlob(
         (blob) => {
-          if (!blob) { reject(new Error("Komprimierung fehlgeschlagen")); return; }
+          if (!blob) { reject(new Error(compressionError)); return; }
           resolve(new File([blob], file.name, { type: "image/jpeg" }));
         },
         "image/jpeg",
         0.85
       );
     };
-    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Bild konnte nicht geladen werden")); };
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error(imageLoadError)); };
     img.src = objectUrl;
   });
 }
 
 
 export default function ImportUnified() {
+  const t = useTranslations("Import");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
-  // UI-local state (doesn't need to survive navigation)
   const [urlInput, setUrlInput] = useState("");
   const [images, setImages] = useState<ImageEntry[]>([]);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Global import state (survives navigation)
   const {
     phase, activeType, parseResult, error, duplicateId, duplicateTitle,
     setPhase, setActiveType, setParseResult, setError,
@@ -159,6 +159,9 @@ export default function ImportUnified() {
     setDuplicateId(null);
     setDuplicateTitle(null);
 
+    const serverErrorMsg = t("serverError");
+    const invalidResponseMsg = t("invalidResponse");
+
     try {
       let json: ImportApiResponse;
 
@@ -166,7 +169,7 @@ export default function ImportUnified() {
         const fd = new FormData();
         fd.append("file", pdfFile);
         const res = await fetch("/api/import-pdf", { method: "POST", body: fd });
-        json = await safeParseJson(res);
+        json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       } else if (inputType === "photo" && images.length > 0) {
         const urls: string[] = [];
         const fileNames: string[] = [];
@@ -176,7 +179,7 @@ export default function ImportUnified() {
             let file = entry.file;
             const isHeic = /image\/heic|image\/heif/i.test(file.type) || /\.heic$/i.test(file.name);
             if (!isHeic) {
-              try { file = await compressImage(file); } catch { /* use original */ }
+              try { file = await compressImage(file, t("canvasError"), t("compressionError"), t("imageLoadError")); } catch { /* use original */ }
             }
             const fd = new FormData();
             fd.append("image", file);
@@ -187,7 +190,7 @@ export default function ImportUnified() {
         }
 
         if (urls.length === 0) {
-          setError("Alle Bilder konnten nicht verarbeitet werden. Bitte erneut versuchen.");
+          setError(t("allImagesError"));
           setPhase("idle");
           return;
         }
@@ -197,7 +200,7 @@ export default function ImportUnified() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ urls, fileNames }),
         });
-        json = await safeParseJson(res);
+        json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       } else {
         const endpoint =
           inputType === "youtube" ? "/api/import-youtube" :
@@ -208,7 +211,7 @@ export default function ImportUnified() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url: urlInput.trim() }),
         });
-        json = await safeParseJson(res);
+        json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
       }
 
       if (json.error === "duplicate" && json.existingRecipeId) {
@@ -216,14 +219,14 @@ export default function ImportUnified() {
         setDuplicateTitle(json.existingTitle ?? null);
         setPhase("idle");
       } else if (json.error || !json.data) {
-        setError(json.error ?? "Import fehlgeschlagen");
+        setError(json.error ?? t("importError"));
         setPhase("idle");
       } else {
         setParseResult(json.data);
         setPhase("review");
       }
     } catch {
-      setError("Netzwerkfehler. Bitte erneut versuchen.");
+      setError(t("networkError"));
       setPhase("idle");
     }
   }
@@ -258,7 +261,7 @@ export default function ImportUnified() {
         router.refresh();
       }
     } catch {
-      setError("Netzwerkfehler. Bitte erneut versuchen.");
+      setError(t("networkError"));
     } finally {
       setSaving(false);
     }
@@ -290,9 +293,9 @@ export default function ImportUnified() {
   if (phase === "success") {
     return (
       <div className="flex flex-col gap-4 py-2">
-        <p className="text-sm text-forest font-medium">Rezept gespeichert.</p>
+        <p className="text-sm text-forest font-medium">{t("importSuccess")}</p>
         <button type="button" onClick={handleReset} className="self-start text-sm text-ink-tertiary hover:text-ink-primary transition-colors">
-          Weiteres Rezept importieren →
+          {t("importAnother")}
         </button>
       </div>
     );
@@ -303,7 +306,7 @@ export default function ImportUnified() {
     return (
       <div className="flex flex-col gap-4">
         {firstPreview && (
-          <img src={firstPreview} alt="Vorschau" className="w-full max-h-40 object-contain rounded bg-surface-secondary" />
+          <img src={firstPreview} alt={t("previewAlt")} className="w-full max-h-40 object-contain rounded bg-surface-secondary" />
         )}
         <RecipeReviewForm
           initial={parseResult.recipe}
@@ -332,7 +335,7 @@ export default function ImportUnified() {
           type="text"
           value={urlInput}
           onChange={(e) => { setUrlInput(e.target.value); setError(null); }}
-          placeholder="Website, YouTube- oder Instagram-Link einfügen…"
+          placeholder={t("urlPlaceholder")}
           disabled={phase === "loading"}
           className="input-field disabled:opacity-50"
         />
@@ -353,7 +356,7 @@ export default function ImportUnified() {
                 type="button"
                 onClick={() => removeImage(entry.id)}
                 className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-black/50 text-white text-xs flex items-center justify-center hover:bg-black/75"
-                aria-label={`${entry.file.name} entfernen`}
+                aria-label={t("removeImage", { name: entry.file.name })}
               >
                 ×
               </button>
@@ -364,12 +367,12 @@ export default function ImportUnified() {
               type="button"
               onClick={() => fileInputRef.current?.click()}
               className="aspect-square rounded border-2 border-dashed border-purple-300 bg-purple-50 flex flex-col items-center justify-center gap-1 text-purple-500 active:bg-purple-100"
-              aria-label="Weiteres Bild hinzufügen"
+              aria-label={t("addMorePhotos")}
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
               </svg>
-              <span className="text-[10px] font-semibold leading-tight text-center px-1">Bild<br/>hinzufügen</span>
+              <span className="text-[10px] font-semibold leading-tight text-center px-1">{t("addImageLabel")}</span>
             </button>
           )}
         </div>
@@ -384,7 +387,7 @@ export default function ImportUnified() {
             type="button"
             onClick={clearPdf}
             className="text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none"
-            aria-label="PDF entfernen"
+            aria-label={t("removePdf")}
           >
             ×
           </button>
@@ -393,7 +396,7 @@ export default function ImportUnified() {
         <div>
           <div className="flex items-center gap-3 my-1">
             <div className="flex-1 h-px bg-stone" />
-            <span className="text-xs text-ink-tertiary">oder</span>
+            <span className="text-xs text-ink-tertiary">{t("orDivider")}</span>
             <div className="flex-1 h-px bg-stone" />
           </div>
           <div className="mt-2 flex gap-2">
@@ -406,7 +409,7 @@ export default function ImportUnified() {
               <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
               </svg>
-              Foto hochladen
+              {t("uploadPhoto")}
             </button>
             <button
               type="button"
@@ -417,7 +420,7 @@ export default function ImportUnified() {
               <svg className="h-4 w-4 shrink-0" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
               </svg>
-              PDF hochladen
+              {t("uploadPdf")}
             </button>
           </div>
         </div>
@@ -441,29 +444,29 @@ export default function ImportUnified() {
 
       <button type="submit" disabled={!canSubmit} className="btn-primary w-full py-3">
         {phase === "loading"
-          ? "Wird analysiert…"
+          ? t("importing")
           : images.length > 1
-          ? `Importieren (${images.length} Bilder)`
+          ? t("submitMultiple", { count: images.length })
           : pdfFile
-          ? "PDF importieren"
-          : "Rezept importieren"}
+          ? t("submitPdf")
+          : t("submitDefault")}
       </button>
 
       {duplicateId && (
         <p className="text-sm text-ink-secondary">
-          Dieses Rezept existiert bereits:{" "}
+          {t("duplicateExists")}:{" "}
           <a
             href={`/${duplicateId}`}
             className="text-forest underline hover:text-forest-deep transition-colors"
           >
-            {duplicateTitle ?? "Zum Rezept"}
+            {duplicateTitle ?? t("goToRecipe")}
           </a>
         </p>
       )}
       {error && <p className="text-sm text-red-700">{error}</p>}
       {phase !== "loading" && (
         <p className="text-xs text-ink-tertiary text-center">
-          Website, YouTube-, Instagram-Link, Foto oder PDF eines Rezepts
+          {t("importHint")}
         </p>
       )}
     </form>

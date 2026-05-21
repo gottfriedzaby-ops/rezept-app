@@ -1,9 +1,11 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { useImport } from "@/contexts/ImportContext";
 
 export default function ImportStatusPill() {
+  const t = useTranslations("Import");
   const { phase } = useImport();
   const pathname = usePathname();
   const router = useRouter();
@@ -15,7 +17,7 @@ export default function ImportStatusPill() {
       {phase === "loading" && (
         <>
           <span className="w-3 h-3 rounded-full border-2 border-forest border-t-transparent animate-spin" />
-          <span className="text-ink-secondary">Rezept wird importiert…</span>
+          <span className="text-ink-secondary">{t("statusLoading")}</span>
         </>
       )}
       {phase === "review" && (
@@ -25,7 +27,7 @@ export default function ImportStatusPill() {
             onClick={() => router.push("/")}
             className="text-ink-primary font-medium hover:text-forest transition-colors"
           >
-            Import bereit — Jetzt prüfen →
+            {t("statusReview")}
           </button>
         </>
       )}

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import type { Recipe, RecipeType } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import TagInput from "@/components/TagInput";
@@ -15,15 +16,17 @@ function scaleAmount(amount: number, factor: number): string {
   return String(parseFloat((amount * factor).toPrecision(6)));
 }
 
-const RECIPE_TYPES: { value: RecipeType; label: string; emoji: string }[] = [
-  { value: "kochen", label: "Kochen", emoji: "🍳" },
-  { value: "backen", label: "Backen", emoji: "🍞" },
-  { value: "grillen", label: "Grillen", emoji: "🔥" },
-  { value: "zubereiten", label: "Zubereiten", emoji: "🥗" },
+const RECIPE_TYPE_VALUES: { value: RecipeType; emoji: string }[] = [
+  { value: "kochen", emoji: "🍳" },
+  { value: "backen", emoji: "🍞" },
+  { value: "grillen", emoji: "🔥" },
+  { value: "zubereiten", emoji: "🥗" },
 ];
 
 export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
   const router = useRouter();
+  const t = useTranslations("RecipeEditForm");
+  const tTypes = useTranslations("RecipeTypes");
   const initServings = (recipe.servings ?? 0) > 0 ? recipe.servings! : 1;
 
   const [title, setTitle] = useState(recipe.title);
@@ -91,7 +94,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
         router.push(`/${recipe.id}`);
       }
     } catch {
-      setError("Netzwerkfehler. Bitte erneut versuchen.");
+      setError(t("networkError"));
       setSaving(false);
     }
   }
@@ -151,7 +154,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
   function removeSection(sIdx: number) {
     const s = sections[sIdx];
     const hasContent = s.ingredients.some((i) => i.name.trim()) || s.steps.some((st) => st.text.trim());
-    if (hasContent && !window.confirm("Abschnitt wirklich löschen? Alle Zutaten und Schritte dieses Abschnitts gehen verloren.")) return;
+    if (hasContent && !window.confirm(t("confirmDeleteSection"))) return;
     setSections((prev) => prev.filter((_, i) => i !== sIdx));
   }
 
@@ -167,29 +170,29 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
     <div className="flex flex-col gap-6">
       {/* Title */}
       <div>
-        <label htmlFor="recipe-title" className="block text-xs text-ink-tertiary mb-1.5">Titel</label>
+        <label htmlFor="recipe-title" className="block text-xs text-ink-tertiary mb-1.5">{t("title")}</label>
         <input id="recipe-title" type="text" value={title} onChange={(e) => setTitle(e.target.value)} disabled={saving} className={fieldCls} />
       </div>
 
       {/* Description */}
       <div>
-        <label htmlFor="recipe-description" className="block text-xs text-ink-tertiary mb-1.5">Beschreibung <span className="text-ink-tertiary/60">(optional)</span></label>
+        <label htmlFor="recipe-description" className="block text-xs text-ink-tertiary mb-1.5">{t("description")} <span className="text-ink-tertiary/60">{t("descriptionOptional")}</span></label>
         <textarea
           id="recipe-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={2}
           disabled={saving}
-          placeholder="Kurze Beschreibung des Rezepts…"
+          placeholder={t("descriptionPlaceholder")}
           className="w-full px-3 py-2 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors resize-y"
         />
       </div>
 
       {/* Recipe type */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Rezepttyp</label>
+        <label className="block text-xs text-ink-tertiary mb-1.5">{t("recipeType")}</label>
         <div className="flex gap-2 flex-wrap">
-          {RECIPE_TYPES.map(({ value, label, emoji }) => (
+          {RECIPE_TYPE_VALUES.map(({ value, emoji }) => (
             <button
               key={value}
               type="button"
@@ -201,7 +204,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
                   : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
               }`}
             >
-              {emoji} {label}
+              {emoji} {tTypes(value)}
             </button>
           ))}
         </div>
@@ -211,7 +214,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label htmlFor="recipe-servings" className="block text-xs text-ink-tertiary mb-1.5">
-            Portionen{showServingsWarning && <span className="text-amber-600 ml-0.5">*</span>}
+            {t("servings")}{showServingsWarning && <span className="text-amber-600 ml-0.5">*</span>}
           </label>
           <input
             id="recipe-servings"
@@ -219,14 +222,14 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
             value={servings}
             onChange={(e) => setServings(e.target.value)}
             min={1}
-            placeholder="z.B. 4"
+            placeholder="4"
             disabled={saving}
             className={`${smallCls} ${showServingsWarning ? "border-amber-400 bg-amber-50/50" : ""}`}
           />
         </div>
         {[
-          { id: "recipe-prep-time", label: "Vorbereitung (Min.)", value: prepTime, set: setPrepTime },
-          { id: "recipe-cook-time", label: "Kochen (Min.)", value: cookTime, set: setCookTime },
+          { id: "recipe-prep-time", label: t("prepTime"), value: prepTime, set: setPrepTime },
+          { id: "recipe-cook-time", label: t("cookTime"), value: cookTime, set: setCookTime },
         ].map(({ id, label, value, set }) => (
           <div key={id}>
             <label htmlFor={id} className="block text-xs text-ink-tertiary mb-1.5">{label}</label>
@@ -237,7 +240,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
 
       {showServingsWarning && (
         <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-3 py-2 -mt-3">
-          Die Portionsangabe fehlt. Bitte ergänze sie, damit die Mengen korrekt skaliert werden können.
+          {t("servingsWarning")}
         </p>
       )}
 
@@ -248,10 +251,10 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
             <div className="flex gap-2 items-center">
               <input
                 type="text"
-                aria-label={`Titel von Abschnitt ${sIdx + 1}`}
+                aria-label={`${t("title")} ${sIdx + 1}`}
                 value={section.title}
                 onChange={(e) => setSections((prev) => prev.map((s, i) => i !== sIdx ? s : { ...s, title: e.target.value }))}
-                placeholder="Abschnitt (z.B. Für den Teig)"
+                placeholder={t("sectionPlaceholder")}
                 disabled={saving}
                 className="flex-1 font-medium text-sm px-2.5 py-1.5 bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
               />
@@ -260,21 +263,21 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
                 onClick={() => moveSection(sIdx, -1)}
                 disabled={saving || sIdx === 0}
                 className="px-2 py-1 text-ink-tertiary hover:text-ink-primary disabled:opacity-30 text-sm"
-                title="Nach oben"
+                title={t("moveUp")}
               >↑</button>
               <button
                 type="button"
                 onClick={() => moveSection(sIdx, 1)}
                 disabled={saving || sIdx === sections.length - 1}
                 className="px-2 py-1 text-ink-tertiary hover:text-ink-primary disabled:opacity-30 text-sm"
-                title="Nach unten"
+                title={t("moveDown")}
               >↓</button>
               <button
                 type="button"
                 onClick={() => removeSection(sIdx)}
                 disabled={saving || sections.length === 1}
                 className="px-2 py-1 text-ink-tertiary hover:text-red-600 disabled:opacity-30 text-sm"
-                title="Abschnitt entfernen"
+                title={t("deleteSection")}
               >×</button>
             </div>
           )}
@@ -282,40 +285,40 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
           {/* Ingredients */}
           <div>
             <label className="block text-xs text-ink-tertiary mb-2">
-              Zutaten für{" "}
+              {t("ingredientsFor")}{" "}
               <span className={`font-medium ${showServingsWarning ? "text-amber-600" : "text-ink-primary"}`}>
                 {showServingsWarning ? "?" : currentServings}
               </span>{" "}
-              Portionen
+              {t("servings")}
             </label>
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (
                 <div key={iIdx} className="flex gap-2 items-center">
-                  <input aria-label={`Menge für Zutat ${iIdx + 1}`} type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder="Menge" min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input aria-label={`Einheit für Zutat ${iIdx + 1}`} type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder="Einheit" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input aria-label={`Name für Zutat ${iIdx + 1}`} type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder="Zutat" disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <button type="button" aria-label={`Zutat ${iIdx + 1} entfernen`} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={rmCls}>×</button>
+                  <input aria-label={`${t("ingredientAmount")} ${iIdx + 1}`} type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`${t("ingredientUnit")} ${iIdx + 1}`} type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`${t("ingredientName")} ${iIdx + 1}`} type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <button type="button" aria-label={`${t("removeIngredient")} ${iIdx + 1}`} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={rmCls}>×</button>
                 </div>
               ))}
               <button type="button" onClick={() => addIngredient(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
-                + Zutat hinzufügen
+                {t("addIngredient")}
               </button>
             </div>
           </div>
 
           {/* Steps */}
           <div>
-            <label className="block text-xs text-ink-tertiary mb-2">Schritte</label>
+            <label className="block text-xs text-ink-tertiary mb-2">{t("steps")}</label>
             <div className="flex flex-col gap-2">
               {section.steps.map((step, stIdx) => (
                 <div key={stIdx} className="flex gap-2 items-start">
                   <span className="text-xs text-ink-tertiary mt-2 w-5 shrink-0 text-right tabular-nums">{stIdx + 1}.</span>
-                  <textarea aria-label={`Schritt ${stIdx + 1}`} value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
-                  <button type="button" aria-label={`Schritt ${stIdx + 1} entfernen`} onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${rmCls} mt-1.5`}>×</button>
+                  <textarea aria-label={`${t("step")} ${stIdx + 1}`} value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
+                  <button type="button" aria-label={`${t("removeStep")} ${stIdx + 1}`} onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${rmCls} mt-1.5`}>×</button>
                 </div>
               ))}
               <button type="button" onClick={() => addStep(sIdx)} disabled={saving} className="self-start text-xs text-forest hover:text-forest-deep transition-colors mt-1 disabled:opacity-40">
-                + Schritt hinzufügen
+                {t("addStep")}
               </button>
             </div>
           </div>
@@ -329,23 +332,23 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
         disabled={saving}
         className="self-start text-xs text-forest hover:text-forest-deep transition-colors disabled:opacity-40 border border-dashed border-forest/40 rounded px-3 py-1.5"
       >
-        + Abschnitt hinzufügen
+        {t("addSection")}
       </button>
 
       {/* Tags */}
       <div>
-        <label className="block text-xs text-ink-tertiary mb-1.5">Tags</label>
+        <label className="block text-xs text-ink-tertiary mb-1.5">{t("tags")}</label>
         <TagInput
           value={tags}
           onChange={setTags}
           disabled={saving}
-          placeholder="Tag eingeben (Enter oder Komma)"
+          placeholder={t("tagPlaceholder")}
         />
       </div>
 
       {/* Cover image URL */}
       <div>
-        <label htmlFor="recipe-image-url" className="block text-xs text-ink-tertiary mb-1.5">Titelbild-URL <span className="text-ink-tertiary/60">(optional)</span></label>
+        <label htmlFor="recipe-image-url" className="block text-xs text-ink-tertiary mb-1.5">{t("imageUrl")} <span className="text-ink-tertiary/60">{t("descriptionOptional")}</span></label>
         <input id="recipe-image-url" type="url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://…" disabled={saving} className={fieldCls} />
       </div>
 
@@ -353,10 +356,10 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
 
       <div className="flex gap-3 pt-2">
         <button type="button" onClick={handleSave} disabled={saving || !title.trim()} className="btn-primary">
-          {saving ? "Wird gespeichert…" : "Änderungen speichern"}
+          {saving ? t("saving") : t("save")}
         </button>
         <button type="button" onClick={() => router.back()} disabled={saving} className="btn-ghost">
-          Abbrechen
+          {t("cancel")}
         </button>
       </div>
     </div>

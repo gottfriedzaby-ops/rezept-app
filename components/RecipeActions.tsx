@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
+import { useTranslations } from 'next-intl';
+import { useRouter, Link } from "@/i18n/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 interface Props {
@@ -12,6 +12,7 @@ interface Props {
 }
 
 export default function RecipeActions({ recipeId, initialFavorite, readOnly = false }: Props) {
+  const t = useTranslations('RecipeActions');
   const router = useRouter();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -60,7 +61,7 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
         <button
           type="button"
           onClick={toggleFavorite}
-          aria-label={isFavorite ? "Aus Favoriten entfernen" : "Zu Favoriten hinzufügen"}
+          aria-label={isFavorite ? t('removeFavorite') : t('addFavorite')}
           className={`${btnCls} ${isFavorite ? "text-amber-400 hover:text-amber-500" : ""}`}
         >
           {isFavorite ? (
@@ -75,7 +76,7 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
         </button>
 
         {/* Edit */}
-        <Link href={`/${recipeId}/edit`} className={btnCls} aria-label="Rezept bearbeiten">
+        <Link href={`/${recipeId}/edit`} className={btnCls} aria-label={t('editRecipe')}>
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5">
             <path strokeLinecap="round" strokeLinejoin="round" d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
           </svg>
@@ -85,8 +86,8 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
         <button
           type="button"
           onClick={() => setConfirmOpen(true)}
-          aria-label="Rezept löschen"
-          title="Rezept löschen"
+          aria-label={t('deleteRecipe')}
+          title={t('deleteRecipe')}
           className={btnCls}
         >
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5} className="w-5 h-5" aria-hidden="true">
@@ -106,9 +107,9 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
 
       <ConfirmDialog
         open={confirmOpen}
-        title="Rezept löschen?"
-        message="Das Rezept wird unwiderruflich gelöscht. Dieser Vorgang kann nicht rückgängig gemacht werden."
-        confirmLabel={deleting ? "Wird gelöscht…" : "Löschen"}
+        title={t('deleteTitle')}
+        message={t('deleteMessage')}
+        confirmLabel={deleting ? t('deleting') : t('deleteRecipe')}
         destructive
         onConfirm={handleDelete}
         onCancel={() => setConfirmOpen(false)}

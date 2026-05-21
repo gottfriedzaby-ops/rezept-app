@@ -1,10 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import type { Recipe, Step } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
-import { ctaLabelFor } from "@/lib/recipeTypeLabels";
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -96,6 +96,7 @@ interface Props {
 }
 
 export default function CookMode({ recipe, initialServings }: Props) {
+  const t = useTranslations("CookMode");
   const sections = useMemo(() => getRecipeSections(recipe), [recipe]);
   const multiSection = sections.length > 1 || sections[0]?.title !== null;
 
@@ -233,7 +234,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           href={`/${recipe.id}`}
           className="h-12 flex items-center text-sm text-ink-tertiary hover:text-ink-primary transition-colors"
         >
-          ← Beenden
+          ← {t("finish")}
         </Link>
         <div className="text-center">
           {/* h1 is always in the DOM for screen readers + document outline,
@@ -241,7 +242,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           <h1 className="text-xs text-ink-tertiary uppercase tracking-widest mb-0.5 sr-only sm:not-sr-only sm:block truncate max-w-[240px]">
             {recipe.title}
           </h1>
-          <p className="text-lg font-medium text-ink-primary tabular-nums" aria-label={`Schritt ${stepIndex + 1} von ${cookSteps.length}`}>
+          <p className="text-lg font-medium text-ink-primary tabular-nums" aria-label={t("step", { current: stepIndex + 1, total: cookSteps.length })}>
             {stepIndex + 1} / {cookSteps.length}
           </p>
         </div>
@@ -293,7 +294,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
               }`}
               style={{ fontSize: "clamp(3rem, 10vw, 5rem)" }}
             >
-              {timeLeft === 0 ? "Fertig ✓" : formatTime(timeLeft)}
+              {timeLeft === 0 ? `${t("timerDone")} ✓` : formatTime(timeLeft)}
             </span>
             <div className="flex gap-3">
               <button
@@ -302,7 +303,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
                 aria-keyshortcuts="t"
                 className="h-14 px-8 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
               >
-                {timerRunning ? "Pause" : "Start"}
+                {timerRunning ? t("pauseTimer") : t("startTimer")}
               </button>
               <button
                 onClick={resetTimer}
@@ -321,7 +322,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           className="w-full h-14 px-6 flex items-center justify-between text-ink-secondary hover:bg-surface-hover transition-colors"
         >
           <span className="text-sm font-medium">
-            Zutaten für {initialServings} Portion{initialServings !== 1 ? "en" : ""}
+            {t("ingredients")} ({initialServings} {t("servings")})
           </span>
           <span className="text-ink-tertiary text-sm">{showIngredients ? "▲" : "▼"}</span>
         </button>
@@ -388,7 +389,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           aria-keyshortcuts="ArrowLeft"
           className="flex-1 h-14 rounded border border-stone text-ink-secondary font-medium hover:bg-surface-hover transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          ← Zurück
+          ← {t("previous")}
         </button>
 
         {isLast ? (
@@ -396,7 +397,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
             href={`/${recipe.id}`}
             className="flex-1 h-14 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors flex items-center justify-center"
           >
-            Fertig!
+            {t("finish")}!
           </Link>
         ) : (
           <button
@@ -404,7 +405,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
             aria-keyshortcuts="ArrowRight Space"
             className="flex-1 h-14 rounded bg-ink-primary text-white font-medium hover:bg-ink-secondary transition-colors"
           >
-            Weiter →
+            {t("next")} →
           </button>
         )}
       </nav>

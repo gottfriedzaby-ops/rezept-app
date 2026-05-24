@@ -97,14 +97,14 @@ export default async function RecipesPage() {
 
         <section>
           <p className="label-overline mb-8">{t("allRecipesSection")}</p>
-          {!recipes || recipes.length === 0 ? (
+          {(!recipes || recipes.length === 0) && sharedRecipes.length === 0 ? (
             <p className="text-ink-secondary">
               {t("emptyState")}
             </p>
           ) : (
             <Suspense fallback={null}>
               <RecipeList
-                recipes={recipes}
+                recipes={recipes ?? []}
                 sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
               />
             </Suspense>

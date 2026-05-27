@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, act } from "@testing-library/react";
 import RecipeList from "@/components/RecipeList";
 import type { Recipe } from "@/types/recipe";
 
@@ -282,14 +282,20 @@ describe("RecipeList — URL-bound filter state (FE-10)", () => {
 
   // RL-U-02
   it("typing in the search input calls router.replace with q param", () => {
+    jest.useFakeTimers();
     render(<RecipeList recipes={[makeRecipe()]} />);
 
     fireEvent.change(screen.getByPlaceholderText("Suchen…"), {
       target: { value: "tomate" },
     });
 
+    expect(mockReplace).not.toHaveBeenCalled();
+
+    act(() => { jest.advanceTimersByTime(300); });
+
     const url = mockReplace.mock.calls[0][0] as string;
     expect(url).toMatch(/q=tomate/);
+    jest.useRealTimers();
   });
 
   // RL-U-03

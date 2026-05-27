@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -32,6 +32,23 @@ export default function RecipeList({
   const pathname = usePathname();
 
   const query = searchParams.get("q") ?? "";
+
+  const [inputValue, setInputValue] = useState<string>(() => searchParams.get("q") ?? "");
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isMountRef = useRef(true);
+
+  useEffect(() => {
+    if (isMountRef.current) { isMountRef.current = false; return; }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => setQuery(inputValue), 300);
+    return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  }, [inputValue]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const urlQuery = searchParams.get("q") ?? "";
+    setInputValue((prev) => (prev === urlQuery ? prev : urlQuery));
+  }, [searchParams]);
+
   const activeTags = useMemo(
     () => new Set(searchParams.getAll("tag")),
     [searchParams]
@@ -80,7 +97,7 @@ export default function RecipeList({
     });
   }, [updateParams]);
 
-  const hasActiveFilter = query !== "" || activeTags.size > 0 || showFavoritesOnly;
+  const hasActiveFilter = inputValue !== "" || activeTags.size > 0 || showFavoritesOnly;
 
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(
     () => new Set(recipes.filter((r) => r.favorite).map((r) => r.id))
@@ -121,7 +138,7 @@ export default function RecipeList({
   );
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
+    const q = inputValue.trim().toLowerCase();
     const result = allRecipes.filter((r) => {
       const matchesQuery =
         q === "" ||
@@ -143,7 +160,7 @@ export default function RecipeList({
       );
     }
     return result;
-  }, [allRecipes, query, activeTags, showFavoritesOnly, favoriteIds, sort]);
+  }, [allRecipes, inputValue, activeTags, showFavoritesOnly, favoriteIds, sort]);
 
   // Tags shown in the filter bar, ranked: active tags first, then by usage
   // count desc (alphabetical tiebreaker). Counts come from the currently
@@ -203,8 +220,8 @@ export default function RecipeList({
           <input
             type="search"
             aria-label={t('searchAriaLabel')}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder={t('searchPlaceholder')}
             className="input-field pl-9"
           />

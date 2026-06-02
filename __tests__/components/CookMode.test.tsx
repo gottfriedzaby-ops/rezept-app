@@ -135,79 +135,9 @@ describe("CookMode — step navigation", () => {
   });
 });
 
-describe("CookMode — timer", () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it("shows timer on a step with timerSeconds", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/)); // step 2 has timerSeconds: 480
-    expect(screen.getByText("08:00")).toBeInTheDocument();
-  });
-
-  it("does not show timer on a step without timerSeconds", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    // Step 1 has no timer
-    expect(screen.queryByText(/\d{2}:\d{2}/)).not.toBeInTheDocument();
-  });
-
-  it("starts countdown when 'Start' is clicked", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/)); // step 2: 480s
-    fireEvent.click(screen.getByText("Start"));
-
-    // Advance one second at a time, wrapping each tick in act so React
-    // flushes state updates before the next timeout is registered.
-    act(() => { jest.advanceTimersByTime(1000); });
-    act(() => { jest.advanceTimersByTime(1000); });
-    act(() => { jest.advanceTimersByTime(1000); });
-
-    expect(screen.getByText("07:57")).toBeInTheDocument();
-  });
-
-  it("toggles to 'Pause' while running", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/));
-    fireEvent.click(screen.getByText("Start"));
-    expect(screen.getByText("Pause")).toBeInTheDocument();
-  });
-
-  it("pauses when 'Pause' is clicked", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/));
-    fireEvent.click(screen.getByText("Start"));
-    fireEvent.click(screen.getByText("Pause"));
-
-    const displayedTime = screen.getByText("08:00").textContent;
-    act(() => { jest.advanceTimersByTime(3000); });
-    // Timer should not have advanced after pausing
-    expect(screen.getByText(displayedTime!)).toBeInTheDocument();
-  });
-
-  it("resets timer when 'Reset' is clicked", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/));
-    fireEvent.click(screen.getByText("Start"));
-    act(() => { jest.advanceTimersByTime(5000); });
-    fireEvent.click(screen.getByText("Reset"));
-    expect(screen.getByText("08:00")).toBeInTheDocument();
-  });
-
-  it("resets timer when navigating to a new step", () => {
-    render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Weiter/)); // step 2 with timer
-    fireEvent.click(screen.getByText("Start"));
-    act(() => { jest.advanceTimersByTime(5000); });
-
-    fireEvent.click(screen.getByText(/Weiter/)); // step 3, no timer
-    expect(screen.queryByText(/\d{2}:\d{2}/)).not.toBeInTheDocument();
-  });
-});
+// Timer tests live in CookModeTimer.test.tsx. The timer now persists across step
+// navigation (it keeps running and stays visible in a banner) instead of resetting,
+// so the former "resets timer when navigating to a new step" expectation no longer holds.
 
 describe("CookMode — ingredients accordion", () => {
   it("hides ingredient list by default", () => {

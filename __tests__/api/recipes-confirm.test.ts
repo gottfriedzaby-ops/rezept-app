@@ -105,7 +105,7 @@ describe("POST /api/recipes/confirm", () => {
     const req = makeRequest({ recipe: validRecipe });
     await POST(req);
 
-    expect(findDuplicateMock).toHaveBeenCalledWith("Tomatensoße", "manual", "test-user-id");
+    expect(findDuplicateMock).toHaveBeenCalledWith("Tomatensoße", "manual", "test-user-id", "manual");
   });
 
   it("inserts the recipe and returns 200 with the saved data", async () => {

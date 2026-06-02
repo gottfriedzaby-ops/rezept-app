@@ -1,4 +1,5 @@
 import { supabaseAdmin } from "@/lib/supabase";
+import type { SourceType } from "@/types/recipe";
 
 export interface DuplicateResult {
   existingRecipeId: string;
@@ -75,17 +76,25 @@ export async function checkUrlDuplicate(url: string, userId: string): Promise<Du
 export async function findDuplicateRecipe(
   title: string,
   sourceValue: string,
-  userId: string
+  userId: string,
+  sourceType?: SourceType
 ): Promise<DuplicateResult | null> {
-  const { data: exact } = await supabaseAdmin
-    .from("recipes")
-    .select("id, title")
-    .eq("source_value", sourceValue)
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
+  // PDF imports store a filename as source_value. Stages 1 (exact source_value)
+  // and 2 (normalised URL) are meaningless for filenames and would false-positive
+  // on collisions (two different "rezept.pdf"), so skip them — run only stage 3.
+  const skipSourceStages = sourceType === "pdf";
 
-  if (sourceValue.startsWith("http")) {
+  if (!skipSourceStages) {
+    const { data: exact } = await supabaseAdmin
+      .from("recipes")
+      .select("id, title")
+      .eq("source_value", sourceValue)
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
+  }
+
+  if (!skipSourceStages && sourceValue.startsWith("http")) {
     const normalizedSource = normalizeUrl(sourceValue);
     let hostname = "";
     try {

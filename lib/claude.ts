@@ -37,6 +37,7 @@ type ClaudeFunctionName =
   | "parseRecipeFromText"
   | "parseRecipeFromImage"
   | "parseRecipeFromImages"
+  | "parseRecipeFromPdf"
   | "reviewAndImproveRecipe"
   | "estimateNutrition";
 
@@ -168,7 +169,7 @@ const RECIPE_SCHEMA = `{
   ],
   "tags": ["string"],
   "scalable": boolean,
-  "source": { "type": "url" | "photo" | "youtube" | "instagram" | "manual", "value": "string" }
+  "source": { "type": "url" | "photo" | "youtube" | "instagram" | "manual" | "pdf", "value": "string" }
 }`;
 
 const RULES = `
@@ -458,6 +459,114 @@ export async function parseRecipeFromImage(
     })),
   }));
   return { recipe: parsed, meta };
+}
+
+// One rasterised page plus its embedded text layer (empty for scanned pages).
+export interface PdfPageInput {
+  pageNumber: number;
+  text: string;
+  imageBase64: string;
+}
+
+export interface PdfRecipeCandidate {
+  title: string;
+  shortDescription: string;
+  pageRange: [number, number];
+}
+
+export type PdfParseResult =
+  | { kind: "single"; recipe: ParsedRecipe }
+  | { kind: "multi"; candidates: PdfRecipeCandidate[] };
+
+const PDF_MULTI_SCHEMA = `{
+  "multiple": true,
+  "candidates": [{ "title": "string", "shortDescription": "string (one short sentence)", "pageRange": [number, number] }]
+}`;
+
+// Hybrid multimodal PDF parse (Feature 10, §6.4): each page contributes a
+// rasterised image block plus, when present, its text-layer block. When
+// detectMultiple is true the model may instead report multiple distinct recipes
+// as candidates (with page ranges) for the user to pick from.
+export async function parseRecipeFromPdf(
+  pages: PdfPageInput[],
+  sourceValue: string,
+  options: { detectMultiple: boolean },
+  userId: string | null = null,
+): Promise<{ result: PdfParseResult; meta: ClaudeCallMeta }> {
+  // Label pages by their position in the sequence we send (1..N), not by their
+  // original page number, so a multi-recipe candidate's pageRange maps directly
+  // back through the caller's pageOrder on the follow-up pick call.
+  const content: Anthropic.ContentBlockParam[] = [];
+  pages.forEach((page, idx) => {
+    content.push({
+      type: "image",
+      source: { type: "base64", media_type: "image/png", data: page.imageBase64 },
+    });
+    if (page.text) {
+      content.push({ type: "text", text: `SEITE ${idx + 1} TEXTEBENE:\n${page.text}` });
+    }
+  });
+
+  const multiInstruction = options.detectMultiple
+    ? `\n\nThis PDF may contain ONE recipe or MULTIPLE distinct recipes.\n- If it contains exactly one recipe, return the ParsedRecipe JSON described above.\n- If it contains two or more clearly separate recipes (each with its own title and own ingredient list), DO NOT merge them. Return ONLY this JSON instead:\n${PDF_MULTI_SCHEMA}\nEach candidate's pageRange is the [first, last] page number (as labelled "SEITE N" above) that the recipe spans.`
+    : `\n\nThese pages show exactly one recipe. Always return the ParsedRecipe JSON described above (never the multi-recipe shape).`;
+
+  content.push({
+    type: "text",
+    text: `Read all recipe content in ${pages.length > 1 ? `these ${pages.length} PDF pages` : "this PDF page"} — use both the rasterised page images and the "SEITE N TEXTEBENE" text blocks. The text-layer blocks are authoritative for exact amounts, units and spelling; use the images for layout and for any page without a text block. Extract the recipe and return valid JSON matching this schema exactly:\n${RECIPE_SCHEMA}\n\nRules:\n${RULES}\n- source.type must be "pdf", source.value must be "${sourceValue}"${multiInstruction}`,
+  });
+
+  const { message, meta } = await claudeCreate(
+    "parseRecipeFromPdf",
+    {
+      model: "claude-sonnet-4-6",
+      max_tokens: 4096,
+      messages: [{ role: "user", content }],
+    },
+    userId,
+  );
+
+  const block = message.content[0];
+  if (block.type !== "text") throw new Error("Unexpected Claude response type");
+
+  const raw = parseClaudeJson<Record<string, unknown>>(block.text);
+
+  if (options.detectMultiple && raw.multiple === true) {
+    const rawCandidates = Array.isArray(raw.candidates) ? raw.candidates : [];
+    const candidates: PdfRecipeCandidate[] = rawCandidates
+      .filter((c): c is Record<string, unknown> => !!c && typeof c === "object")
+      .map((c): PdfRecipeCandidate => {
+        const pr: [number, number] =
+          Array.isArray(c.pageRange) && c.pageRange.length === 2
+            ? [Number(c.pageRange[0]) || 1, Number(c.pageRange[1]) || 1]
+            : [1, pages.length];
+        return {
+          title: typeof c.title === "string" ? c.title : "",
+          shortDescription: typeof c.shortDescription === "string" ? c.shortDescription : "",
+          pageRange: pr,
+        };
+      })
+      .filter((c) => c.title.length > 0);
+    if (candidates.length > 0) {
+      return { result: { kind: "multi", candidates }, meta };
+    }
+    // multiple:true with no usable candidates is a contradictory response —
+    // treat as an extraction failure rather than fabricating a recipe.
+    throw new Error("Das Rezept konnte nicht extrahiert werden. Bitte versuche es erneut.");
+  }
+
+  const parsed = raw as unknown as ParsedRecipe;
+  parsed.tags = normalizeTags(parsed.tags);
+  parsed.source = { type: "pdf", value: sourceValue };
+  const sv = Math.max(1, parsed.servings || 1);
+  parsed.sections = (parsed.sections ?? []).map((section: RecipeSection) => ({
+    ...section,
+    ingredients: section.ingredients.map((ing) => ({
+      ...ing,
+      amount: Math.round((ing.amount / sv) * 100) / 100,
+    })),
+  }));
+  return { result: { kind: "single", recipe: parsed }, meta };
 }
 
 export async function parseRecipeFromText(

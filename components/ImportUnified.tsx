@@ -1,12 +1,17 @@
 "use client";
 
 import { useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
 import { useImport } from "@/contexts/ImportContext";
+
+// PDF import pulls in pdf.js (~1 MB) for client-side thumbnails — load it only
+// once a PDF is actually selected, never on the URL/photo path.
+const PdfImportFlow = dynamic(() => import("@/components/PdfImportFlow"), { ssr: false });
 
 type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
 
@@ -146,7 +151,17 @@ export default function ImportUnified() {
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files.length > 0) addImages(e.dataTransfer.files);
+    const files = Array.from(e.dataTransfer.files);
+    if (files.length === 0) return;
+    // A dropped PDF goes through the dedicated PDF flow, not the photo/vision path.
+    const pdf = files.find((f) => f.type === "application/pdf" || /\.pdf$/i.test(f.name));
+    if (pdf && images.length === 0) {
+      setPdfFile(pdf);
+      setError(null);
+      return;
+    }
+    const imageFiles = files.filter((f) => f.type.startsWith("image/") || /\.(heic|heif)$/i.test(f.name));
+    if (imageFiles.length > 0) addImages(imageFiles);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -165,12 +180,7 @@ export default function ImportUnified() {
     try {
       let json: ImportApiResponse;
 
-      if (inputType === "pdf" && pdfFile) {
-        const fd = new FormData();
-        fd.append("file", pdfFile);
-        const res = await fetch("/api/import-pdf", { method: "POST", body: fd });
-        json = await safeParseJson(res, serverErrorMsg, invalidResponseMsg);
-      } else if (inputType === "photo" && images.length > 0) {
+      if (inputType === "photo" && images.length > 0) {
         const urls: string[] = [];
         const fileNames: string[] = [];
 
@@ -319,6 +329,12 @@ export default function ImportUnified() {
     );
   }
 
+  // A selected PDF takes over with its own preview/reorder/password/picker flow,
+  // which hands the parsed recipe back via ImportContext (phase → "review").
+  if (pdfFile) {
+    return <PdfImportFlow file={pdfFile} onCancel={clearPdf} />;
+  }
+
   return (
     <form
       onSubmit={handleSubmit}
@@ -375,22 +391,6 @@ export default function ImportUnified() {
               <span className="text-[10px] font-semibold leading-tight text-center px-1">{t("addImageLabel")}</span>
             </button>
           )}
-        </div>
-      ) : pdfFile ? (
-        /* PDF chip */
-        <div className="flex items-center gap-3 px-4 py-3 border border-stone rounded bg-surface-secondary">
-          <svg className="h-5 w-5 shrink-0 text-ink-secondary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
-          </svg>
-          <span className="flex-1 text-sm text-ink-primary truncate">{pdfFile.name}</span>
-          <button
-            type="button"
-            onClick={clearPdf}
-            className="text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none"
-            aria-label={t("removePdf")}
-          >
-            ×
-          </button>
         </div>
       ) : (
         <div>

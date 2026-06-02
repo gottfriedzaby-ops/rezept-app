@@ -115,8 +115,11 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
   const [stepIndex, setStepIndex] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
-  const [timeLeft, setTimeLeft] = useState<number | null>(cookSteps[0]?.step.timerSeconds ?? null);
+  // The recipe's single active timer. timeLeft/timerStepIndex are null when no timer runs.
+  // Once started, the timer belongs to timerStepIndex and keeps running across step navigation.
+  const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [timerStepIndex, setTimerStepIndex] = useState<number | null>(null);
   const [checkedIngredients, setCheckedIngredients] = useState<Set<number>>(new Set());
   const mainRef = useRef<HTMLElement | null>(null);
 
@@ -140,6 +143,21 @@ export default function CookMode({ recipe, initialServings }: Props) {
   const currentCookStep = cookSteps[stepIndex];
   const isFirst = stepIndex === 0;
   const isLast = stepIndex === cookSteps.length - 1;
+
+  // The current step's own configured timer — may differ from the running timer's value.
+  const currentStepTimer = currentCookStep?.step.timerSeconds ?? null;
+  // Is the single active timer anchored to the step we're currently viewing?
+  const activeTimerIsOnThisStep = timerStepIndex === stepIndex;
+  const hasActiveTimer = timerStepIndex !== null && timeLeft !== null;
+  // What the main timer area shows for the current step:
+  //  - the live countdown when the active timer is on this step
+  //  - nothing when a timer runs on another step (the pinned banner shows it instead)
+  //  - otherwise this step's configured duration as a "ready to start" value
+  const mainDisplaySeconds: number | null = activeTimerIsOnThisStep
+    ? timeLeft
+    : hasActiveTimer
+      ? null
+      : currentStepTimer;
 
   // Wake Lock
   useEffect(() => {
@@ -170,11 +188,6 @@ export default function CookMode({ recipe, initialServings }: Props) {
   }, []);
 
   useEffect(() => {
-    setTimerRunning(false);
-    setTimeLeft(cookSteps[stepIndex]?.step.timerSeconds ?? null);
-  }, [stepIndex, cookSteps]);
-
-  useEffect(() => {
     if (!timerRunning || timeLeft === null || timeLeft <= 0) return;
     const id = setTimeout(() => {
       const next = timeLeft - 1;
@@ -184,10 +197,25 @@ export default function CookMode({ recipe, initialServings }: Props) {
     return () => clearTimeout(id);
   }, [timerRunning, timeLeft]);
 
+  const handleStartPause = useCallback(() => {
+    if (activeTimerIsOnThisStep) {
+      if (timeLeft === 0) return; // finished — nothing to toggle
+      setTimerRunning((r) => !r);
+      return;
+    }
+    if (currentStepTimer === null) return; // this step has no timer to start
+    // Start this step's timer. Only reachable when no timer is active: while one runs, the
+    // start control is hidden on every other step (see mainDisplaySeconds), enforcing one timer.
+    setTimerStepIndex(stepIndex);
+    setTimeLeft(currentStepTimer);
+    setTimerRunning(true);
+  }, [activeTimerIsOnThisStep, timeLeft, currentStepTimer, stepIndex]);
+
   const resetTimer = useCallback(() => {
     setTimerRunning(false);
-    setTimeLeft(currentCookStep?.step.timerSeconds ?? null);
-  }, [currentCookStep]);
+    setTimeLeft(null);
+    setTimerStepIndex(null);
+  }, []);
 
   useEffect(() => {
     const isTypingTarget = (el: EventTarget | null): boolean => {
@@ -214,9 +242,9 @@ export default function CookMode({ recipe, initialServings }: Props) {
           break;
         case "t":
         case "T":
-          if (timeLeft !== null && timeLeft > 0) {
+          if (mainDisplaySeconds !== null && !(activeTimerIsOnThisStep && timeLeft === 0)) {
             e.preventDefault();
-            setTimerRunning((r) => !r);
+            handleStartPause();
           }
           break;
       }
@@ -224,7 +252,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [cookSteps.length, timeLeft]);
+  }, [cookSteps.length, mainDisplaySeconds, activeTimerIsOnThisStep, timeLeft, handleStartPause]);
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
@@ -286,35 +314,79 @@ export default function CookMode({ recipe, initialServings }: Props) {
           />
         )}
 
-        {timeLeft !== null && (
+        {mainDisplaySeconds !== null && (
           <div className="flex flex-col gap-5">
             <span
               className={`font-mono font-medium tabular-nums ${
-                timeLeft === 0 ? "text-forest" : "text-ink-primary"
+                activeTimerIsOnThisStep && timeLeft === 0 ? "text-forest" : "text-ink-primary"
               }`}
               style={{ fontSize: "clamp(3rem, 10vw, 5rem)" }}
             >
-              {timeLeft === 0 ? `${t("timerDone")} ✓` : formatTime(timeLeft)}
+              {activeTimerIsOnThisStep && timeLeft === 0
+                ? `${t("timerDone")} ✓`
+                : formatTime(mainDisplaySeconds)}
             </span>
             <div className="flex gap-3">
               <button
-                onClick={() => setTimerRunning((r) => !r)}
-                disabled={timeLeft === 0}
+                onClick={handleStartPause}
+                disabled={activeTimerIsOnThisStep && timeLeft === 0}
                 aria-keyshortcuts="t"
                 className="h-14 px-8 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors disabled:opacity-40 disabled:cursor-not-allowed min-w-[120px]"
               >
-                {timerRunning ? t("pauseTimer") : t("startTimer")}
+                {activeTimerIsOnThisStep && timerRunning ? t("pauseTimer") : t("startTimer")}
               </button>
               <button
                 onClick={resetTimer}
                 className="h-14 px-8 rounded border border-stone text-ink-secondary font-medium hover:bg-surface-hover transition-colors min-w-[100px]"
               >
-                Reset
+                {t("resetTimer")}
               </button>
             </div>
           </div>
         )}
       </main>
+
+      {/* Persistent timer banner — keeps the active timer visible and controllable
+          while the user browses to a different step. Tap the label to jump back. */}
+      {timerStepIndex !== null && timeLeft !== null && !activeTimerIsOnThisStep && (
+        <div
+          role="group"
+          aria-label={t("timerForStep", { step: timerStepIndex + 1 })}
+          className="flex items-center gap-3 px-6 h-14 border-t border-stone bg-surface-secondary shrink-0"
+        >
+          <button
+            type="button"
+            onClick={() => setStepIndex(timerStepIndex)}
+            className="flex flex-1 items-baseline gap-3 min-w-0 text-left hover:opacity-80 transition-opacity"
+          >
+            <span className="text-sm text-ink-tertiary truncate">
+              ⏱ {t("step", { current: timerStepIndex + 1, total: cookSteps.length })}
+            </span>
+            <span
+              className={`font-mono font-medium tabular-nums ml-auto ${
+                timeLeft === 0 ? "text-forest" : "text-ink-primary"
+              }`}
+            >
+              {timeLeft === 0 ? `${t("timerDone")} ✓` : formatTime(timeLeft)}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setTimerRunning((r) => !r)}
+            disabled={timeLeft === 0}
+            className="h-10 px-4 rounded border border-stone text-ink-secondary text-sm hover:bg-surface-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          >
+            {timerRunning ? t("pauseTimer") : t("startTimer")}
+          </button>
+          <button
+            type="button"
+            onClick={resetTimer}
+            className="h-10 px-4 rounded border border-stone text-ink-secondary text-sm hover:bg-surface-hover transition-colors shrink-0"
+          >
+            {t("resetTimer")}
+          </button>
+        </div>
+      )}
 
       <div className="border-t border-stone shrink-0">
         <button

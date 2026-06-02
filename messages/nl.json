@@ -327,7 +327,8 @@
     "startTimer": "Timer starten",
     "pauseTimer": "Timer pauzeren",
     "resetTimer": "Timer resetten",
-    "timerDone": "Klaar!"
+    "timerDone": "Klaar!",
+    "timerForStep": "Timer voor stap {step}"
   },
   "ConfirmDialog": {
     "cancel": "Annuleren",

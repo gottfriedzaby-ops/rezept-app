@@ -4,6 +4,7 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
+import OfflineRecipeCacher from "@/components/OfflineRecipeCacher";
 import AddToShoppingListButton from "@/components/AddToShoppingListButton";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
@@ -41,6 +42,8 @@ export default async function RecipeDetailPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(toSchemaOrgRecipe(recipe)) }}
       />
+      {/* Persist this recipe to IndexedDB for offline viewing */}
+      <OfflineRecipeCacher recipe={recipe} />
       {/* Hero cover — full width */}
       <RecipeCover
         imageUrl={recipe.image_url}

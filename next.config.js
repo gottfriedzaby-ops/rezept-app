@@ -15,7 +15,10 @@ const withSerwist = withSerwistInit({
   // The /offline fallback is a prerendered HTML route, which is not part of the
   // default (build-asset) precache manifest — add it explicitly so the service
   // worker can serve it when a navigation fails offline.
-  additionalPrecacheEntries: [{ url: '/offline', revision: offlineRevision }],
+  additionalPrecacheEntries: [
+    { url: '/offline', revision: offlineRevision },
+    { url: '/offline/recipe', revision: offlineRevision },
+  ],
 });
 
 /** @type {import('next').NextConfig} */

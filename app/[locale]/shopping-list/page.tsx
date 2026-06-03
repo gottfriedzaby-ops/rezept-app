@@ -7,45 +7,30 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 import {
   getList,
   toggleItem,
+  setItemsChecked,
   removeItem,
   clearList,
   addManualItem,
   getHideChecked,
   setHideChecked,
   getUncheckedCount,
+  getSortMode,
+  setSortMode,
+  notifyListChanged,
   type ShoppingListItem,
+  type SortMode,
 } from "@/lib/shopping-list";
-
-interface GroupedItems {
-  recipeTitle: string;
-  items: ShoppingListItem[];
-}
-
-function groupByRecipe(items: ShoppingListItem[]): GroupedItems[] {
-  const order: string[] = [];
-  const map: Record<string, ShoppingListItem[]> = {};
-  for (const item of items) {
-    if (!map[item.recipe_title]) {
-      order.push(item.recipe_title);
-      map[item.recipe_title] = [];
-    }
-    map[item.recipe_title].push(item);
-  }
-  return order.map((title) => ({ recipeTitle: title, items: map[title] }));
-}
-
-function formatAmount(item: ShoppingListItem): string {
-  const parts: string[] = [];
-  if (item.amount != null) parts.push(String(item.amount));
-  if (item.unit) parts.push(item.unit);
-  parts.push(item.ingredient_name);
-  return parts.join(" ");
-}
+import { buildGroups, formatRowAmount, type ViewGroup, type ViewRow } from "@/lib/shopping-list-view";
+import { getLearnedCategories, CATEGORY_BY_ID, type CategoryId } from "@/lib/ingredient-categories";
+import { useAutoCategorize } from "@/lib/useAutoCategorize";
 
 export default function ShoppingListPage() {
   const t = useTranslations("ShoppingList");
+  const tCat = useTranslations("ShoppingCategories");
   const [items, setItems] = useState<ShoppingListItem[]>([]);
   const [hideChecked, setHideCheckedState] = useState(false);
+  const [sortMode, setSortModeState] = useState<SortMode>("recipe");
+  const [learned, setLearned] = useState<Record<string, CategoryId>>({});
   const [confirmClearOpen, setConfirmClearOpen] = useState(false);
   const [manualInput, setManualInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
@@ -54,26 +39,34 @@ export default function ShoppingListPage() {
   useEffect(() => {
     setItems(getList());
     setHideCheckedState(getHideChecked());
+    setSortModeState(getSortMode());
+    setLearned(getLearnedCategories());
   }, []);
+
+  useAutoCategorize(items, sortMode, setLearned);
 
   function refresh() {
     setItems(getList());
   }
 
-  function handleToggle(id: string) {
-    toggleItem(id);
+  function handleToggleRow(row: ViewRow) {
+    if (row.ids.length === 1) toggleItem(row.ids[0]);
+    else setItemsChecked(row.ids, !row.checked);
     refresh();
+    notifyListChanged();
   }
 
-  function handleRemove(id: string) {
-    removeItem(id);
+  function handleRemoveRow(row: ViewRow) {
+    row.ids.forEach((id) => removeItem(id));
     refresh();
+    notifyListChanged();
   }
 
   function handleClear() {
     clearList();
     setConfirmClearOpen(false);
     refresh();
+    notifyListChanged();
   }
 
   function handleToggleHideChecked() {
@@ -82,19 +75,33 @@ export default function ShoppingListPage() {
     setHideCheckedState(next);
   }
 
+  function handleSetSort(mode: SortMode) {
+    setSortMode(mode);
+    setSortModeState(mode);
+  }
+
   function handleAddManual() {
     const text = manualInput.trim();
     if (!text) return;
     addManualItem(text);
     setManualInput("");
     refresh();
+    notifyListChanged();
     inputRef.current?.focus();
   }
 
   const displayItems = hideChecked ? items.filter((i) => !i.checked) : items;
-  const groups = groupByRecipe(displayItems);
+  const groups = buildGroups(displayItems, sortMode, learned);
   const uncheckedCount = getUncheckedCount();
   const totalCount = items.length;
+
+  function groupHeading(group: ViewGroup): string {
+    if (group.kind === "category") {
+      const meta = CATEGORY_BY_ID[group.id as CategoryId];
+      return meta ? `${meta.emoji} ${tCat(meta.labelKey)}` : group.id;
+    }
+    return group.id;
+  }
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -121,6 +128,31 @@ export default function ShoppingListPage() {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {/* Sort toggle */}
+            {totalCount > 0 && (
+              <div
+                className="inline-flex rounded border border-stone overflow-hidden"
+                role="group"
+                aria-label={t("title")}
+              >
+                {(["recipe", "type"] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => handleSetSort(mode)}
+                    aria-pressed={sortMode === mode}
+                    className={`px-3 py-1.5 text-sm transition-colors ${
+                      sortMode === mode
+                        ? "bg-forest text-white"
+                        : "text-ink-secondary hover:bg-surface-hover"
+                    }`}
+                  >
+                    {mode === "recipe" ? t("sortByRecipe") : t("sortByType")}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {items.some((i) => i.checked) && (
               <button
                 type="button"
@@ -198,6 +230,31 @@ export default function ShoppingListPage() {
           </div>
         </div>
 
+        {/* Start shopping mode */}
+        {totalCount > 0 && (
+          <Link
+            href="/shopping-list/shop"
+            className="btn-primary inline-flex items-center justify-center gap-2 w-full sm:w-auto mb-8"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 20 20"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              className="w-5 h-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+            {t("startShoppingMode")}
+          </Link>
+        )}
+
         {/* Empty state */}
         {items.length === 0 && (
           <p className="text-sm text-ink-tertiary py-8 text-center">
@@ -209,33 +266,38 @@ export default function ShoppingListPage() {
         {groups.length > 0 && (
           <div className="space-y-6 mb-10">
             {groups.map((group) => (
-              <div key={group.recipeTitle}>
+              <div key={`${group.kind}:${group.id}`}>
                 <h2 className="font-serif text-base font-medium text-ink-secondary mb-2">
-                  {group.recipeTitle}
+                  {groupHeading(group)}
                 </h2>
                 <ul className="space-y-1">
-                  {group.items.map((item) => (
+                  {group.rows.map((row) => (
                     <li
-                      key={item.id}
+                      key={row.key}
                       className="flex items-center gap-3 py-2 px-3 rounded hover:bg-surface-hover group transition-colors"
                     >
                       <input
                         type="checkbox"
-                        checked={item.checked}
-                        onChange={() => handleToggle(item.id)}
+                        checked={row.checked}
+                        onChange={() => handleToggleRow(row)}
                         className="w-4 h-4 rounded accent-forest shrink-0 cursor-pointer"
-                        aria-label={formatAmount(item)}
+                        aria-label={formatRowAmount(row.amount, row.unit, row.displayName)}
                       />
                       <span
                         className={`flex-1 text-sm text-ink-primary transition-colors ${
-                          item.checked ? "line-through opacity-50" : ""
+                          row.checked ? "line-through opacity-50" : ""
                         }`}
                       >
-                        {formatAmount(item)}
+                        {formatRowAmount(row.amount, row.unit, row.displayName)}
+                        {row.sourceCount > 1 && (
+                          <span className="ml-2 text-xs text-ink-tertiary">
+                            {t("fromSources", { count: row.sourceCount })}
+                          </span>
+                        )}
                       </span>
                       <button
                         type="button"
-                        onClick={() => handleRemove(item.id)}
+                        onClick={() => handleRemoveRow(row)}
                         aria-label={t("removeItem")}
                         className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-ink-tertiary hover:text-ink-primary hover:bg-surface-secondary transition-all shrink-0 text-base leading-none"
                       >

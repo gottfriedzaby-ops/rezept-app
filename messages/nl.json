@@ -331,7 +331,35 @@
     "decreaseServings": "Minder porties",
     "increaseServings": "Meer porties",
     "addedToast": "{count} ingrediënten aan boodschappenlijst toegevoegd",
-    "previewExample": "bijv."
+    "previewExample": "bijv.",
+    "sortByRecipe": "Op recept",
+    "sortByType": "Op categorie",
+    "startShoppingMode": "Boodschappenmodus starten",
+    "fromSources": "{count} recepten"
+  },
+  "ShoppingCategories": {
+    "obstGemuese": "Groente & Fruit",
+    "molkereiEier": "Zuivel & Eieren",
+    "fleischFisch": "Vlees & Vis",
+    "brotBackwaren": "Brood & Bakkerij",
+    "tiefkuehl": "Diepvries",
+    "vorrat": "Voorraad",
+    "gewuerzeSaucen": "Kruiden & Sauzen",
+    "getraenke": "Dranken",
+    "suessesSnacks": "Snoep & Snacks",
+    "sonstiges": "Overig"
+  },
+  "ShoppingMode": {
+    "title": "Boodschappenmodus",
+    "backToList": "Lijst",
+    "doneCount": "{done} van {total} klaar",
+    "allDone": "Alles klaar!",
+    "emptyTitle": "Je boodschappenlijst is leeg",
+    "sortByRecipe": "Op recept",
+    "sortByType": "Op categorie",
+    "fromSources": "{count} recepten",
+    "collapseSection": "Sectie inklappen",
+    "expandSection": "Sectie uitklappen"
   },
   "CookMode": {
     "ingredients": "Ingrediënten",

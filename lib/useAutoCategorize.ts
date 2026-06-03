@@ -14,9 +14,10 @@ import {
 /**
  * Hybrid-AI fallback for the "by type" view. When sorting by category, any
  * ingredient that the static keyword map cannot place (and isn't already in the
- * learned cache) is sent — once — to /api/shopping/categorize. Claude's answers
- * are merged into the per-user learned cache so they resolve instantly forever
- * after, keeping API usage to genuinely-new ingredients only.
+ * local cache) is sent — once per device — to /api/shopping/categorize. That
+ * endpoint resolves names against a SHARED, cross-user table (so a lookup by
+ * any user benefits everyone) and only asks Claude for names new to the whole
+ * system. Results are merged into the local cache as a per-device fast path.
  *
  * Non-blocking: unknowns show under "Sonstiges" until the response lands, then
  * move to their aisle when `onLearned` refreshes the consumer.

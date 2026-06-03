@@ -357,9 +357,10 @@ export function resolveCategory(
   return categorizeIngredientLocal(name) ?? "sonstiges";
 }
 
-// --- Learned-overrides cache (per-user, localStorage) ---------------------
-// Claude's answers for previously-unmapped names are stored here so the API is
-// only ever called once per genuinely new ingredient.
+// --- Local cache of learned categories (per-device, localStorage) ----------
+// A fast-path mirror of the shared, cross-user table (see
+// lib/ingredient-categories-store.ts). It avoids re-requesting names this
+// device has already resolved; the shared table remains the source of truth.
 
 export const LEARNED_KEY = "rezept-app:shopping-list:learned-categories";
 

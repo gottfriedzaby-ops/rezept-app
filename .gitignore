@@ -24,6 +24,11 @@ next-env.d.ts
 .claude/worktrees/
 .claude/agent-memory/
 
+# serwist (generated service worker)
+/public/sw.js
+/public/sw.js.map
+/public/swe-worker-*.js
+
 # playwright
 /test-results/
 /playwright-report/

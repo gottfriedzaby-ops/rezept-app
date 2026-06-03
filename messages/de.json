@@ -331,7 +331,35 @@
     "decreaseServings": "Portionen verringern",
     "increaseServings": "Portionen erhöhen",
     "addedToast": "{count} Zutaten zur Einkaufsliste hinzugefügt",
-    "previewExample": "z.B."
+    "previewExample": "z.B.",
+    "sortByRecipe": "Nach Rezept",
+    "sortByType": "Nach Kategorie",
+    "startShoppingMode": "Einkaufsmodus starten",
+    "fromSources": "{count} Rezepte"
+  },
+  "ShoppingCategories": {
+    "obstGemuese": "Obst & Gemüse",
+    "molkereiEier": "Molkerei & Eier",
+    "fleischFisch": "Fleisch & Fisch",
+    "brotBackwaren": "Brot & Backwaren",
+    "tiefkuehl": "Tiefkühl",
+    "vorrat": "Vorrat",
+    "gewuerzeSaucen": "Gewürze & Saucen",
+    "getraenke": "Getränke",
+    "suessesSnacks": "Süßes & Snacks",
+    "sonstiges": "Sonstiges"
+  },
+  "ShoppingMode": {
+    "title": "Einkaufsmodus",
+    "backToList": "Liste",
+    "doneCount": "{done} von {total} erledigt",
+    "allDone": "Alles erledigt!",
+    "emptyTitle": "Deine Einkaufsliste ist leer",
+    "sortByRecipe": "Nach Rezept",
+    "sortByType": "Nach Kategorie",
+    "fromSources": "{count} Rezepte",
+    "collapseSection": "Kategorie einklappen",
+    "expandSection": "Kategorie ausklappen"
   },
   "CookMode": {
     "ingredients": "Zutaten",

@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { Ingredient, ParsedRecipe, RecipeSection, SourceType } from "@/types/recipe";
 import { normalizeTags } from "@/lib/tags";
+import { isCategoryId, type CategoryId } from "@/lib/ingredient-categories";
 import { logClaudeCall, truncateError } from "@/lib/claude-api-tracking";
 
 export interface ClaudeCallMeta {
@@ -39,7 +40,8 @@ type ClaudeFunctionName =
   | "parseRecipeFromImages"
   | "parseRecipeFromPdf"
   | "reviewAndImproveRecipe"
-  | "estimateNutrition";
+  | "estimateNutrition"
+  | "categorizeIngredients";
 
 // Replace base64 image data with a placeholder so log entries stay readable.
 function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
@@ -728,5 +730,62 @@ export async function estimateNutrition(
     };
   } catch {
     return { kcal_per_serving: null, protein_g: null, carbs_g: null, fat_g: null };
+  }
+}
+
+const CATEGORY_PROMPT_GUIDE = `Valid categories (return the id on the left):
+- obst-gemuese: fresh fruit, vegetables, fresh herbs
+- molkerei-eier: milk, butter, cheese, cream, yogurt, eggs
+- fleisch-fisch: meat, poultry, sausage, fish, seafood, tofu
+- brot-backwaren: bread, rolls, tortillas, baked goods
+- tiefkuehl: frozen goods
+- vorrat: pantry staples (flour, sugar, rice, pasta, legumes, canned goods, oil, vinegar, nuts)
+- gewuerze-saucen: salt, pepper, spices, stock, sauces, condiments
+- getraenke: water, juice, wine, beer, soft drinks
+- suesses-snacks: chocolate, cookies, chips, sweets
+- sonstiges: anything that fits none of the above, or non-food`;
+
+// Lightweight fallback used by the shopping list "by type" view for ingredients
+// that the static keyword map (lib/ingredient-categories.ts) could not place.
+// Returns a map keyed by the EXACT names passed in; on any failure returns {}
+// (callers then leave those items under "sonstiges"). Results are cached client
+// side so each genuinely-new ingredient is only ever sent once.
+export async function categorizeIngredients(
+  names: string[],
+  userId: string | null = null,
+): Promise<Record<string, CategoryId>> {
+  const cleaned = Array.from(new Set(names.map((n) => n.trim()).filter(Boolean)));
+  if (cleaned.length === 0) return {};
+
+  const prompt =
+    `Assign each grocery ingredient below to exactly one supermarket category.\n\n` +
+    `${CATEGORY_PROMPT_GUIDE}\n\n` +
+    `Ingredients:\n${cleaned.map((n) => `- ${n}`).join("\n")}\n\n` +
+    `Return ONLY valid JSON (no markdown fences, no extra text) mapping each ingredient name ` +
+    `EXACTLY as given to its category id, e.g. {"Tomaten":"obst-gemuese","Mehl":"vorrat"}. ` +
+    `Every ingredient must appear as a key; use only the category ids listed above.`;
+
+  try {
+    const { message } = await claudeCreate(
+      "categorizeIngredients",
+      {
+        model: "claude-haiku-4-5",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: prompt }],
+      },
+      userId,
+    );
+
+    const block = message.content[0];
+    if (block.type !== "text") return {};
+
+    const raw = parseClaudeJson<Record<string, unknown>>(block.text);
+    const out: Record<string, CategoryId> = {};
+    for (const [name, id] of Object.entries(raw)) {
+      if (isCategoryId(id)) out[name] = id;
+    }
+    return out;
+  } catch {
+    return {};
   }
 }

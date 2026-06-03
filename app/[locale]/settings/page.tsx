@@ -7,6 +7,7 @@ import ShareManager from "@/components/ShareManager";
 import UserSettingsActions from "@/components/UserSettingsActions";
 import LibraryShareManager from "@/components/LibraryShareManager";
 import IncomingSharesManager from "@/components/IncomingSharesManager";
+import NotificationsToggle from "@/components/NotificationsToggle";
 import TagMergeToggle from "@/components/TagMergeToggle";
 import InvitedEmailsManager, {
   type InvitedEmail,
@@ -164,6 +165,14 @@ export default async function SettingsPage() {
             {t('libraryView')}
           </h2>
           <TagMergeToggle initialValue={showSharedDefault} />
+        </section>
+
+        {/* Notifications */}
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+            {t('notifications')}
+          </h2>
+          <NotificationsToggle />
         </section>
 
         {/* Share links */}

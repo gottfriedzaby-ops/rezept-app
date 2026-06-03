@@ -6,6 +6,7 @@ import {
   sendInvitationToRegistered,
   sendInvitationToUnregistered,
 } from "@/lib/email";
+import { sendPushToUser } from "@/lib/push";
 import crypto from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -89,6 +90,11 @@ export async function POST(
       targetEmail,
     });
   }
+  await sendPushToUser(reshareReq.requested_by_id, {
+    title: "Anfrage genehmigt",
+    body: `${ownerName || "Der Eigentümer"} hat deine Weiterteilen-Anfrage für ${targetEmail} genehmigt.`,
+    url: "/settings",
+  });
 
   // Send invitation to target
   if (targetId) {

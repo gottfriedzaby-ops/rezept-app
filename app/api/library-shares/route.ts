@@ -9,6 +9,7 @@ import {
   sendInvitationToRegistered,
   sendInvitationToUnregistered,
 } from "@/lib/email";
+import { sendPushToUser } from "@/lib/push";
 import type { LibraryShareOutbound } from "@/types/library-sharing";
 import crypto from "crypto";
 
@@ -136,6 +137,11 @@ export async function POST(request: NextRequest) {
   if (recipientId) {
     const emailResult = await sendInvitationToRegistered({ ownerName, recipientEmail });
     if (!emailResult.success) console.error("[library-shares] sendInvitationToRegistered failed:", emailResult.error);
+    await sendPushToUser(recipientId, {
+      title: "Neue geteilte Sammlung",
+      body: `${ownerName} hat eine Rezeptsammlung mit dir geteilt.`,
+      url: "/library-shares/incoming",
+    });
   } else {
     const emailResult = await sendInvitationToUnregistered({ ownerName, recipientEmail, invitationToken });
     if (!emailResult.success) console.error("[library-shares] sendInvitationToUnregistered failed:", emailResult.error);

@@ -62,3 +62,44 @@ const serwist = new Serwist({
 });
 
 serwist.addEventListeners();
+
+// Web Push: show the notification, and focus/open the app on click.
+self.addEventListener("push", (event) => {
+  let data: { title?: string; body?: string; url?: string } = {};
+  try {
+    if (event.data) data = event.data.json();
+  } catch {
+    // non-JSON payload — fall back to defaults
+  }
+  const title = data.title || "Rezept-App";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/icon-192.png",
+      badge: "/icon-192.png",
+      data: { url: data.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = (event.notification.data && event.notification.data.url) || "/";
+  event.waitUntil(
+    (async () => {
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+      for (const client of clients) {
+        if ("focus" in client) {
+          await client.focus();
+          try {
+            await client.navigate(url);
+          } catch {
+            // navigation may be disallowed; focusing is enough
+          }
+          return;
+        }
+      }
+      await self.clients.openWindow(url);
+    })(),
+  );
+});

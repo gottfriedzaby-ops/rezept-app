@@ -55,7 +55,7 @@ describe("middleware — unauthenticated access to protected routes", () => {
     const res = await middleware(makeRequest("/recipes/abc"));
     const loc = locationOf(res)!;
     const url = new URL(loc);
-    expect(url.pathname).toBe("/login");
+    expect(url.pathname).toBe("/de/login");
     expect(url.searchParams.get("redirect")).toBe("/recipes/abc");
   });
 
@@ -123,7 +123,7 @@ describe("middleware — logged-in users on auth pages", () => {
     const res = await middleware(makeRequest("/login"));
     expect(isRedirect(res)).toBe(true);
     const url = new URL(locationOf(res)!);
-    expect(url.pathname).toBe("/");
+    expect(url.pathname).toBe("/de");
   });
 
   // MW-10
@@ -132,7 +132,7 @@ describe("middleware — logged-in users on auth pages", () => {
     const res = await middleware(makeRequest("/register"));
     expect(isRedirect(res)).toBe(true);
     const url = new URL(locationOf(res)!);
-    expect(url.pathname).toBe("/");
+    expect(url.pathname).toBe("/de");
   });
 });
 

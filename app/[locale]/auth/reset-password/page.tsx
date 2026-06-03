@@ -161,5 +161,8 @@ function mapUpdateError(message: string, t: TFunction): string {
   if (message.includes("Password should be")) {
     return t('passwordTooShort');
   }
-  return t('passwordMismatch');
+  if (message.includes("Auth session missing")) {
+    return t('errorSessionMissing');
+  }
+  return t('errorGeneral');
 }

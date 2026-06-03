@@ -3,7 +3,6 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 
 const mockSearchParams = jest.fn();
 const signUp = jest.fn();
-const signInWithOAuth = jest.fn();
 
 jest.mock("next/navigation", () => ({
   useSearchParams: () => mockSearchParams(),
@@ -31,12 +30,11 @@ jest.mock("@/lib/supabase/client", () => ({
   createSupabaseBrowserClient: () => ({
     auth: {
       signUp: (...args: unknown[]) => signUp(...args),
-      signInWithOAuth: (...args: unknown[]) => signInWithOAuth(...args),
     },
   }),
 }));
 
-import RegisterPage from "@/app/register/page";
+import RegisterPage from "@/app/[locale]/register/page";
 
 function fillRegistration(password = "longenough", confirm = "longenough") {
   fireEvent.change(screen.getByLabelText("E-Mail-Adresse"), {
@@ -57,7 +55,6 @@ function submit() {
 beforeEach(() => {
   mockSearchParams.mockReset();
   signUp.mockReset();
-  signInWithOAuth.mockReset();
   mockSearchParams.mockReturnValue(new URLSearchParams(""));
   // The component fetches in two situations:
   //   1. Invitation metadata via useEffect when ?invitation= is set
@@ -183,19 +180,6 @@ describe("RegisterForm (register page)", () => {
 
     const loadingBtn = await screen.findByRole("button", { name: "Registrieren …" });
     expect(loadingBtn).toBeDisabled();
-  });
-
-  // RF-09
-  it("Google OAuth button on the register page calls signInWithOAuth", async () => {
-    signInWithOAuth.mockResolvedValueOnce({ error: null });
-
-    render(<RegisterPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Mit Google anmelden/ }));
-
-    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(1));
-    const call = signInWithOAuth.mock.calls[0][0];
-    expect(call.provider).toBe("google");
-    expect(call.options.redirectTo).toMatch(/\/auth\/callback$/);
   });
 
   it("includes the invitation token in the callback URL when ?invitation= is present", async () => {

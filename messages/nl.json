@@ -277,7 +277,9 @@
     "successMessage": "Je wachtwoord is succesvol gewijzigd.",
     "goToRecipes": "Naar mijn recepten",
     "passwordMismatch": "Wachtwoorden komen niet overeen.",
-    "passwordTooShort": "Wachtwoord moet minimaal 8 tekens zijn."
+    "passwordTooShort": "Wachtwoord moet minimaal 8 tekens zijn.",
+    "errorSessionMissing": "Je sessie is verlopen. Vraag een nieuwe link aan.",
+    "errorGeneral": "Wachtwoord kon niet worden gewijzigd. Probeer het opnieuw."
   },
   "Settings": {
     "title": "Instellingen",

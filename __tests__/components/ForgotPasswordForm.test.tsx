@@ -30,7 +30,7 @@ jest.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-import ForgotPasswordPage from "@/app/login/forgot-password/page";
+import ForgotPasswordPage from "@/app/[locale]/login/forgot-password/page";
 
 function fillEmail(email = "u@example.com") {
   fireEvent.change(screen.getByLabelText("E-Mail-Adresse"), {
@@ -39,7 +39,7 @@ function fillEmail(email = "u@example.com") {
 }
 
 function submit() {
-  fireEvent.click(screen.getByRole("button", { name: "Link anfordern" }));
+  fireEvent.click(screen.getByRole("button", { name: "Link senden" }));
 }
 
 beforeEach(() => {
@@ -96,7 +96,7 @@ describe("ForgotPasswordForm", () => {
     fillEmail();
     submit();
 
-    const loadingBtn = await screen.findByRole("button", { name: "Senden …" });
+    const loadingBtn = await screen.findByRole("button", { name: "Wird gesendet …" });
     expect(loadingBtn).toBeDisabled();
   });
 });

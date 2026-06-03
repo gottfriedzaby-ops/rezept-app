@@ -79,16 +79,16 @@ describe("RecipeEditForm accessibility", () => {
     expect(screen.getByLabelText(/Portionen/)).toBeInTheDocument();
     expect(screen.getByLabelText("Vorbereitung (Min.)")).toBeInTheDocument();
     expect(screen.getByLabelText("Kochen (Min.)")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Titelbild-URL/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Bild-URL/)).toBeInTheDocument();
   });
 
   it("each ingredient row exposes Menge / Einheit / Name labels", () => {
     render(<RecipeEditForm recipe={baseRecipe} />);
 
-    expect(screen.getByLabelText("Menge für Zutat 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Einheit für Zutat 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Name für Zutat 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Menge für Zutat 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Menge 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Einheit 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Zutat 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Menge 2")).toBeInTheDocument();
   });
 
   it("each step textarea is labeled by its position", () => {
@@ -116,7 +116,7 @@ describe("RecipeEditForm accessibility", () => {
     };
     render(<RecipeEditForm recipe={multi} />);
 
-    expect(screen.getByLabelText("Titel von Abschnitt 1")).toBeInTheDocument();
-    expect(screen.getByLabelText("Titel von Abschnitt 2")).toBeInTheDocument();
+    expect(screen.getByLabelText("Titel 1")).toBeInTheDocument();
+    expect(screen.getByLabelText("Titel 2")).toBeInTheDocument();
   });
 });

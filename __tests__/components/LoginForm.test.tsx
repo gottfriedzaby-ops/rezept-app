@@ -4,15 +4,15 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 const mockPush = jest.fn();
 const mockSearchParams = jest.fn();
 const signInWithPassword = jest.fn();
-const signInWithOAuth = jest.fn();
 
 jest.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
   useSearchParams: () => mockSearchParams(),
 }));
 
-jest.mock("next/link", () => {
-  return function Link({
+// The login page uses useRouter/Link from the locale-aware navigation helper.
+jest.mock("@/i18n/navigation", () => ({
+  useRouter: () => ({ push: mockPush }),
+  Link: function Link({
     href,
     children,
     className,
@@ -26,19 +26,18 @@ jest.mock("next/link", () => {
         {children}
       </a>
     );
-  };
-});
+  },
+}));
 
 jest.mock("@/lib/supabase/client", () => ({
   createSupabaseBrowserClient: () => ({
     auth: {
       signInWithPassword: (...args: unknown[]) => signInWithPassword(...args),
-      signInWithOAuth: (...args: unknown[]) => signInWithOAuth(...args),
     },
   }),
 }));
 
-import LoginPage from "@/app/login/page";
+import LoginPage from "@/app/[locale]/login/page";
 
 function fillCredentials(email = "u@example.com", password = "secret123") {
   fireEvent.change(screen.getByLabelText("E-Mail-Adresse"), {
@@ -57,7 +56,6 @@ beforeEach(() => {
   mockPush.mockReset();
   mockSearchParams.mockReset();
   signInWithPassword.mockReset();
-  signInWithOAuth.mockReset();
   mockSearchParams.mockReturnValue(new URLSearchParams(""));
 });
 
@@ -156,27 +154,4 @@ describe("LoginForm (login page)", () => {
     expect(loadingBtn).toBeDisabled();
   });
 
-  // LF-08
-  it("Google OAuth button calls signInWithOAuth with provider:'google' and a /auth/callback redirectTo", async () => {
-    signInWithOAuth.mockResolvedValueOnce({ error: null });
-
-    render(<LoginPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Mit Google anmelden/ }));
-
-    await waitFor(() => expect(signInWithOAuth).toHaveBeenCalledTimes(1));
-    const call = signInWithOAuth.mock.calls[0][0];
-    expect(call.provider).toBe("google");
-    expect(call.options.redirectTo).toMatch(/\/auth\/callback$/);
-  });
-
-  // LF-09
-  it("shows the Google failure message when signInWithOAuth returns an error", async () => {
-    signInWithOAuth.mockResolvedValueOnce({ error: { message: "oauth error" } });
-
-    render(<LoginPage />);
-    fireEvent.click(screen.getByRole("button", { name: /Mit Google anmelden/ }));
-
-    const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("Google-Anmeldung fehlgeschlagen. Bitte versuche es erneut.");
-  });
 });

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Fraunces } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from 'next-intl';
 import { notFound } from 'next/navigation';
@@ -26,12 +26,18 @@ const fraunces = Fraunces({
 export const metadata: Metadata = {
   title: "Rezept-App",
   description: "Rezepte importieren und verwalten",
-  themeColor: "#2D5F3F",
   appleWebApp: {
     capable: true,
     title: "Rezept",
     statusBarStyle: "black-translucent",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#2D5F3F",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function LocaleLayout({

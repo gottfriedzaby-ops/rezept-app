@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { getList, toggleItem, notifyListChanged, type ShoppingListItem } from "@/lib/shopping-list";
+import { getCachedRecipes, type CachedRecipeMeta } from "@/lib/offline-recipes";
+import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 
 // Offline fallback page. The shopping list lives entirely in localStorage, so
 // it stays fully usable without a connection — exactly the in-store use case.
@@ -15,9 +17,11 @@ function formatItem(item: ShoppingListItem): string {
 
 export default function OfflinePage() {
   const [items, setItems] = useState<ShoppingListItem[]>([]);
+  const [recipes, setRecipes] = useState<CachedRecipeMeta[]>([]);
 
   useEffect(() => {
     setItems(getList());
+    getCachedRecipes().then(setRecipes).catch(() => {});
   }, []);
 
   function handleToggle(id: string) {
@@ -45,11 +49,37 @@ export default function OfflinePage() {
             Du bist offline
           </h1>
           <p className="text-sm text-ink-secondary mt-1">
-            Keine Verbindung. Deine Einkaufsliste ist hier weiterhin verfügbar — abgehakte
-            Artikel werden gespeichert. Sobald du wieder online bist, lädt die App automatisch neu.
+            Keine Verbindung. Deine Einkaufsliste und zuletzt geöffnete Rezepte sind hier
+            weiterhin verfügbar — abgehakte Artikel werden gespeichert. Sobald du wieder
+            online bist, lädt die App automatisch neu.
           </p>
         </div>
 
+        {recipes.length > 0 && (
+          <section className="mb-10">
+            <h2 className="font-serif text-lg font-medium text-ink-primary mb-3">
+              Offline verfügbare Rezepte
+            </h2>
+            <ul className="space-y-1">
+              {recipes.map((r) => (
+                <li key={r.id}>
+                  <a
+                    href={`/offline/recipe?id=${encodeURIComponent(r.id)}`}
+                    className="flex items-center gap-3 py-2 px-3 rounded hover:bg-surface-hover transition-colors"
+                  >
+                    <span className="text-base" aria-hidden="true">
+                      {recipeTypeBadgeFor(r.recipe_type).emoji}
+                    </span>
+                    <span className="flex-1 text-sm text-ink-primary">{r.title}</span>
+                    <span className="text-ink-tertiary text-sm" aria-hidden="true">→</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        <h2 className="font-serif text-lg font-medium text-ink-primary mb-3">Einkaufsliste</h2>
         {items.length === 0 ? (
           <p className="text-sm text-ink-tertiary py-8 text-center">
             Deine Einkaufsliste ist leer.

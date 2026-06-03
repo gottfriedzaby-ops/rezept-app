@@ -111,7 +111,7 @@ export default function ShoppingListPage() {
           href="/"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← {t("backToRecipes")}
+          {t("backToRecipes")}
         </Link>
 
         {/* Header row */}

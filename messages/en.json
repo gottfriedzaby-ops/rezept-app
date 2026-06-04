@@ -277,7 +277,9 @@
     "successMessage": "Your password has been successfully changed.",
     "goToRecipes": "Go to my recipes",
     "passwordMismatch": "Passwords do not match.",
-    "passwordTooShort": "Password must be at least 8 characters."
+    "passwordTooShort": "Password must be at least 8 characters.",
+    "errorSessionMissing": "Your session has expired. Please request a new link.",
+    "errorGeneral": "Could not change password. Please try again."
   },
   "Settings": {
     "title": "Settings",

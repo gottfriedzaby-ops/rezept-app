@@ -29,7 +29,7 @@ jest.mock("@/lib/supabase/client", () => ({
   }),
 }));
 
-import ResetPasswordPage from "@/app/auth/reset-password/page";
+import ResetPasswordPage from "@/app/[locale]/auth/reset-password/page";
 
 function fillPasswords(password = "longenough", confirm = "longenough") {
   fireEvent.change(screen.getByLabelText("Neues Passwort"), {
@@ -41,7 +41,7 @@ function fillPasswords(password = "longenough", confirm = "longenough") {
 }
 
 function submit() {
-  fireEvent.click(screen.getByRole("button", { name: "Passwort speichern" }));
+  fireEvent.click(screen.getByRole("button", { name: "Passwort ändern" }));
 }
 
 beforeEach(() => {

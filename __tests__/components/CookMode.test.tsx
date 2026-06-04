@@ -148,26 +148,26 @@ describe("CookMode — ingredients accordion", () => {
   it("shows ingredients after clicking the accordion toggle", () => {
     // initialServings=1 so formatAmount(200, 1)=200g
     render(<CookMode recipe={makeRecipe()} initialServings={1} />);
-    fireEvent.click(screen.getByText(/Zutaten für/));
+    fireEvent.click(screen.getByText(/Zutaten \(/));
     expect(screen.getByText("200 g")).toBeInTheDocument();
     expect(screen.getByText("Nudeln")).toBeInTheDocument();
   });
 
   it("hides ingredients again when accordion is toggled closed", () => {
     render(<CookMode recipe={makeRecipe()} initialServings={2} />);
-    fireEvent.click(screen.getByText(/Zutaten für/));
-    fireEvent.click(screen.getByText(/Zutaten für/));
+    fireEvent.click(screen.getByText(/Zutaten \(/));
+    fireEvent.click(screen.getByText(/Zutaten \(/));
     expect(screen.queryByText("Nudeln")).not.toBeInTheDocument();
   });
 
   it("shows serving count in accordion label", () => {
     render(<CookMode recipe={makeRecipe()} initialServings={3} />);
-    expect(screen.getByText(/Zutaten für 3 Portionen/)).toBeInTheDocument();
+    expect(screen.getByText(/Zutaten \(3 Portionen\)/)).toBeInTheDocument();
   });
 
-  it("uses singular 'Portion' for 1 serving", () => {
+  it("shows the serving count in the accordion label for 1 serving", () => {
     render(<CookMode recipe={makeRecipe()} initialServings={1} />);
-    expect(screen.getByText(/Zutaten für 1 Portion$/)).toBeInTheDocument();
+    expect(screen.getByText(/Zutaten \(1 Portionen\)/)).toBeInTheDocument();
   });
 });
 
@@ -251,11 +251,11 @@ describe("CookMode — keyboard navigation (FE-01)", () => {
     act(() => {
       fireEvent.keyDown(window, { key: "ArrowRight" });
     });
-    expect(screen.getByText("Start")).toBeInTheDocument();
+    expect(screen.getByText("Timer starten")).toBeInTheDocument();
     act(() => {
       fireEvent.keyDown(window, { key: "t" });
     });
-    expect(screen.getByText("Pause")).toBeInTheDocument();
+    expect(screen.getByText("Timer pausieren")).toBeInTheDocument();
   });
 
   it("ignores keyboard events while typing in an input", () => {
@@ -327,7 +327,7 @@ describe("CookMode — progress bar (FE-02)", () => {
 
 describe("CookMode — ingredient checklist (FE-04)", () => {
   function openIngredients() {
-    fireEvent.click(screen.getByText(/Zutaten für/));
+    fireEvent.click(screen.getByText(/Zutaten \(/));
   }
 
   // CM-C-01

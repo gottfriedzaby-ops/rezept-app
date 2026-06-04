@@ -60,6 +60,7 @@ export default async function SharedRecipeDetailPage({
         imageUrl={recipe.image_url}
         title={recipe.title}
         tags={recipe.tags}
+        recipeType={recipe.recipe_type}
         variant="hero"
       />
 

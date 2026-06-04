@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Backen">
+  <defs>
+    <linearGradient id="bg-backen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F3EAD8"/>
+      <stop offset="1" stop-color="#E7D4B8"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg-backen)"/>
+
+  <!-- soft depth under the loaf -->
+  <ellipse cx="196" cy="172" rx="92" ry="46" fill="#8A5A2B" fill-opacity="0.08"/>
+
+  <!-- wheat ear accent behind the loaf -->
+  <g fill="none" stroke="#A6794A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M262 196 L292 112"/>
+    <path d="M285 132 q14 -10 24 -6 q-2 11 -14 18 q-12 5 -10 -12 Z"/>
+    <path d="M281 148 q14 -10 24 -6 q-2 11 -14 18 q-12 5 -10 -12 Z"/>
+    <path d="M277 164 q14 -10 24 -6 q-2 11 -14 18 q-12 5 -10 -12 Z"/>
+    <path d="M289 124 q-13 -11 -24 -8 q1 11 13 19 q12 6 11 -11 Z"/>
+    <path d="M285 140 q-13 -11 -24 -8 q1 11 13 19 q12 6 11 -11 Z"/>
+    <path d="M281 156 q-13 -11 -24 -8 q1 11 13 19 q12 6 11 -11 Z"/>
+  </g>
+
+  <!-- bread loaf -->
+  <g fill="none" stroke="#8A5A2B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M122 162 q4 -42 74 -42 q70 0 74 42 q3 26 -28 32 q-46 8 -92 0 q-31 -6 -28 -32 Z"/>
+  </g>
+
+  <!-- diagonal score marks on the crust -->
+  <g fill="none" stroke="#B68A5A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 158 l24 -22"/>
+    <path d="M184 162 l24 -22"/>
+    <path d="M218 158 l24 -22"/>
+  </g>
+</svg>

@@ -115,57 +115,68 @@ describe("RecipeCover", () => {
     });
   });
 
-  describe("without an imageUrl (gradient fallback)", () => {
-    it("renders the title text inside the gradient placeholder", () => {
+  describe("without an imageUrl (category illustration fallback)", () => {
+    it("defaults to the kochen illustration when no recipeType is given", () => {
       render(<RecipeCover imageUrl={null} title="Tomatensoße" tags={["pasta"]} />);
-
-      expect(screen.getByText("Tomatensoße")).toBeInTheDocument();
-      // No <img> should be rendered when imageUrl is null
-      expect(screen.queryByRole("img")).not.toBeInTheDocument();
+      const illo = screen.getByTestId("recipe-cover-category-illustration");
+      expect(illo).toBeInTheDocument();
+      expect(illo.getAttribute("src")).toBe("/categories/kochen.svg");
+      expect(illo.getAttribute("data-category")).toBe("kochen");
+      // Decorative: the recipe title is rendered by the surrounding card / page.
+      expect(illo.getAttribute("aria-hidden")).toBe("true");
+      expect(illo.getAttribute("alt")).toBe("");
     });
 
-    it("hero fallback uses the larger text size class", () => {
+    (["kochen", "backen", "grillen", "zubereiten"] as const).forEach((type) => {
+      it(`renders the ${type} illustration for that recipe type`, () => {
+        render(
+          <RecipeCover imageUrl={null} title="X" tags={[]} recipeType={type} />
+        );
+        const illo = screen.getByTestId("recipe-cover-category-illustration");
+        expect(illo.getAttribute("src")).toBe(`/categories/${type}.svg`);
+        expect(illo.getAttribute("data-category")).toBe(type);
+      });
+    });
+
+    it("falls back to kochen when recipeType is null", () => {
+      render(
+        <RecipeCover imageUrl={null} title="X" tags={[]} recipeType={null} />
+      );
+      expect(
+        screen
+          .getByTestId("recipe-cover-category-illustration")
+          .getAttribute("src")
+      ).toBe("/categories/kochen.svg");
+    });
+
+    it("hero fallback uses the responsive hero height classes", () => {
       render(
         <RecipeCover
           imageUrl={null}
           title="Big Hero Title"
           tags={[]}
           variant="hero"
+          recipeType="grillen"
         />
       );
-      const title = screen.getByText("Big Hero Title");
-      // Hero variant adds the responsive lg:text-5xl class
-      expect(title.className).toMatch(/text-3xl/);
-      expect(title.className).toMatch(/sm:text-4xl/);
+      const illo = screen.getByTestId("recipe-cover-category-illustration");
+      expect(illo.getAttribute("src")).toBe("/categories/grillen.svg");
+      expect(illo.className).toMatch(/h-\[260px\]/);
+      expect(illo.className).toMatch(/lg:h-\[420px\]/);
     });
 
-    // PR-G: chef-hat placeholder icon
-    it("renders the chef-hat placeholder icon in the card fallback", () => {
-      render(<RecipeCover imageUrl={null} title="No Image" tags={[]} />);
-      const icon = screen.getByTestId("recipe-cover-placeholder-icon");
-      expect(icon).toBeInTheDocument();
-      expect(icon.getAttribute("aria-hidden")).toBe("true");
-      expect(icon.getAttribute("class")).toMatch(/w-10 h-10/);
-    });
-
-    it("renders a larger chef-hat icon in the hero fallback", () => {
-      render(
-        <RecipeCover imageUrl={null} title="No Image" tags={[]} variant="hero" />
-      );
-      const icon = screen.getByTestId("recipe-cover-placeholder-icon");
-      expect(icon.getAttribute("class")).toMatch(/w-16 h-16/);
-      expect(icon.getAttribute("class")).toMatch(/sm:w-20 sm:h-20/);
-    });
-
-    it("does NOT render the placeholder icon when an image is present", () => {
+    it("does NOT render a category illustration when an image is present", () => {
       render(
         <RecipeCover
           imageUrl="https://test.supabase.co/storage/v1/object/public/recipe-images/x.jpg"
           title="Has Image"
           tags={[]}
+          recipeType="backen"
         />
       );
-      expect(screen.queryByTestId("recipe-cover-placeholder-icon")).toBeNull();
+      expect(
+        screen.queryByTestId("recipe-cover-category-illustration")
+      ).toBeNull();
     });
   });
 });

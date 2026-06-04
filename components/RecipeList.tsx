@@ -374,6 +374,7 @@ export default function RecipeList({
                     imageUrl={recipe.image_url}
                     title={recipe.title}
                     tags={recipe.tags}
+                    recipeType={recipe.recipe_type}
                     variant="card"
                   />
                   <div className="flex flex-col flex-1 p-4">

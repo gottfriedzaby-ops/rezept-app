@@ -3,19 +3,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import type { Recipe, Step } from "@/types/recipe";
+import type { Recipe, Step, Ingredient } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
+import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
   return `${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
-}
-
-function formatAmount(perServing: number, servings: number): string {
-  const total = perServing * servings;
-  if (total <= 0) return "";
-  const r = Math.round(total * 10) / 10;
-  return r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
 }
 
 function playBeep() {
@@ -41,6 +35,7 @@ function playBeep() {
 interface CookStep {
   step: Step;
   sectionTitle: string | null;
+  ingredients: Ingredient[];
 }
 
 interface IngredientRowProps {
@@ -103,7 +98,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
   // Stable reference — prevents the [stepIndex, cookSteps] reset-effect from firing on every render
   const cookSteps: CookStep[] = useMemo(
     () => sections.flatMap((section) =>
-      section.steps.map((step) => ({ step, sectionTitle: section.title }))
+      section.steps.map((step) => ({ step, sectionTitle: section.title, ingredients: section.ingredients }))
     ),
     [sections]
   );
@@ -309,7 +304,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           className="font-serif font-medium text-ink-primary leading-relaxed"
           style={{ fontSize: "clamp(1.4rem, 4vw, 1.875rem)" }}
         >
-          {currentCookStep.step.text}
+          {resolveStepText(currentCookStep.step.text, currentCookStep.ingredients, initialServings)}
         </p>
 
         {stepImageUrl && (

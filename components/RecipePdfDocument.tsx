@@ -9,6 +9,7 @@ import {
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { cookTimeLabelFor } from "@/lib/recipeTypeLabels";
+import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
 
 const DARK = "#1a1a1a";
 const MID = "#555555";
@@ -146,13 +147,6 @@ const s = StyleSheet.create({
   },
 });
 
-function formatAmount(perServing: number, servings: number): string {
-  const total = perServing * servings;
-  if (total <= 0) return "";
-  const r = Math.round(total * 10) / 10;
-  return r % 1 === 0 ? String(Math.round(r)) : r.toFixed(1);
-}
-
 const TYPE_LABELS: Record<string, string> = {
   kochen: "🍳 Kochen",
   backen: "🍞 Backen",
@@ -264,7 +258,7 @@ export default function RecipePdfDocument({ recipe }: Props) {
                   <Text style={s.stepNum}>{globalStep}.</Text>
                   <View style={{ flex: 1 }}>
                     <Text style={s.stepText}>
-                      {step.text}
+                      {resolveStepText(step.text, section.ingredients, servings)}
                       {step.timerSeconds ? (
                         <Text style={s.timerBadge}>
                           {" "}({Math.round(step.timerSeconds / 60)} Min.)

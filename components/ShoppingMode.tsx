@@ -253,8 +253,14 @@ export default function ShoppingMode() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
-      {/* Header */}
-      <header className="flex items-center justify-between gap-3 px-6 py-4 border-b border-stone shrink-0">
+      {/* Header — paddingTop adds the iOS status-bar inset (env(safe-area-inset-top))
+          on top of the regular 16px. With viewport-fit=cover + a translucent status
+          bar, this full-screen header would otherwise render under the notch /
+          Dynamic Island, leaving the back link untappable. */}
+      <header
+        className="flex items-center justify-between gap-3 px-6 pb-4 border-b border-stone shrink-0"
+        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
+      >
         <Link
           href="/shopping-list"
           className="h-12 flex items-center text-sm text-ink-tertiary hover:text-ink-primary transition-colors shrink-0"
@@ -314,7 +320,13 @@ export default function ShoppingMode() {
           </Link>
         </div>
       ) : (
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-[640px] mx-auto w-full flex flex-col gap-3">
+        // paddingBottom adds the iOS home-indicator inset (env(safe-area-inset-bottom))
+        // to this scroll container so the last list rows can scroll clear of the home
+        // indicator and stay tappable. The inset is 0 on devices without one.
+        <main
+          className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 max-w-[640px] mx-auto w-full flex flex-col gap-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+        >
           {displayGroups.map((group) => {
             const { emoji, title } = groupLabel(group);
             const isCollapsed = collapsed[group.id] ?? false;

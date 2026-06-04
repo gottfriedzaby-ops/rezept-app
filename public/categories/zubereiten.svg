@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Zubereiten">
+  <defs>
+    <linearGradient id="bg-zubereiten" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E9EFE2"/>
+      <stop offset="1" stop-color="#D2E0C4"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg-zubereiten)"/>
+
+  <!-- subtle background flourishes (may crop) -->
+  <circle cx="60" cy="70" r="34" fill="#4F7A3E" fill-opacity="0.06"/>
+  <circle cx="350" cy="232" r="44" fill="#4F7A3E" fill-opacity="0.06"/>
+
+  <!-- bowl body fill for gentle depth -->
+  <path d="M150 158 A50 50 0 0 0 250 158 Z" fill="#4F7A3E" fill-opacity="0.08"/>
+
+  <!-- leafy greens emerging from the bowl -->
+  <g fill="none" stroke="#5C9A4A" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M186 158 C172 138 168 120 184 108 C198 122 196 142 186 158 Z"/>
+    <path d="M214 158 C228 136 226 116 210 106 C196 122 200 142 214 158 Z"/>
+    <path d="M200 158 C200 134 200 116 200 102"/>
+  </g>
+  <!-- leaf veins -->
+  <g fill="none" stroke="#5C9A4A" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="0.7">
+    <path d="M183 152 C181 138 181 126 183 116"/>
+    <path d="M211 152 C213 138 213 124 211 116"/>
+  </g>
+
+  <!-- bowl (front view, wide U) and rim -->
+  <g fill="none" stroke="#4F7A3E" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M150 158 A50 50 0 0 0 250 158"/>
+    <line x1="142" y1="158" x2="258" y2="158"/>
+  </g>
+
+  <!-- chef's knife laid diagonally in front of the bowl -->
+  <g stroke="#6B6B66" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- blade: thin triangle, tip pointing down-left -->
+    <path d="M126 203 L188 177 L196 189 Z" fill="#6B6B66" fill-opacity="0.12"/>
+    <!-- handle: rounded grip up to the right -->
+    <path d="M189 181 L217 169 a7 7 0 0 1 6 12 L197 192 Z" fill="#6B6B66" fill-opacity="0.20"/>
+  </g>
+</svg>

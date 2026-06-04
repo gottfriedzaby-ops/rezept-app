@@ -49,6 +49,7 @@ export default async function RecipeDetailPage({
         imageUrl={recipe.image_url}
         title={recipe.title}
         tags={recipe.tags}
+        recipeType={recipe.recipe_type}
         variant="hero"
       />
 

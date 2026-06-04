@@ -1,11 +1,14 @@
 import Image from "next/image";
 import { getRecipeGradient } from "@/lib/tag-colors";
+import type { RecipeType } from "@/types/recipe";
 
 interface Props {
   imageUrl: string | null;
   title: string;
   tags: string[];
   variant?: "card" | "hero";
+  /** Recipe category — selects the placeholder illustration when no image_url exists. */
+  recipeType?: RecipeType | null;
 }
 
 function gradientBlurDataURL(from: string, to: string): string {
@@ -25,7 +28,7 @@ function isOptimizableHost(url: string): boolean {
   }
 }
 
-export default function RecipeCover({ imageUrl, title, tags, variant = "card" }: Props) {
+export default function RecipeCover({ imageUrl, title, tags, variant = "card", recipeType }: Props) {
   const [from, to] = getRecipeGradient(tags);
   const isHero = variant === "hero";
 
@@ -66,46 +69,38 @@ export default function RecipeCover({ imageUrl, title, tags, variant = "card" }:
     );
   }
 
-  return (
-    <div
-      className={`flex flex-col items-center justify-center gap-3 ${
-        isHero
-          ? "w-full h-[220px] sm:h-[300px] lg:h-[360px]"
-          : "aspect-[4/3] p-6"
-      }`}
-      style={{ background: `linear-gradient(135deg, ${from} 0%, ${to} 100%)` }}
-    >
-      <ChefHatIcon className={isHero ? "w-16 h-16 sm:w-20 sm:h-20" : "w-10 h-10"} />
-      <p
-        className={`font-serif font-medium text-ink-primary text-center tracking-[-0.01em] ${
-          isHero ? "text-3xl sm:text-4xl lg:text-5xl px-8 max-w-[680px]" : "text-base leading-snug"
-        }`}
-      >
-        {title}
-      </p>
-    </div>
-  );
-}
+  // No source image (common for PDF imports and many URL imports): show a
+  // category illustration that represents the recipe type. It is rendered
+  // full-bleed like a real cover photo. The recipe title is always shown by the
+  // surrounding card / page, so the illustration itself stays decorative.
+  const category: RecipeType = recipeType ?? "kochen";
+  const illustrationSrc = `/categories/${category}.svg`;
 
-function ChefHatIcon({ className }: { className?: string }) {
+  if (isHero) {
+    return (
+      <div className="w-full overflow-hidden">
+        <img
+          src={illustrationSrc}
+          alt=""
+          aria-hidden="true"
+          data-testid="recipe-cover-category-illustration"
+          data-category={category}
+          className="w-full h-[260px] sm:h-[360px] lg:h-[420px] object-cover"
+        />
+      </div>
+    );
+  }
+
   return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.4}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-      className={`text-ink-primary/40 ${className ?? ""}`}
-      data-testid="recipe-cover-placeholder-icon"
-    >
-      {/* Hat top — three rounded puffs */}
-      <path d="M6 11a4 4 0 1 1 1.7-7.6A4.5 4.5 0 0 1 16.3 3.4 4 4 0 1 1 18 11" />
-      {/* Hat band */}
-      <path d="M6 11h12v4H6z" />
-      {/* Vertical pleats on the band */}
-      <path d="M10 11v4M14 11v4" />
-    </svg>
+    <div className="relative aspect-[4/3] overflow-hidden">
+      <img
+        src={illustrationSrc}
+        alt=""
+        aria-hidden="true"
+        data-testid="recipe-cover-category-illustration"
+        data-category={category}
+        className="absolute inset-0 w-full h-full object-cover"
+      />
+    </div>
   );
 }

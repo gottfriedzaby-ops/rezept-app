@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Kochen">
+  <defs>
+    <linearGradient id="bg-kochen" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#E4EDE7"/>
+      <stop offset="1" stop-color="#CBDDD0"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg-kochen)"/>
+
+  <!-- Pot body: wide with gently rounded bottom -->
+  <path d="M148 162 L148 188 Q148 205 168 205 L232 205 Q252 205 252 188 L252 162 Z" fill="#2D5F3F" fill-opacity="0.08" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Side handles -->
+  <path d="M148 168 Q136 168 136 176" fill="none" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M252 168 Q264 168 264 176" fill="none" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Lid -->
+  <path d="M142 162 L258 162" fill="none" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M150 162 Q150 150 200 150 Q250 150 250 162" fill="#2D5F3F" fill-opacity="0.08" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Lid knob -->
+  <path d="M200 150 L200 142" fill="none" stroke="#2D5F3F" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="200" cy="138" r="5" fill="#2D5F3F"/>
+
+  <!-- Steam curls -->
+  <path d="M176 132 Q166 120 176 108 Q186 98 178 96" fill="none" stroke="#6E9A7E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M200 130 Q190 116 200 102 Q210 90 202 86" fill="none" stroke="#6E9A7E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M224 132 Q234 120 224 108 Q214 98 222 96" fill="none" stroke="#6E9A7E" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

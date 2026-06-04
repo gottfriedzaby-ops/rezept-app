@@ -320,7 +320,13 @@ export default function ShoppingMode() {
           </Link>
         </div>
       ) : (
-        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 max-w-[640px] mx-auto w-full flex flex-col gap-3">
+        // paddingBottom adds the iOS home-indicator inset (env(safe-area-inset-bottom))
+        // to this scroll container so the last list rows can scroll clear of the home
+        // indicator and stay tappable. The inset is 0 on devices without one.
+        <main
+          className="flex-1 overflow-y-auto px-4 sm:px-6 pt-6 max-w-[640px] mx-auto w-full flex flex-col gap-3"
+          style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1.5rem)" }}
+        >
           {displayGroups.map((group) => {
             const { emoji, title } = groupLabel(group);
             const isCollapsed = collapsed[group.id] ?? false;

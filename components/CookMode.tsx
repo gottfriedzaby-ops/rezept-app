@@ -461,7 +461,13 @@ export default function CookMode({ recipe, initialServings }: Props) {
         )}
       </div>
 
-      <nav className="flex gap-3 p-4 border-t border-stone shrink-0">
+      {/* paddingBottom adds the iOS home-indicator inset (env(safe-area-inset-bottom))
+          on top of the regular 16px, so the prev/next buttons clear the home
+          indicator and stay tappable. The inset is 0 on devices without one. */}
+      <nav
+        className="flex gap-3 px-4 pt-4 border-t border-stone shrink-0"
+        style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 1rem)" }}
+      >
         <button
           onClick={() => setStepIndex((i) => Math.max(0, i - 1))}
           disabled={isFirst}

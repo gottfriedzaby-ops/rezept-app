@@ -257,14 +257,12 @@ export default function CookMode({ recipe, initialServings }: Props) {
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
 
-      {/* paddingTop adds the iOS status-bar inset (env(safe-area-inset-top)) on
-          top of the regular 16px. With viewport-fit=cover + a translucent status
-          bar, this full-screen header would otherwise render under the notch /
-          Dynamic Island, leaving the back link untappable. */}
-      <header
-        className="flex items-center justify-between px-6 pb-4 border-b border-stone shrink-0"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
-      >
+      {/* safe-top-bar pushes the header below the iOS status bar (see globals.css).
+          With viewport-fit=cover + a black-translucent status bar this full-screen
+          header renders under the system UI; the class clears it on notched AND
+          non-notched iPhones (where env(safe-area-inset-top) is 0) so the back link
+          stays tappable. */}
+      <header className="safe-top-bar flex items-center justify-between px-6 pb-4 border-b border-stone shrink-0">
         <Link
           href={`/${recipe.id}`}
           className="h-12 flex items-center text-sm text-ink-tertiary hover:text-ink-primary transition-colors"

@@ -80,3 +80,21 @@
     animation: none;
   }
 }
+
+/* iOS safe area — keep the full-screen Cook/Shopping headers below the status bar.
+   These modes use viewport-fit=cover + a black-translucent status bar, so content
+   renders edge-to-edge under the system UI. On notched iPhones env(safe-area-inset-top)
+   accounts for the status bar / Dynamic Island. On non-notched iPhones env() is 0, yet
+   the translucent status bar still overlays content when the app runs standalone (added
+   to the Home Screen) — so there we fall back to the ~20px status-bar height. The +1rem
+   is breathing room below the bar. Unlayered so it reliably beats Tailwind's padding
+   utilities and is never purged. */
+.safe-top-bar {
+  padding-top: calc(env(safe-area-inset-top) + 1rem);
+}
+
+@media (display-mode: standalone) {
+  .safe-top-bar {
+    padding-top: calc(max(env(safe-area-inset-top), 20px) + 1rem);
+  }
+}

@@ -253,14 +253,9 @@ export default function ShoppingMode() {
 
   return (
     <div className="min-h-screen flex flex-col bg-surface-primary">
-      {/* Header — paddingTop adds the iOS status-bar inset (env(safe-area-inset-top))
-          on top of the regular 16px. With viewport-fit=cover + a translucent status
-          bar, this full-screen header would otherwise render under the notch /
-          Dynamic Island, leaving the back link untappable. */}
-      <header
-        className="flex items-center justify-between gap-3 px-6 pb-4 border-b border-stone shrink-0"
-        style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}
-      >
+      {/* Header — safe-top-bar pushes it below the iOS status bar (see globals.css),
+          clearing it on notched AND non-notched iPhones so the back link is tappable. */}
+      <header className="safe-top-bar flex items-center justify-between gap-3 px-6 pb-4 border-b border-stone shrink-0">
         <Link
           href="/shopping-list"
           className="h-12 flex items-center text-sm text-ink-tertiary hover:text-ink-primary transition-colors shrink-0"

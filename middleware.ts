@@ -103,10 +103,11 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // PWA assets are excluded so they are served directly without locale routing
-  // or an auth redirect: the manifest, the generated service worker (sw.js +
-  // swe-worker chunks), and the standalone /offline fallback page.
+  // PWA / store assets are excluded so they are served directly without locale
+  // routing or an auth redirect: the manifest, the generated service worker
+  // (sw.js + swe-worker chunks), the standalone /offline fallback page, and the
+  // /.well-known/ files (e.g. Android TWA Digital Asset Links).
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|swe-worker-.*\\.js|offline|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|swe-worker-.*\\.js|\\.well-known|offline|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

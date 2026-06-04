@@ -152,6 +152,7 @@ const TYPE_LABELS: Record<string, string> = {
   backen: "🍞 Backen",
   grillen: "🔥 Grillen",
   zubereiten: "🥗 Zubereiten",
+  cocktail: "🍸 Cocktail",
 };
 
 interface Props {

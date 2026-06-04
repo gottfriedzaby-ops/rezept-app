@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" width="400" height="300" role="img" aria-label="Cocktail">
+  <defs>
+    <linearGradient id="bg-cocktail" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F4E3EB"/>
+      <stop offset="1" stop-color="#E7C4D6"/>
+    </linearGradient>
+  </defs>
+  <rect width="400" height="300" fill="url(#bg-cocktail)"/>
+
+  <!-- subtle background flourishes (may crop) -->
+  <circle cx="64" cy="78" r="36" fill="#9B3F66" fill-opacity="0.05"/>
+  <circle cx="342" cy="228" r="46" fill="#9B3F66" fill-opacity="0.05"/>
+
+  <!-- drink inside the bowl (inset from the rim) -->
+  <path d="M159 121 L241 121 L200 161 Z" fill="#C2557F" fill-opacity="0.18"/>
+
+  <!-- martini glass: bowl, stem and foot -->
+  <g fill="none" stroke="#9B3F66" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M146 110 L254 110 L200 172 Z" fill="#9B3F66" fill-opacity="0.06"/>
+    <line x1="200" y1="172" x2="200" y2="206"/>
+    <path d="M174 207 Q200 214 226 207"/>
+  </g>
+
+  <!-- drink surface highlight -->
+  <line x1="159" y1="121" x2="241" y2="121" stroke="#9B3F66" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- cocktail pick resting across the rim, with a cherry -->
+  <line x1="206" y1="148" x2="236" y2="92" stroke="#9B3F66" stroke-width="4.5" stroke-linecap="round"/>
+  <circle cx="238" cy="88" r="9" fill="#B83A5A" fill-opacity="0.22" stroke="#B83A5A" stroke-width="5"/>
+
+  <!-- fizz + sparkle accents -->
+  <g fill="#C77F9C">
+    <circle cx="183" cy="133" r="3.4"/>
+    <circle cx="210" cy="141" r="2.8"/>
+    <circle cx="196" cy="127" r="2.2"/>
+  </g>
+  <path d="M120 144 l0 16 M112 152 l16 0" fill="none" stroke="#C77F9C" stroke-width="4" stroke-linecap="round"/>
+</svg>

@@ -93,7 +93,7 @@ npx supabase start # Lokale Supabase-Instanz (optional)
   - `sections` JSONB — benannte Abschnitte (z.B. „Für die Soße")
   - `source_type` / `source_value` — Pflichtfelder (url, photo, youtube, instagram, manual)
   - `user_id` — Eigentümer (auth.users)
-  - `recipe_type` — kochen / backen / grillen / zubereiten
+  - `recipe_type` — kochen / backen / grillen / zubereiten / cocktail
   - `scalable` — ob Mengen linear skalierbar sind
   - `kcal_per_serving`, `protein_g`, `carbs_g`, `fat_g` — Nährwerte pro Portion (nullable)
   - `favorite`, `image_url`, `step_images`, `tags`
@@ -142,7 +142,7 @@ IMPORT_DEBUG=          # optional, set to "1" to log JSON-LD + Claude's parsed s
 
 ## Implementierte Features
 - ✅ Rezept-Import: URL, YouTube, Foto (inkl. Multi-Image), Instagram, manuell
-- ✅ Rezept-Typ-Unterscheidung (kochen / backen / grillen / zubereiten)
+- ✅ Rezept-Typ-Unterscheidung (kochen / backen / grillen / zubereiten / cocktail)
 - ✅ Multi-Abschnitt-Rezepte (benannte Sections mit eigenen Zutaten/Schritten)
 - ✅ PDF-Export
 - ✅ Authentifizierung (E-Mail, Registrierung, Passwort-Reset, Middleware)

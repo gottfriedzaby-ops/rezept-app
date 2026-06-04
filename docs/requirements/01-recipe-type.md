@@ -11,11 +11,21 @@
 
 ---
 
+> **Addendum (2026-06): fifth type `cocktail` added.** This spec was originally
+> written for four recipe types. A fifth type — **cocktail** (🍸; drink recipes
+> such as cocktails, mocktails, longdrinks and spritz) — was added later under
+> decision OQ-01-1 ("extend the CHECK constraint when a 5th type is genuinely
+> needed"). Read every four-type enumeration below as also including `cocktail`.
+> Its cook-time label is **Zubereitungszeit**, its cook-mode CTA is
+> **„Jetzt mixen"**, and its card badge is **🍸 Cocktail**. The database CHECK
+> constraint is widened in migration
+> `20260604000000_feature01_recipe_type_cocktail.sql`.
+
 ## 1. Overview
 
 Recipes in the app currently share a single set of time labels ("Kochzeit", "Zubereitungszeit") and a single cook-mode call-to-action button ("Jetzt kochen") regardless of what kind of preparation the recipe actually involves. A baking recipe and a grilling recipe have fundamentally different contexts.
 
-This feature introduces a `recipe_type` field that classifies every recipe into one of four preparation types: **kochen**, **backen**, **grillen**, or **zubereiten**. The UI then adapts time labels, cook-mode CTA labels, and recipe card badges to match the type.
+This feature introduces a `recipe_type` field that classifies every recipe into one of five preparation types: **kochen**, **backen**, **grillen**, **zubereiten**, or **cocktail**. The UI then adapts time labels, cook-mode CTA labels, and recipe card badges to match the type.
 
 **Goal:** Make the app feel contextually aware — a bread recipe should say "Backzeit" and "Jetzt backen", not "Kochzeit" and "Jetzt kochen".
 
@@ -64,7 +74,7 @@ This feature introduces a `recipe_type` field that classifies every recipe into 
 ### FR-01-1 — New `recipe_type` field
 The `recipes` table MUST have a new column `recipe_type` with the following constraints:
 - Type: `text`
-- Allowed values: `'kochen'`, `'backen'`, `'grillen'`, `'zubereiten'`
+- Allowed values: `'kochen'`, `'backen'`, `'grillen'`, `'zubereiten'`, `'cocktail'`
 - Default: `'kochen'`
 - NOT NULL
 - Enforced via CHECK constraint
@@ -73,10 +83,10 @@ The `recipes` table MUST have a new column `recipe_type` with the following cons
 The Claude parsing prompt MUST request `recipe_type` in its JSON output:
 ```json
 {
-  "recipe_type": "kochen | backen | grillen | zubereiten"
+  "recipe_type": "kochen | backen | grillen | zubereiten | cocktail"
 }
 ```
-Claude's system instructions MUST include classification guidance (e.g. "backen" for oven-baked goods requiring precise temperature and timing, "grillen" for open-flame or griddle cooking, "zubereiten" for no-cook/assembly recipes such as salads and smoothies).
+Claude's system instructions MUST include classification guidance (e.g. "backen" for oven-baked goods requiring precise temperature and timing, "grillen" for open-flame or griddle cooking, "cocktail" for mixed drinks such as cocktails, mocktails, longdrinks and spritz, "zubereiten" for no-cook/assembly recipes such as salads and smoothies).
 
 If Claude returns an unrecognized value or omits the field, the API route MUST default to `'kochen'`.
 
@@ -89,6 +99,7 @@ The UI MUST adapt the cook time label according to `recipe_type`:
 | `backen` | Backzeit | Backen |
 | `grillen` | Grillzeit | Grillen |
 | `zubereiten` | Zubereitungszeit | Zubereiten |
+| `cocktail` | Zubereitungszeit | Mixen |
 
 "Gesamtzeit" (= prep_time + cook_time) remains unchanged for all types.
 
@@ -100,10 +111,11 @@ The "start cooking" button on the recipe detail page MUST use the adapted verb:
 - `backen` → **"Jetzt backen"**
 - `grillen` → **"Jetzt grillen"**
 - `zubereiten` → **"Jetzt zubereiten"**
+- `cocktail` → **"Jetzt mixen"**
 
 ### FR-01-5 — Recipe card type badge
 Each recipe card in the list view MUST display a visual indicator of `recipe_type`. Implementation may use:
-- A small icon (e.g. 🍳 kochen, 🍞 backen, 🔥 grillen, 🥗 zubereiten), OR
+- A small icon (e.g. 🍳 kochen, 🍞 backen, 🔥 grillen, 🥗 zubereiten, 🍸 cocktail), OR
 - A colored pill badge with the type name, OR
 - Both.
 
@@ -128,7 +140,7 @@ Existing recipes that do not have a `recipe_type` value MUST display and functio
 ### NFR-01-2 — TypeScript types
 The `Recipe` TypeScript type in `/types` MUST be updated to include:
 ```ts
-recipe_type: 'kochen' | 'backen' | 'grillen' | 'zubereiten';
+recipe_type: 'kochen' | 'backen' | 'grillen' | 'zubereiten' | 'cocktail';
 ```
 No `any` types. All consumers of the `Recipe` type MUST be updated.
 
@@ -148,16 +160,21 @@ All user-facing labels MUST be in German. `recipe_type` enum values MUST be stor
 -- Add recipe_type column to recipes table
 ALTER TABLE recipes
   ADD COLUMN recipe_type text NOT NULL DEFAULT 'kochen'
-  CHECK (recipe_type IN ('kochen', 'backen', 'grillen', 'zubereiten'));
+  CHECK (recipe_type IN ('kochen', 'backen', 'grillen', 'zubereiten', 'cocktail'));
 
 -- Optional: index for filtering
 CREATE INDEX recipes_type_idx ON recipes (recipe_type);
+
+-- NOTE: the recipe_type column + CHECK constraint were originally created in the
+-- Supabase dashboard (not via a migration). The 'cocktail' value was added later
+-- by migration 20260604000000_feature01_recipe_type_cocktail.sql, which looks the
+-- existing constraint up dynamically and widens it in place.
 ```
 
 ### Updated TypeScript type (`/types/recipe.ts`)
 
 ```ts
-export type RecipeType = 'kochen' | 'backen' | 'grillen' | 'zubereiten';
+export type RecipeType = 'kochen' | 'backen' | 'grillen' | 'zubereiten' | 'cocktail';
 
 export interface Recipe {
   // ... existing fields ...
@@ -169,7 +186,7 @@ export interface Recipe {
 
 ```json
 {
-  "recipe_type": "kochen | backen | grillen | zubereiten"
+  "recipe_type": "kochen | backen | grillen | zubereiten | cocktail"
 }
 ```
 
@@ -200,6 +217,7 @@ export const cookTimeLabelFor = (type: RecipeType): string => ({
   backen: 'Backzeit',
   grillen: 'Grillzeit',
   zubereiten: 'Zubereitungszeit',
+  cocktail: 'Zubereitungszeit',
 }[type]);
 
 export const ctaLabelFor = (type: RecipeType): string => ({
@@ -207,6 +225,7 @@ export const ctaLabelFor = (type: RecipeType): string => ({
   backen: 'Jetzt backen',
   grillen: 'Jetzt grillen',
   zubereiten: 'Jetzt zubereiten',
+  cocktail: 'Jetzt mixen',
 }[type]);
 ```
 
@@ -233,6 +252,7 @@ This avoids duplicating the mapping in every component.
 | OQ-01-2 | Manual override in edit form? | **Yes** — FR-01-6 in scope | Claude will occasionally misclassify; edit form fix is < 2 hours |
 | OQ-01-3 | Fallback type | **"kochen"** as default | Covers the majority of recipes; wrong baking recipes are easy to spot and fix |
 | OQ-01-4 | Type filter in v1? | **No — follow-up** | Add filter when collection grows large enough to need it |
+| OQ-01-1b | Add a 5th type (`cocktail`)? | **Yes — added 2026-06** | Drink recipes (cocktails/mocktails) are common enough to deserve their own type; the CHECK constraint was widened via a new migration, exactly as OQ-01-1 anticipated |
 
 ---
 

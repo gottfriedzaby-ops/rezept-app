@@ -77,14 +77,17 @@
     "backen": "Bake",
     "grillen": "Grill",
     "zubereiten": "Prepare",
+    "cocktail": "Cocktail",
     "cookTimeKochen": "Cook time",
     "cookTimeBacken": "Bake time",
     "cookTimeGrillen": "Grill time",
     "cookTimeZubereiten": "Prep time",
+    "cookTimeCocktail": "Prep time",
     "ctaKochen": "Start cooking",
     "ctaBacken": "Start baking",
     "ctaGrillen": "Start grilling",
-    "ctaZubereiten": "Start preparing"
+    "ctaZubereiten": "Start preparing",
+    "ctaCocktail": "Start mixing"
   },
   "RecipeEditForm": {
     "title": "Title",

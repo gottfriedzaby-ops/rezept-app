@@ -5,13 +5,7 @@ import { useTranslations } from 'next-intl';
 import { Link } from "@/i18n/navigation";
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
-
-function formatAmount(amountPerServing: number, servings: number): string {
-  const total = amountPerServing * servings;
-  if (total <= 0) return "";
-  const rounded = Math.round(total * 10) / 10;
-  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
-}
+import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
 
 const ctaKeys = {
   kochen: 'ctaKochen',
@@ -148,7 +142,7 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
                     </span>
                     <div className="flex-1">
                       <p className="text-ink-primary leading-relaxed">
-                        {step.text}
+                        {resolveStepText(step.text, section.ingredients, servings)}
                         {step.timerSeconds ? (
                           <span className="ml-2 text-xs text-ink-tertiary">
                             ({Math.round(step.timerSeconds / 60)} Min.)

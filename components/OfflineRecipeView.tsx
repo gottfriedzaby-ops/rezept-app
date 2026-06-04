@@ -5,13 +5,7 @@ import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { getTagColor } from "@/lib/tag-colors";
-
-function formatAmount(amountPerServing: number, servings: number): string {
-  const total = amountPerServing * servings;
-  if (total <= 0) return "";
-  const rounded = Math.round(total * 10) / 10;
-  return rounded % 1 === 0 ? String(Math.round(rounded)) : rounded.toFixed(1);
-}
+import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
 
 // Read-only recipe view for offline use. Hardcoded German (the /offline route
 // has no next-intl provider, matching the rest of the offline fallback) and no
@@ -143,7 +137,7 @@ export default function OfflineRecipeView({ recipe }: { recipe: Recipe }) {
                     </span>
                     <div className="flex-1">
                       <p className="text-ink-primary leading-relaxed">
-                        {step.text}
+                        {resolveStepText(step.text, section.ingredients, servings)}
                         {step.timerSeconds ? (
                           <span className="ml-2 text-xs text-ink-tertiary">
                             ({Math.round(step.timerSeconds / 60)} Min.)

@@ -1,12 +1,14 @@
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
+import { resolveStepText } from "@/lib/stepText";
 
 export function toSchemaOrgRecipe(recipe: Recipe): object {
   const sections = getRecipeSections(recipe);
+  const servings = recipe.servings ?? 1;
   const allIngredients = sections.flatMap((s) => s.ingredients);
   const allSteps = sections
-    .flatMap((s) => s.steps)
-    .sort((a, b) => a.order - b.order);
+    .flatMap((s) => s.steps.map((step) => ({ step, ingredients: s.ingredients })))
+    .sort((a, b) => a.step.order - b.step.order);
 
   return {
     "@context": "https://schema.org",
@@ -23,9 +25,9 @@ export function toSchemaOrgRecipe(recipe: Recipe): object {
         .replace(/\s+/g, " ")
         .trim()
     ),
-    recipeInstructions: allSteps.map((s) => ({
+    recipeInstructions: allSteps.map(({ step, ingredients }) => ({
       "@type": "HowToStep",
-      text: s.text,
+      text: resolveStepText(step.text, ingredients, servings),
     })),
     url:
       recipe.source_type === "url" ? recipe.source_value : undefined,
@@ -34,10 +36,11 @@ export function toSchemaOrgRecipe(recipe: Recipe): object {
 
 export function toPlainText(recipe: Recipe): string {
   const sections = getRecipeSections(recipe);
+  const servings = recipe.servings ?? 1;
   const allIngredients = sections.flatMap((s) => s.ingredients);
   const allSteps = sections
-    .flatMap((s) => s.steps)
-    .sort((a, b) => a.order - b.order);
+    .flatMap((s) => s.steps.map((step) => ({ step, ingredients: s.ingredients })))
+    .sort((a, b) => a.step.order - b.step.order);
 
   const lines: string[] = [
     recipe.title,
@@ -47,7 +50,7 @@ export function toPlainText(recipe: Recipe): string {
   if (recipe.prep_time) lines.push(`Vorbereitung: ${recipe.prep_time} Min.`);
   if (recipe.cook_time) lines.push(`Kochzeit: ${recipe.cook_time} Min.`);
   lines.push("", "Zutaten:", ...allIngredients.map((i) => `• ${i.amount > 0 ? i.amount : ""} ${i.unit} ${i.name}`.replace(/\s+/g, " ").trim()));
-  lines.push("", "Zubereitung:", ...allSteps.map((s, idx) => `${idx + 1}. ${s.text}`));
+  lines.push("", "Zubereitung:", ...allSteps.map(({ step, ingredients }, idx) => `${idx + 1}. ${resolveStepText(step.text, ingredients, servings)}`));
 
   return lines.join("\n");
 }

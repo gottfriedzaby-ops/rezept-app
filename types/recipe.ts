@@ -10,7 +10,7 @@ export interface Step {
   timerSeconds: number | null;
 }
 
-export type RecipeType = "kochen" | "backen" | "grillen" | "zubereiten";
+export type RecipeType = "kochen" | "backen" | "grillen" | "zubereiten" | "cocktail";
 
 export interface RecipeSection {
   title: string | null;

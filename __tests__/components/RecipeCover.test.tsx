@@ -127,7 +127,7 @@ describe("RecipeCover", () => {
       expect(illo.getAttribute("alt")).toBe("");
     });
 
-    (["kochen", "backen", "grillen", "zubereiten"] as const).forEach((type) => {
+    (["kochen", "backen", "grillen", "zubereiten", "cocktail"] as const).forEach((type) => {
       it(`renders the ${type} illustration for that recipe type`, () => {
         render(
           <RecipeCover imageUrl={null} title="X" tags={[]} recipeType={type} />

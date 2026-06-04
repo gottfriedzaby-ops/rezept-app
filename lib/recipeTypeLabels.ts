@@ -5,6 +5,7 @@ const COOK_TIME_LABELS: Record<RecipeType, string> = {
   backen: "Backzeit",
   grillen: "Grillzeit",
   zubereiten: "Zubereitungszeit",
+  cocktail: "Zubereitungszeit",
 };
 
 const CTA_LABELS: Record<RecipeType, string> = {
@@ -12,6 +13,7 @@ const CTA_LABELS: Record<RecipeType, string> = {
   backen: "Jetzt backen",
   grillen: "Jetzt grillen",
   zubereiten: "Jetzt zubereiten",
+  cocktail: "Jetzt mixen",
 };
 
 const TYPE_BADGES: Record<RecipeType, { label: string; emoji: string }> = {
@@ -19,6 +21,7 @@ const TYPE_BADGES: Record<RecipeType, { label: string; emoji: string }> = {
   backen:     { label: "Backen",     emoji: "🍞" },
   grillen:    { label: "Grillen",    emoji: "🔥" },
   zubereiten: { label: "Zubereiten", emoji: "🥗" },
+  cocktail:   { label: "Cocktail",   emoji: "🍸" },
 };
 
 export const cookTimeLabelFor = (type: RecipeType): string => COOK_TIME_LABELS[type];

@@ -77,14 +77,17 @@
     "backen": "Bakken",
     "grillen": "Grillen",
     "zubereiten": "Bereiden",
+    "cocktail": "Cocktail",
     "cookTimeKochen": "Kooktijd",
     "cookTimeBacken": "Baktijd",
     "cookTimeGrillen": "Griltijd",
     "cookTimeZubereiten": "Bereidingstijd",
+    "cookTimeCocktail": "Bereidingstijd",
     "ctaKochen": "Nu koken",
     "ctaBacken": "Nu bakken",
     "ctaGrillen": "Nu grillen",
-    "ctaZubereiten": "Nu bereiden"
+    "ctaZubereiten": "Nu bereiden",
+    "ctaCocktail": "Nu mixen"
   },
   "RecipeEditForm": {
     "title": "Titel",

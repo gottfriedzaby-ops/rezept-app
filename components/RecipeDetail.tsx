@@ -12,6 +12,7 @@ const ctaKeys = {
   backen: 'ctaBacken',
   grillen: 'ctaGrillen',
   zubereiten: 'ctaZubereiten',
+  cocktail: 'ctaCocktail',
 } as const;
 
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {

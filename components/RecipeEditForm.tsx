@@ -21,6 +21,7 @@ const RECIPE_TYPE_VALUES: { value: RecipeType; emoji: string }[] = [
   { value: "backen", emoji: "🍞" },
   { value: "grillen", emoji: "🔥" },
   { value: "zubereiten", emoji: "🥗" },
+  { value: "cocktail", emoji: "🍸" },
 ];
 
 export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {

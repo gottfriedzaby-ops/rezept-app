@@ -158,7 +158,7 @@ function parseRecipeYield(value: unknown): number | null {
 
 const RECIPE_SCHEMA = `{
   "title": "string",
-  "recipe_type": "kochen | backen | grillen | zubereiten",
+  "recipe_type": "kochen | backen | grillen | zubereiten | cocktail",
   "servings": number,
   "prepTime": number (minutes),
   "cookTime": number (minutes),
@@ -198,7 +198,7 @@ const RULES = `
 - timerSeconds: null if the step has no specific time, otherwise the duration in seconds
 - If a numeric field is unknown use 0; infer tags from ingredients and title
 - tags: always lowercase German (e.g. "vegetarisch", "italienisch", "schnell") — never English, never capitalised
-- recipe_type: classify as "backen" for oven-baked goods requiring precise temperature/timing (bread, cakes, cookies, quiche), "grillen" for open-flame or griddle cooking (BBQ, Grillgemüse), "zubereiten" for no-heat assembly recipes (salads, smoothies, overnight oats, sandwiches), "kochen" for everything else. Default to "kochen" when uncertain
+- recipe_type: classify as "backen" for oven-baked goods requiring precise temperature/timing (bread, cakes, cookies, quiche), "grillen" for open-flame or griddle cooking (BBQ, Grillgemüse), "cocktail" for mixed drinks — alcoholic or non-alcoholic (cocktails, mocktails, longdrinks, punches, spritz, aperitifs) assembled by shaking, stirring or building over ice, "zubereiten" for other no-heat assembly recipes (salads, smoothies, overnight oats, sandwiches), "kochen" for everything else. Default to "kochen" when uncertain
 - sections: if the recipe has distinct named components (e.g. "Für die Soße", "Für den Teig", "Für die Füllung"), create one section object per component with a non-null title. If no distinct components exist, return a single section with title: null. Never split arbitrarily — only create multiple sections when the original recipe explicitly names separate parts with their own ingredient lists and steps
 - Copy ingredient names EXACTLY as they appear in the source text. Do NOT substitute, rename, or omit any ingredient based on your knowledge of the dish type. Include every ingredient explicitly listed, even if the combination seems unusual for the recipe (e.g. sausages in lentil soup, bacon in a vegetable stew).
 - Do NOT draw on your training knowledge of how a dish is typically prepared. Extract ONLY what is explicitly written in the provided text — nothing more, nothing less. If an ingredient is not mentioned in the text, do not add it.

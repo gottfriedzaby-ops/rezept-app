@@ -22,31 +22,42 @@ describe("buildInlineAmountsPreamble", () => {
     expect(result).toContain('"Mehl"');
   });
 
-  it("converts EL to ml (×15)", () => {
+  it("keeps EL as-is — no ml conversion", () => {
     const result = buildInlineAmountsPreamble("2 EL Honig");
-    expect(result).toContain("30 ml");
+    expect(result).toContain("2 EL");
+    expect(result).not.toContain("30 ml");
     expect(result).toContain('"Honig"');
   });
 
-  it("converts a single EL to 15ml", () => {
+  it("keeps a single EL as-is", () => {
     const result = buildInlineAmountsPreamble("1 EL Olivenöl");
-    expect(result).toContain("15 ml");
+    expect(result).toContain("1 EL");
+    expect(result).not.toContain("15 ml");
   });
 
-  it("converts TL to ml (×5)", () => {
+  it("keeps TL as-is — no ml conversion", () => {
     const result = buildInlineAmountsPreamble("1 TL Salz");
-    expect(result).toContain("5 ml");
+    expect(result).toContain("1 TL");
+    expect(result).not.toContain("5 ml");
     expect(result).toContain('"Salz"');
   });
 
-  it("converts 2 TL to 10ml", () => {
+  it("keeps 2 TL as-is", () => {
     const result = buildInlineAmountsPreamble("2 TL Backpulver");
-    expect(result).toContain("10 ml");
+    expect(result).toContain("2 TL");
+    expect(result).not.toContain("10 ml");
   });
 
-  it("converts Prise to g (×0.5)", () => {
+  it("normalises lowercase el/tl to EL/TL", () => {
+    const result = buildInlineAmountsPreamble("2 el Honig\n1 tl Zimt");
+    expect(result).toContain("2 EL");
+    expect(result).toContain("1 TL");
+  });
+
+  it("keeps Prise as-is — no g conversion", () => {
     const result = buildInlineAmountsPreamble("1 Prise Pfeffer");
-    expect(result).toContain("0.5 g");
+    expect(result).toContain("1 Prise");
+    expect(result).not.toContain("0.5 g");
     expect(result).toContain('"Pfeffer"');
   });
 

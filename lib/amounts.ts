@@ -1,4 +1,5 @@
 // Injects extracted amounts as ground truth so Claude never overrides them with its own estimates.
+// EL/TL/Prise are source units and must survive the import as-is — never convert them to ml/g.
 export function buildInlineAmountsPreamble(text: string): string {
   const re =
     /^[ \t]*(\d+(?:[.,]\d+)?)\s*(ml|l\b|g\b|kg\b|EL\b|TL\b|Prise\b)\s+(.+)$/gim;
@@ -12,10 +13,10 @@ export function buildInlineAmountsPreamble(text: string): string {
 
     let amount = rawAmt;
     let unit = rawUnit;
-    if (rawUnit === "EL") { amount = rawAmt * 15; unit = "ml"; }
-    else if (rawUnit === "TL") { amount = rawAmt * 5; unit = "ml"; }
-    else if (rawUnit === "Prise") { amount = rawAmt * 0.5; unit = "g"; }
-    else if (rawUnit === "l") { amount = rawAmt * 1000; unit = "ml"; }
+    if (/^el$/i.test(rawUnit)) unit = "EL";
+    else if (/^tl$/i.test(rawUnit)) unit = "TL";
+    else if (/^prise$/i.test(rawUnit)) unit = "Prise";
+    else if (/^l$/i.test(rawUnit)) { amount = rawAmt * 1000; unit = "ml"; }
 
     lines.push(`- ${amount} ${unit}  (ingredient: "${ingredient}")`);
   }

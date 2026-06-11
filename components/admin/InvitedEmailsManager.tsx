@@ -167,18 +167,21 @@ export default function InvitedEmailsManager({
                       {invite.email}
                     </p>
                     <p className="text-xs text-ink-tertiary mt-0.5">
-                      Eingeladen am{" "}
-                      {dateFormatter.format(new Date(invite.invited_at))}
+                      {t("invitedOn", {
+                        date: dateFormatter.format(new Date(invite.invited_at)),
+                      })}
                       {invite.registered_at
-                        ? ` · Registriert am ${dateFormatter.format(new Date(invite.registered_at))}`
-                        : " · Noch nicht registriert"}
+                        ? t("inviteRegisteredOn", {
+                            date: dateFormatter.format(new Date(invite.registered_at)),
+                          })
+                        : t("inviteNotRegistered")}
                     </p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
                     {isConfirming ? (
                       <>
                         <span className="text-xs text-ink-tertiary">
-                          Wirklich entfernen?
+                          {t("inviteConfirmQuestion")}
                         </span>
                         <button
                           type="button"
@@ -186,7 +189,7 @@ export default function InvitedEmailsManager({
                           disabled={isDeleting}
                           className="text-red-600 hover:text-red-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          {isDeleting ? "Entferne…" : "Ja, entfernen"}
+                          {isDeleting ? t("inviteRemoving") : t("inviteConfirmYes")}
                         </button>
                         <button
                           type="button"
@@ -194,25 +197,24 @@ export default function InvitedEmailsManager({
                           disabled={isDeleting}
                           className="text-ink-secondary hover:text-ink-primary text-sm transition-colors"
                         >
-                          Abbrechen
+                          {tCommon("cancel")}
                         </button>
                       </>
                     ) : (
                       <button
                         type="button"
                         onClick={() => setConfirmDelete(invite.email)}
-                        aria-label="Einladung entfernen"
+                        aria-label={t("inviteRemoveAriaLabel")}
                         className="text-red-600 hover:text-red-700 text-sm transition-colors"
                       >
-                        Entfernen
+                        {t("inviteRemove")}
                       </button>
                     )}
                   </div>
                 </div>
                 {isConfirming && invite.registered_at && (
                   <p className="text-xs text-ink-tertiary mt-3">
-                    Hinweis: Die Person ist bereits registriert. Das Entfernen
-                    dieser Einladung löscht das Nutzerkonto NICHT.
+                    {t("inviteRegisteredNote")}
                   </p>
                 )}
               </li>

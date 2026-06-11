@@ -73,8 +73,11 @@ hundreds of recipes each.
    Effort: S–M.
 4. **Error monitoring** (A14) — `@sentry/nextjs` (server + client), release
    tagging on Vercel deploys, alert rule for API 5xx spikes. Effort: S.
-5. **Admin UI i18n** (A17) — move `components/admin/*` strings to next-intl.
-   Effort: S.
+5. **Admin + sharing UI i18n** (A17) — move `components/admin/*` and the
+   German-only sharing client components (`ShareManager`,
+   `LibraryShareManager`, `IncomingSharesManager`, `CopyToLibraryButton`
+   surroundings) to next-intl. The server pages around them are already
+   localized (Phase 1). Effort: S–M.
 6. **E2E depth** (A15) — Playwright flows for import→review→confirm (mocked
    Claude), cook mode, meal plan → shopping list. Effort: M.
 

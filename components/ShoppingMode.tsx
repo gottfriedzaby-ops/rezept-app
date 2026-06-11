@@ -14,6 +14,7 @@ import {
   type SortMode,
 } from "@/lib/shopping-list";
 import { buildGroups, formatRowAmount, type ViewGroup, type ViewRow } from "@/lib/shopping-list-view";
+import { useShoppingListSync } from "@/lib/shopping-list-sync";
 import { getLearnedCategories, CATEGORY_BY_ID, type CategoryId } from "@/lib/ingredient-categories";
 import { useAutoCategorize } from "@/lib/useAutoCategorize";
 
@@ -113,6 +114,8 @@ export default function ShoppingMode() {
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(() => setItems(getList()), []);
+
+  useShoppingListSync();
 
   // SSR-safe mount: hydrate from localStorage.
   useEffect(() => {
@@ -275,7 +278,7 @@ export default function ShoppingMode() {
               className={`px-3 py-1.5 text-sm transition-colors ${
                 sortMode === mode
                   ? "bg-forest text-white"
-                  : "bg-white text-ink-secondary hover:bg-surface-hover"
+                  : "bg-surface-card text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               {mode === "recipe" ? t("sortByRecipe") : t("sortByType")}
@@ -325,7 +328,7 @@ export default function ShoppingMode() {
             const isCollapsed = collapsed[group.id] ?? false;
             const complete = group.total > 0 && group.checkedCount === group.total;
             return (
-              <section key={`${group.kind}:${group.id}`} className="rounded-lg bg-white border border-stone overflow-hidden">
+              <section key={`${group.kind}:${group.id}`} className="rounded-lg bg-surface-card border border-stone overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleSection(group.id)}

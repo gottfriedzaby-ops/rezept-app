@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { AdminUserDetail, WindowKey } from "@/lib/admin-metrics";
 
+// Message keys in the "Admin" namespace for each window option.
 const WINDOW_LABELS: Record<WindowKey, string> = {
-  "24h": "24 Stunden",
-  "7d": "7 Tage",
-  "30d": "30 Tage",
-  all: "Alle Zeiten",
+  "24h": "window24h",
+  "7d": "window7d",
+  "30d": "window30d",
+  all: "windowAll",
 };
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
@@ -35,10 +37,13 @@ function isWindow(s: string | null | undefined): s is WindowKey {
 }
 
 export default function UserDetailPanel({ userId, currentAdminId }: Props) {
+  const t = useTranslations("Admin");
+  const tCommon = useTranslations("Common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawWindow = searchParams.get("window");
   const window: WindowKey = isWindow(rawWindow) ? rawWindow : "7d";
+  const windowLabel = t(WINDOW_LABELS[window]);
 
   const [detail, setDetail] = useState<AdminUserDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,19 +66,19 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
       });
       const json = await res.json();
       if (!res.ok || json.error || !json.data) {
-        setLoadError(json.error ?? "Nutzer konnte nicht geladen werden.");
+        setLoadError(json.error ?? t("loadErrorUser"));
         setDetail(null);
       } else {
         setDetail(json.data);
       }
     } catch (err) {
       setLoadError(
-        err instanceof Error ? err.message : "Daten konnten nicht geladen werden.",
+        err instanceof Error ? err.message : t("loadErrorData"),
       );
     } finally {
       setLoading(false);
     }
-  }, [userId, window]);
+  }, [userId, window, t]);
 
   useEffect(() => {
     refresh();
@@ -107,7 +112,7 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
         setActionState({
           kind: "result",
           tone: "error",
-          message: json.error ?? "Aktion fehlgeschlagen.",
+          message: json.error ?? t("actionFailed"),
         });
         return;
       }
@@ -120,10 +125,10 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
         tone: "ok",
         message:
           action === "disable"
-            ? "Konto deaktiviert."
+            ? t("resultDisabled")
             : action === "enable"
-              ? "Konto reaktiviert."
-              : "Passwort-Reset-Mail ausgelöst.",
+              ? t("resultEnabled")
+              : t("resultResetSent"),
       });
       await refresh();
     } catch (err) {
@@ -131,13 +136,13 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
         kind: "result",
         tone: "error",
         message:
-          err instanceof Error ? err.message : "Aktion fehlgeschlagen.",
+          err instanceof Error ? err.message : t("actionFailed"),
       });
     }
   }
 
   if (loading && !detail) {
-    return <p className="text-sm text-ink-tertiary">Lade Nutzerdaten…</p>;
+    return <p className="text-sm text-ink-tertiary">{t("loadingUserData")}</p>;
   }
   if (loadError) {
     return (
@@ -155,9 +160,9 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
           href={`/settings/admin?window=${window}`}
           className="text-sm text-ink-tertiary hover:text-ink-primary transition-colors"
         >
-          ← Zurück zum Dashboard
+          {t("backToDashboard")}
         </Link>
-        <div className="flex items-center gap-2" role="tablist" aria-label="Zeitraum">
+        <div className="flex items-center gap-2" role="tablist" aria-label={t("windowAriaLabel")}>
           {(Object.keys(WINDOW_LABELS) as WindowKey[]).map((w) => (
             <button
               key={w}
@@ -170,7 +175,7 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
                   : "border-stone text-ink-secondary hover:text-ink-primary hover:border-ink-tertiary"
               }`}
             >
-              {WINDOW_LABELS[w]}
+              {t(WINDOW_LABELS[w])}
             </button>
           ))}
         </div>
@@ -179,35 +184,35 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
       {/* User header */}
       <section className="rounded-xl border border-border-secondary p-5">
         <p className="font-serif text-xl font-medium text-ink-primary">
-          {detail.email || "(keine E-Mail)"}
+          {detail.email || t("noEmail")}
         </p>
         <p className="mt-1 text-xs text-ink-tertiary">
-          Registriert am {dateFmt.format(new Date(detail.registered_at))} ·{" "}
+          {t("registeredOn", { date: dateFmt.format(new Date(detail.registered_at)) })} ·{" "}
           {detail.last_sign_in_at
-            ? `Letzte Anmeldung ${dateTimeFmt.format(new Date(detail.last_sign_in_at))}`
-            : "Noch nie angemeldet"}{" "}
+            ? t("lastSignIn", { date: dateTimeFmt.format(new Date(detail.last_sign_in_at)) })
+            : t("neverSignedIn")}{" "}
           ·{" "}
           {detail.is_disabled ? (
-            <span className="text-red-700">Deaktiviert</span>
+            <span className="text-red-700">{t("statusDisabled")}</span>
           ) : (
-            <span className="text-ink-secondary">Aktiv</span>
+            <span className="text-ink-secondary">{t("statusActive")}</span>
           )}
         </p>
       </section>
 
       {/* Stats */}
       <section className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Stat label="Rezepte (gesamt)" value={intFmt.format(detail.recipes_lifetime)} />
+        <Stat label={t("recipesLifetime")} value={intFmt.format(detail.recipes_lifetime)} />
         <Stat
-          label={`Rezepte (${WINDOW_LABELS[window]})`}
+          label={t("recipesInWindow", { window: windowLabel })}
           value={intFmt.format(detail.recipes_in_window)}
         />
         <Stat
-          label={`API-Calls (${WINDOW_LABELS[window]})`}
+          label={t("apiCallsInWindow", { window: windowLabel })}
           value={intFmt.format(detail.api_calls_in_window)}
         />
         <Stat
-          label={`Kosten (${WINDOW_LABELS[window]})`}
+          label={t("costInWindow", { window: windowLabel })}
           value={usdFmt.format(detail.cost_usd_in_window)}
         />
       </section>
@@ -215,17 +220,17 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
       {/* Recipes by source */}
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-          Rezepte nach Quelle ({WINDOW_LABELS[window]})
+          {t("recipesBySource", { window: windowLabel })}
         </h3>
         {detail.recipes_by_source_in_window.length === 0 ? (
-          <p className="text-sm text-ink-tertiary">Keine Rezepte im Zeitraum.</p>
+          <p className="text-sm text-ink-tertiary">{t("noRecipesInWindow")}</p>
         ) : (
           <div className="rounded-xl border border-border-secondary overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-surface-secondary text-xs uppercase tracking-wider text-ink-tertiary">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium">Quelle</th>
-                  <th className="px-4 py-2 text-right font-medium">Anzahl</th>
+                  <th className="px-4 py-2 text-left font-medium">{t("colSource")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colCount")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -244,23 +249,23 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
       {/* API breakdown */}
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-          Claude-API nach Funktion und Modell ({WINDOW_LABELS[window]})
+          {t("apiByFunctionAndModel", { window: windowLabel })}
         </h3>
         {detail.api_by_function_and_model_in_window.length === 0 ? (
-          <p className="text-sm text-ink-tertiary">Keine API-Aufrufe im Zeitraum.</p>
+          <p className="text-sm text-ink-tertiary">{t("noApiCalls")}</p>
         ) : (
           <div className="rounded-xl border border-border-secondary overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-surface-secondary text-xs uppercase tracking-wider text-ink-tertiary">
                 <tr>
-                  <th className="px-4 py-2 text-left font-medium">Funktion</th>
-                  <th className="px-4 py-2 text-left font-medium">Modell</th>
-                  <th className="px-4 py-2 text-right font-medium">Calls</th>
-                  <th className="px-4 py-2 text-right font-medium">Input</th>
-                  <th className="px-4 py-2 text-right font-medium">Output</th>
-                  <th className="px-4 py-2 text-right font-medium">Cache-Read</th>
-                  <th className="px-4 py-2 text-right font-medium">Cache-Write</th>
-                  <th className="px-4 py-2 text-right font-medium">Kosten</th>
+                  <th className="px-4 py-2 text-left font-medium">{t("colFunction")}</th>
+                  <th className="px-4 py-2 text-left font-medium">{t("colModel")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colCalls")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colInput")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colOutput")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colCacheRead")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colCacheWrite")}</th>
+                  <th className="px-4 py-2 text-right font-medium">{t("colCost")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -279,7 +284,7 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
                     </td>
                     <td className="px-4 py-2 text-right">
                       {a.cost_usd === null ? (
-                        <span className="text-ink-tertiary" title="Modell nicht in Preistabelle">
+                        <span className="text-ink-tertiary" title={t("modelNotPriced")}>
                           —
                         </span>
                       ) : (
@@ -297,11 +302,11 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
       {/* Actions */}
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-          Aktionen
+          {t("actionsTitle")}
         </h3>
         {isSelf ? (
           <p className="text-sm text-ink-tertiary">
-            Aktionen sind für das eigene Konto deaktiviert.
+            {t("actionsSelfDisabled")}
           </p>
         ) : (
           <div className="space-y-3">
@@ -310,25 +315,25 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
                 <ActionButton
                   onClick={() => runAction("enable")}
                   pending={actionState.kind === "pending" && actionState.action === "enable"}
-                  label="Konto reaktivieren"
+                  label={t("actionEnable")}
                 />
               ) : (
                 <ActionButton
                   onClick={() => setActionState({ kind: "confirming", action: "disable" })}
                   pending={actionState.kind === "pending" && actionState.action === "disable"}
-                  label="Konto deaktivieren"
+                  label={t("actionDisable")}
                 />
               )}
               <ActionButton
                 onClick={() => runAction("reset")}
                 pending={actionState.kind === "pending" && actionState.action === "reset"}
-                label="Passwort-Reset-Mail senden"
+                label={t("actionResetPassword")}
               />
               <ActionButton
                 tone="danger"
                 onClick={() => setActionState({ kind: "confirming", action: "delete" })}
                 pending={actionState.kind === "pending" && actionState.action === "delete"}
-                label="Nutzer löschen"
+                label={t("actionDelete")}
               />
             </div>
 
@@ -336,16 +341,14 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
               <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm">
                 {actionState.action === "delete" ? (
                   <>
-                    <p className="font-medium text-red-700">Diese Aktion kann nicht rückgängig gemacht werden.</p>
+                    <p className="font-medium text-red-700">{t("confirmDeleteTitle")}</p>
                     <p className="mt-1 text-red-700">
-                      Alle Rezepte und Daten des Nutzers werden gelöscht. API-Aufrufe in der
-                      Historie bleiben anonymisiert erhalten.
+                      {t("confirmDeleteBody")}
                     </p>
                   </>
                 ) : (
                   <p className="text-red-700">
-                    Der Nutzer kann sich nach der Deaktivierung nicht mehr anmelden. Daten
-                    bleiben erhalten.
+                    {t("confirmDisableBody")}
                   </p>
                 )}
                 <div className="mt-3 flex gap-3">
@@ -354,14 +357,14 @@ export default function UserDetailPanel({ userId, currentAdminId }: Props) {
                     onClick={() => runAction(actionState.action)}
                     className="bg-red-600 text-white hover:bg-red-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
-                    {actionState.action === "delete" ? "Ja, löschen" : "Ja, deaktivieren"}
+                    {actionState.action === "delete" ? t("confirmDeleteYes") : t("confirmDisableYes")}
                   </button>
                   <button
                     type="button"
                     onClick={() => setActionState({ kind: "idle" })}
                     className="text-ink-secondary hover:text-ink-primary text-sm transition-colors px-3 py-2"
                   >
-                    Abbrechen
+                    {tCommon("cancel")}
                   </button>
                 </div>
               </div>

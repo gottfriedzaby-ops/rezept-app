@@ -48,8 +48,10 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
   supabase.ts                # Lazy-Proxy Admin-Client (Service-Role); supabase/server.ts + client.ts (SSR/Browser)
   profiles.ts                # Batch-User-Lookups über profiles-Tabelle (42P01-Fallback auf auth.admin)
   duplicate-check.ts         # 3-stufige Duplikatprüfung (user-scoped, parallel gefetcht)
+  recipe-search.ts           # Server-seitige Suche/Pagination (+ Tag-Facette, Shared-Sichtbarkeit)
   import-rate-limit.ts       # 20 Imports/User/Tag (UTC)
-  shopping-list.ts           # localStorage-Store der Einkaufsliste
+  shopping-list.ts           # localStorage-Store der Einkaufsliste (Tombstones für Sync)
+  shopping-list-sync.ts      # Cloud-Sync: debounced Push, Pull-Merge, useShoppingListSync
   meal-plan.ts               # Wochen-Mathematik (getWeekStart, addDays, …)
   image-validation.ts        # Magic-Byte-Sniffing für Uploads
   amounts.ts / tags.ts / tag-colors.ts / schemaOrg.ts / pdf-import.ts / parsers/
@@ -105,18 +107,22 @@ Siehe `.env.local.example` (vollständig kommentiert): Supabase-Keys, `ANTHROPIC
 - ✅ Sharing: Token-Links **und** Bibliothek-Sharing (Einladung per E-Mail, Reshare-Workflow)
 - ✅ Einkaufsliste (localStorage, Skalierung, In-Store-Modus, Kategorisierung) + Kochmodus (Timer, Wake-Lock, Tastatur)
 - ✅ Wochenplan (Feature 16): Woche × Mahlzeit-Slots, Portions-Override, „Woche zur Einkaufsliste"
-- ✅ Nährwertschätzung, PDF-/Cookidoo-Export, Volltext-Suche client-seitig (Titel/Tags/Zutaten)
-- ✅ i18n (de/en/nl), PWA (offline, installierbar), Admin-Dashboard, Import-Tageslimit
+- ✅ Nährwertschätzung, PDF-/Cookidoo-Export
+- ✅ Server-seitige Suche + Pagination (`lib/recipe-search.ts`, Trigram-Index auf `search_text`;
+  Hauptseite SSRt die erste Seite, „Mehr laden" via `/api/recipes/search`)
+- ✅ Einkaufslisten-Cloud-Sync (offline-first, LWW, Tombstones — `lib/shopping-list-sync.ts`)
+- ✅ Dark Mode (class-Strategie über CSS-Variablen, Toggle in Settings)
+- ✅ Sentry (opt-in via `NEXT_PUBLIC_SENTRY_DSN`, sonst No-op)
+- ✅ i18n (de/en/nl, inkl. Admin- und Sharing-UI), PWA (offline, installierbar), Admin-Dashboard, Import-Tageslimit
 - ✅ Toasts, Loading-Skeletons, globale Fokus-Indikatoren
 
 ## Noch NICHT implementiert (siehe docs/roadmap.md)
-- Server-seitige Suche/Pagination (Liste lädt aktuell alle Rezepte)
-- Einkaufslisten-Cloud-Sync, Dark Mode, Sentry (Phase 2)
 - AI-Kochassistent, Collections/Ratings (Phase 3)
 - Google OAuth-, Push-, Store-Go-Lives; Prompt-Caching (Phase 4)
 
 ## Betriebshinweise
-- Zwei Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`) müssen vom Operator
-  im Supabase SQL-Editor ausgeführt werden — Code degradiert bis dahin graceful
-  (Checkliste in docs/roadmap.md).
+- Vier Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`, `recipe_search`,
+  `shopping_list_sync`) müssen vom Operator im Supabase SQL-Editor ausgeführt
+  werden — Code degradiert bis dahin graceful (Checkliste in docs/roadmap.md).
+- Sentry ist ohne `NEXT_PUBLIC_SENTRY_DSN` ein No-op; DSN + Auth-Token in Vercel setzen.
 - Beim Multi-User-Rollout wurden alle Alt-Rezepte gelöscht; jeder Nutzer startet leer.

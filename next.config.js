@@ -1,5 +1,6 @@
 const createNextIntlPlugin = require('next-intl/plugin');
 const withSerwistInit = require('@serwist/next').default;
+const { withSentryConfig } = require('@sentry/nextjs');
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
@@ -25,6 +26,8 @@ const withSerwist = withSerwistInit({
 const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ["heic-convert", "mupdf"],
+    // Next 14 needs the flag for instrumentation.ts (Sentry server init)
+    instrumentationHook: true,
   },
   images: {
     remotePatterns: [
@@ -37,4 +40,12 @@ const nextConfig = {
   },
 };
 
-module.exports = withSerwist(withNextIntl(nextConfig));
+// Sentry is a no-op without NEXT_PUBLIC_SENTRY_DSN; source-map upload only
+// runs when SENTRY_AUTH_TOKEN is configured (e.g. in Vercel).
+module.exports = withSentryConfig(withSerwist(withNextIntl(nextConfig)), {
+  silent: true,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+});

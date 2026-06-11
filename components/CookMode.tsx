@@ -479,7 +479,7 @@ export default function CookMode({ recipe, initialServings }: Props) {
           <button
             onClick={() => setStepIndex((i) => i + 1)}
             aria-keyshortcuts="ArrowRight Space"
-            className="flex-1 h-14 rounded bg-ink-primary text-white font-medium hover:bg-ink-secondary transition-colors"
+            className="flex-1 h-14 rounded bg-ink-primary text-surface-primary font-medium hover:bg-ink-secondary transition-colors"
           >
             {t("next")} →
           </button>

@@ -124,7 +124,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
   }
 
   const fieldCls = "input-field";
-  const smallFieldCls = "w-full px-3 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors";
+  const smallFieldCls = "w-full px-3 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors";
   const removeBtnCls = "text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none disabled:opacity-40";
 
   return (
@@ -149,8 +149,8 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
               disabled={saving}
               className={`px-3 py-1.5 text-sm rounded border transition-colors ${
                 recipeType === value
-                  ? "bg-ink-primary text-white border-ink-primary"
-                  : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
+                  ? "bg-ink-primary text-surface-primary border-ink-primary"
+                  : "bg-surface-card text-ink-secondary border-stone hover:bg-surface-hover"
               }`}
             >
               {emoji} {tTypes(value)}
@@ -202,7 +202,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
               onChange={(e) => setSections((prev) => prev.map((s, i) => i !== sIdx ? s : { ...s, title: e.target.value }))}
               placeholder={t("sectionPlaceholder")}
               disabled={saving}
-              className="font-medium text-sm px-2.5 py-1.5 bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
+              className="font-medium text-sm px-2.5 py-1.5 bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
             />
           )}
 
@@ -218,9 +218,9 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (
                 <div key={iIdx} className="flex gap-2 items-center">
-                  <input type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
                   <button type="button" aria-label={t("addIngredient")} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={removeBtnCls}>×</button>
                 </div>
               ))}
@@ -237,7 +237,7 @@ export default function RecipeReviewForm({ initial, saving, error, onSave, onDis
               {section.steps.map((step, stIdx) => (
                 <div key={stIdx} className="flex gap-2 items-start">
                   <span className="text-xs text-ink-tertiary mt-2 w-5 shrink-0 text-right tabular-nums">{stIdx + 1}.</span>
-                  <textarea value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
+                  <textarea value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
                   <button type="button" onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${removeBtnCls} mt-1.5`}>×</button>
                 </div>
               ))}

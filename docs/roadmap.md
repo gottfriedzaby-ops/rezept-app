@@ -52,34 +52,42 @@ applied**. Until applied, the code falls back gracefully (paginated
 
 ---
 
-## Phase 2 — Scale & comfort (next)
+## Phase 2 — Scale & comfort ✅ (this branch)
 
 Goal: the app feels instant and trustworthy for hundreds of users with
 hundreds of recipes each.
 
-1. **Server-side search + pagination** (A10) — use the existing
-   `search_vector` tsvector + GIN index: `GET /api/recipes?q=&cursor=` with
-   `textSearch("search_vector", q, { type: "websearch", config: "german" })`,
-   cursor on `created_at`. Keep `RecipeList`'s URL-param UX; switch the data
-   source behind it. Tag/favourite filters become query params evaluated in
-   SQL. Effort: M.
-2. **Shopping list cloud sync** (A13) — `shopping_lists` +
-   `shopping_list_items` tables (owner RLS), localStorage becomes the offline
-   cache; merge strategy last-write-wins per item on reconnect. Preserve the
-   `lib/shopping-list.ts` API surface so `ShoppingMode`/`AddToShoppingListButton`
-   don't change. Unlocks household sharing later. Effort: M–L.
-3. **Dark mode** (A12) — `darkMode: 'class'`, dark values for the existing
-   CSS custom properties, toggle in settings persisted in `user_settings`.
-   Effort: S–M.
-4. **Error monitoring** (A14) — `@sentry/nextjs` (server + client), release
-   tagging on Vercel deploys, alert rule for API 5xx spikes. Effort: S.
-5. **Admin + sharing UI i18n** (A17) — move `components/admin/*` and the
-   German-only sharing client components (`ShareManager`,
-   `LibraryShareManager`, `IncomingSharesManager`, `CopyToLibraryButton`
-   surroundings) to next-intl. The server pages around them are already
-   localized (Phase 1). Effort: S–M.
-6. **E2E depth** (A15) — Playwright flows for import→review→confirm (mocked
-   Claude), cook mode, meal plan → shopping list. Effort: M.
+1. ✅ **Server-side search + pagination** (A10) — trigram-indexed
+   `search_text` column (substring semantics identical to the old client
+   filter, incl. ingredient names), stored `total_time` for SQL time-sort.
+   The main page SSRs the first 24 matches per URL params; `RecipeList`
+   keeps its URL-param UX and appends pages via `GET /api/recipes/search`.
+   Share pages keep the client mode. Title-only fallback until the
+   migration is applied.
+2. ✅ **Shopping list cloud sync** (A13) — `shopping_list_items` table
+   (composite PK user_id+id, owner RLS, tombstones), per-item LWW merge in
+   `POST /api/shopping-list/sync`, debounced push + pull-on-mount via
+   `useShoppingListSync` (UserNav, list page, ShoppingMode). localStorage
+   stays the offline source of truth.
+3. ✅ **Dark mode** (A12) — `darkMode: 'class'` over RGB-triplet CSS
+   variables, pre-paint theme script, System/Hell/Dunkel toggle in settings.
+4. ✅ **Error monitoring** (A14) — `@sentry/nextjs` (server/edge/client +
+   global-error), complete no-op without `NEXT_PUBLIC_SENTRY_DSN`.
+   *Operator: create a Sentry project and set the env vars in Vercel.*
+5. ✅ **Admin + sharing UI i18n** (A17) — `components/admin/*`,
+   `ShareManager`, `LibraryShareManager`, `IncomingSharesManager` moved to
+   next-intl (de/en/nl).
+6. ✅ **E2E depth** (A15) — suite repaired (locale pinned to de-DE, stale
+   assertions fixed) and extended with offline-page and locale-routing
+   specs (12 specs green). Import/cook flows need a real test Supabase
+   project — tracked in docs/test-concept.md §14 (Phase 4).
+
+### 🔑 Operator checklist (after merge, in addition to Phase 1)
+
+3. Supabase SQL editor → run `supabase/migrations/20260611000002_recipe_search.sql`
+4. Supabase SQL editor → run `supabase/migrations/20260611000003_shopping_list_sync.sql`
+5. Optional: create a Sentry project and set `NEXT_PUBLIC_SENTRY_DSN`
+   (+ `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` for source maps) in Vercel
 
 ## Phase 3 — Product differentiation
 

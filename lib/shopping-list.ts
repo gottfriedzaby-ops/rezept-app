@@ -8,6 +8,10 @@ export interface ShoppingListItem {
   checked: boolean;
   added_at: string; // ISO 8601
   manual?: boolean;
+  /** Last local mutation (LWW timestamp for cloud sync). Missing on pre-sync items. */
+  updated_at?: string;
+  /** Deletion tombstone — hidden from all views, kept until the next sync. */
+  deleted_at?: string | null;
 }
 
 export const STORAGE_KEY = "rezept-app:shopping-list";
@@ -16,7 +20,28 @@ export const SORT_MODE_KEY = "rezept-app:shopping-list:sort-mode";
 
 export type SortMode = "recipe" | "type";
 
-export function getList(): ShoppingListItem[] {
+// Cloud sync registers itself here so every mutation schedules a debounced
+// push without this module importing the sync layer (no import cycle).
+type MutationListener = () => void;
+const mutationListeners = new Set<MutationListener>();
+
+export function addShoppingListMutationListener(listener: MutationListener): () => void {
+  mutationListeners.add(listener);
+  return () => mutationListeners.delete(listener);
+}
+
+function emitMutation(): void {
+  mutationListeners.forEach((listener) => {
+    try {
+      listener();
+    } catch {
+      // listeners must never break a mutation
+    }
+  });
+}
+
+/** All stored items including deletion tombstones (sync layer only). */
+export function getRawList(): ShoppingListItem[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -29,6 +54,10 @@ export function getList(): ShoppingListItem[] {
   }
 }
 
+export function getList(): ShoppingListItem[] {
+  return getRawList().filter((item) => !item.deleted_at);
+}
+
 export function saveList(items: ShoppingListItem[]): void {
   if (typeof window === "undefined") return;
   try {
@@ -38,12 +67,18 @@ export function saveList(items: ShoppingListItem[]): void {
   }
 }
 
+/** Overwrite local storage with the merged server state (sync layer only). */
+export function replaceList(items: ShoppingListItem[]): void {
+  saveList(items);
+}
+
 export function addRecipeItems(
   recipe: { id: string; title: string; servings: number | null },
   ingredients: Array<{ amount: number; unit: string; name: string }>,
   desiredServings: number
 ): number {
-  const current = getList();
+  const current = getRawList();
+  const now = new Date().toISOString();
   const newItems: ShoppingListItem[] = ingredients.map((ing) => {
     // Amounts are stored per portion; total = amount * desired servings.
     const scaledAmount =
@@ -59,17 +94,26 @@ export function addRecipeItems(
       amount: scaledAmount,
       unit: ing.unit,
       checked: false,
-      added_at: new Date().toISOString(),
+      added_at: now,
+      updated_at: now,
     };
   });
 
   saveList([...current, ...newItems]);
+  emitMutation();
   return newItems.length;
 }
 
 export function toggleItem(id: string): void {
-  const items = getList();
-  saveList(items.map((item) => (item.id === id ? { ...item, checked: !item.checked } : item)));
+  const now = new Date().toISOString();
+  saveList(
+    getRawList().map((item) =>
+      item.id === id && !item.deleted_at
+        ? { ...item, checked: !item.checked, updated_at: now }
+        : item
+    )
+  );
+  emitMutation();
 }
 
 // Set the checked state for a set of ids in a single write. Used by merged
@@ -77,15 +121,37 @@ export function toggleItem(id: string): void {
 export function setItemsChecked(ids: string[], checked: boolean): void {
   if (ids.length === 0) return;
   const set = new Set(ids);
-  saveList(getList().map((item) => (set.has(item.id) ? { ...item, checked } : item)));
+  const now = new Date().toISOString();
+  saveList(
+    getRawList().map((item) =>
+      set.has(item.id) && !item.deleted_at
+        ? { ...item, checked, updated_at: now }
+        : item
+    )
+  );
+  emitMutation();
 }
 
 export function removeItem(id: string): void {
-  saveList(getList().filter((item) => item.id !== id));
+  const now = new Date().toISOString();
+  // Tombstone instead of dropping the row, so the deletion propagates to
+  // other devices on the next sync.
+  saveList(
+    getRawList().map((item) =>
+      item.id === id ? { ...item, deleted_at: now, updated_at: now } : item
+    )
+  );
+  emitMutation();
 }
 
 export function clearList(): void {
-  saveList([]);
+  const now = new Date().toISOString();
+  saveList(
+    getRawList().map((item) =>
+      item.deleted_at ? item : { ...item, deleted_at: now, updated_at: now }
+    )
+  );
+  emitMutation();
 }
 
 export function getUncheckedCount(): number {
@@ -93,7 +159,8 @@ export function getUncheckedCount(): number {
 }
 
 export function addManualItem(text: string): void {
-  const current = getList();
+  const current = getRawList();
+  const now = new Date().toISOString();
   const newItem: ShoppingListItem = {
     id: crypto.randomUUID(),
     recipe_id: "manual",
@@ -102,10 +169,12 @@ export function addManualItem(text: string): void {
     amount: null,
     unit: "",
     checked: false,
-    added_at: new Date().toISOString(),
+    added_at: now,
     manual: true,
+    updated_at: now,
   };
   saveList([...current, newItem]);
+  emitMutation();
 }
 
 export function getHideChecked(): boolean {

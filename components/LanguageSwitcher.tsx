@@ -27,8 +27,8 @@ export default function LanguageSwitcher() {
           onClick={() => handleChange(locale)}
           className={`px-4 py-2 text-sm rounded border transition-colors ${
             locale === currentLocale
-              ? "bg-ink-primary text-white border-ink-primary"
-              : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
+              ? "bg-ink-primary text-surface-primary border-ink-primary"
+              : "bg-surface-card text-ink-secondary border-stone hover:bg-surface-hover"
           }`}
         >
           {t(locale)}

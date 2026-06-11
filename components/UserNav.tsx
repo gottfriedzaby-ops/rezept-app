@@ -5,11 +5,13 @@ import { useTranslations } from 'next-intl';
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getUncheckedCount } from "@/lib/shopping-list";
+import { useShoppingListSync } from "@/lib/shopping-list-sync";
 import type { LibraryShareInbound } from "@/types/library-sharing";
 
 export default function UserNav() {
   const t = useTranslations('Nav');
   const { user, loading } = useAuth();
+  useShoppingListSync();
   const [uncheckedCount, setUncheckedCount] = useState(0);
   const [hasSharedCollections, setHasSharedCollections] = useState(false);
   const [showSharedInMain, setShowSharedInMain] = useState(true);

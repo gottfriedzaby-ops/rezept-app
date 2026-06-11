@@ -82,7 +82,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
             className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
             onClick={() => setModalOpen(false)}
           />
-          <div className="relative bg-white rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4">
+          <div className="relative bg-surface-card rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4">
             <h2 className="font-serif text-lg font-medium text-ink-primary mb-5">
               {t("modalTitle")}
             </h2>
@@ -113,7 +113,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
                     const val = parseInt(e.target.value, 10);
                     if (!isNaN(val) && val >= 1 && val <= 20) setDesiredServings(val);
                   }}
-                  className="w-16 text-center px-2 py-2 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors"
+                  className="w-16 text-center px-2 py-2 text-sm bg-surface-card border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors"
                 />
                 <button
                   type="button"

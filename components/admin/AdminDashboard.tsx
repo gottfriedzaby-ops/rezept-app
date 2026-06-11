@@ -3,17 +3,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type {
   AdminUserRow,
   DashboardMetrics,
   WindowKey,
 } from "@/lib/admin-metrics";
 
+// Message keys in the "Admin" namespace for each window option.
 const WINDOW_LABELS: Record<WindowKey, string> = {
-  "24h": "24 Stunden",
-  "7d": "7 Tage",
-  "30d": "30 Tage",
-  all: "Alle Zeiten",
+  "24h": "window24h",
+  "7d": "window7d",
+  "30d": "window30d",
+  all: "windowAll",
 };
 
 const dateFmt = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
@@ -34,10 +36,12 @@ function isWindow(s: string | null | undefined): s is WindowKey {
 }
 
 export default function AdminDashboard() {
+  const t = useTranslations("Admin");
   const router = useRouter();
   const searchParams = useSearchParams();
   const rawWindow = searchParams.get("window");
   const window: WindowKey = isWindow(rawWindow) ? rawWindow : "7d";
+  const windowLabel = t(WINDOW_LABELS[window]);
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
@@ -69,7 +73,7 @@ export default function AdminDashboard() {
         ]);
         if (cancelled) return;
         if (m?.error || !m?.data) {
-          setLoadError(m?.error ?? "Metriken konnten nicht geladen werden.");
+          setLoadError(m?.error ?? t("loadErrorMetrics"));
         } else {
           setMetrics(m.data);
         }
@@ -81,7 +85,7 @@ export default function AdminDashboard() {
       } catch (err) {
         if (cancelled) return;
         setLoadError(
-          err instanceof Error ? err.message : "Daten konnten nicht geladen werden.",
+          err instanceof Error ? err.message : t("loadErrorData"),
         );
       } finally {
         if (!cancelled) setLoading(false);
@@ -90,7 +94,7 @@ export default function AdminDashboard() {
     return () => {
       cancelled = true;
     };
-  }, [window]);
+  }, [window, t]);
 
   const [sortBy, setSortBy] = useState<
     "cost" | "email" | "registered" | "last_sign_in" | "recipes" | "api_calls" | "status"
@@ -150,9 +154,9 @@ export default function AdminDashboard() {
       {/* Window selector */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="font-serif text-2xl font-medium text-ink-primary">
-          Admin Dashboard
+          {t("dashboardTitle")}
         </h2>
-        <div className="flex items-center gap-2" role="tablist" aria-label="Zeitraum">
+        <div className="flex items-center gap-2" role="tablist" aria-label={t("windowAriaLabel")}>
           {(Object.keys(WINDOW_LABELS) as WindowKey[]).map((w) => (
             <button
               key={w}
@@ -165,7 +169,7 @@ export default function AdminDashboard() {
                   : "border-stone text-ink-secondary hover:text-ink-primary hover:border-ink-tertiary"
               }`}
             >
-              {WINDOW_LABELS[w]}
+              {t(WINDOW_LABELS[w])}
             </button>
           ))}
         </div>
@@ -181,7 +185,7 @@ export default function AdminDashboard() {
       )}
 
       {loading && !metrics && (
-        <p className="text-sm text-ink-tertiary">Lade Daten…</p>
+        <p className="text-sm text-ink-tertiary">{t("loadingData")}</p>
       )}
 
       {metrics && (
@@ -189,24 +193,24 @@ export default function AdminDashboard() {
           {/* Section 1 — User Activity */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-              Nutzeraktivität
+              {t("userActivity")}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               <Stat
-                label="Registrierte Nutzer (gesamt)"
+                label={t("totalRegisteredUsers")}
                 value={intFmt.format(metrics.userActivity.totalRegisteredUsers)}
                 subtle
               />
               <Stat
-                label={`Neue Nutzer (${WINDOW_LABELS[window]})`}
+                label={t("newUsers", { window: windowLabel })}
                 value={intFmt.format(metrics.userActivity.newUsersInWindow)}
               />
               <Stat
-                label={`Aktive Nutzer (${WINDOW_LABELS[window]})`}
+                label={t("activeUsers", { window: windowLabel })}
                 value={intFmt.format(metrics.userActivity.activeUsersInWindow)}
               />
               <Stat
-                label={`Rezepte (${WINDOW_LABELS[window]})`}
+                label={t("recipesInWindow", { window: windowLabel })}
                 value={intFmt.format(metrics.userActivity.recipesCreatedInWindow)}
               />
             </div>
@@ -215,13 +219,13 @@ export default function AdminDashboard() {
           {/* Section 2 — Recipe Usage */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-              Rezepte ({WINDOW_LABELS[window]})
+              {t("recipesInWindow", { window: windowLabel })}
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="rounded-xl border border-border-secondary p-5">
-                <p className="text-xs text-ink-tertiary mb-3">Nach Quelle</p>
+                <p className="text-xs text-ink-tertiary mb-3">{t("bySource")}</p>
                 {metrics.recipeUsage.bySourceType.length === 0 ? (
-                  <p className="text-sm text-ink-tertiary">Keine Rezepte im Zeitraum.</p>
+                  <p className="text-sm text-ink-tertiary">{t("noRecipesInWindow")}</p>
                 ) : (
                   <ul className="space-y-1.5 text-sm">
                     {metrics.recipeUsage.bySourceType.map((row) => (
@@ -240,13 +244,13 @@ export default function AdminDashboard() {
               </div>
               <div className="rounded-xl border border-border-secondary p-5">
                 <p className="text-xs text-ink-tertiary mb-3">
-                  Top-Tags &nbsp;·&nbsp; Aktive Sammlungs-Links (gesamt):{" "}
+                  {t("topTagsActiveShares")}{" "}
                   <span className="text-ink-primary">
                     {intFmt.format(metrics.recipeUsage.totalActiveShares)}
                   </span>
                 </p>
                 {metrics.recipeUsage.topTags.length === 0 ? (
-                  <p className="text-sm text-ink-tertiary">Keine Tags im Zeitraum.</p>
+                  <p className="text-sm text-ink-tertiary">{t("noTags")}</p>
                 ) : (
                   <ul className="space-y-1.5 text-sm">
                     {metrics.recipeUsage.topTags.map((t) => (
@@ -264,38 +268,38 @@ export default function AdminDashboard() {
           {/* Section 3 — API & Token Usage */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-              Claude-API ({WINDOW_LABELS[window]})
+              {t("claudeApi", { window: windowLabel })}
             </h3>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-              <Stat label="Calls gesamt" value={intFmt.format(metrics.apiUsage.totalCalls)} />
+              <Stat label={t("totalCalls")} value={intFmt.format(metrics.apiUsage.totalCalls)} />
               <Stat
-                label="Eindeutige Nutzer"
+                label={t("uniqueUsers")}
                 value={intFmt.format(metrics.apiUsage.uniqueUsersWithCalls)}
               />
               <Stat
-                label="Erfolg"
+                label={t("success")}
                 value={intFmt.format(metrics.apiUsage.successCount)}
               />
               <Stat
-                label="Fehler"
+                label={t("errorCount")}
                 value={intFmt.format(metrics.apiUsage.errorCount)}
                 tone={metrics.apiUsage.errorCount > 0 ? "warn" : "default"}
               />
             </div>
             {metrics.apiUsage.callsByFunction.length === 0 ? (
-              <p className="text-sm text-ink-tertiary">Keine API-Aufrufe im Zeitraum.</p>
+              <p className="text-sm text-ink-tertiary">{t("noApiCalls")}</p>
             ) : (
               <div className="rounded-xl border border-border-secondary overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-secondary text-xs uppercase tracking-wider text-ink-tertiary">
                     <tr>
-                      <th className="px-4 py-2 text-left font-medium">Funktion</th>
-                      <th className="px-4 py-2 text-right font-medium">Calls</th>
-                      <th className="px-4 py-2 text-right font-medium">Anteil</th>
-                      <th className="px-4 py-2 text-right font-medium">Input-Tokens</th>
-                      <th className="px-4 py-2 text-right font-medium">Output-Tokens</th>
-                      <th className="px-4 py-2 text-right font-medium">Cache-Read</th>
-                      <th className="px-4 py-2 text-right font-medium">Cache-Write</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("colFunction")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colCalls")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colShare")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colInputTokens")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colOutputTokens")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colCacheRead")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colCacheWrite")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -327,31 +331,31 @@ export default function AdminDashboard() {
           {/* Section 4 — Cost */}
           <section>
             <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-              Geschätzte Kosten ({WINDOW_LABELS[window]})
+              {t("estimatedCosts", { window: windowLabel })}
             </h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
               <Stat
-                label="Summe (USD)"
+                label={t("totalUsd")}
                 value={usdFmt.format(metrics.cost.totalUsd)}
               />
               {metrics.cost.unpricedModelCalls > 0 && (
                 <Stat
-                  label="Calls ohne Preis"
+                  label={t("unpricedCalls")}
                   value={intFmt.format(metrics.cost.unpricedModelCalls)}
                   tone="warn"
                 />
               )}
             </div>
             {metrics.cost.breakdown.length === 0 ? (
-              <p className="text-sm text-ink-tertiary">Keine Kosten im Zeitraum.</p>
+              <p className="text-sm text-ink-tertiary">{t("noCosts")}</p>
             ) : (
               <div className="rounded-xl border border-border-secondary overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="bg-surface-secondary text-xs uppercase tracking-wider text-ink-tertiary">
                     <tr>
-                      <th className="px-4 py-2 text-left font-medium">Funktion</th>
-                      <th className="px-4 py-2 text-left font-medium">Modell</th>
-                      <th className="px-4 py-2 text-right font-medium">Kosten (USD)</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("colFunction")}</th>
+                      <th className="px-4 py-2 text-left font-medium">{t("colModel")}</th>
+                      <th className="px-4 py-2 text-right font-medium">{t("colCostUsd")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -368,7 +372,7 @@ export default function AdminDashboard() {
                           {b.cost_usd === null ? (
                             <span
                               className="text-ink-tertiary"
-                              title="Modell nicht in Preistabelle"
+                              title={t("modelNotPriced")}
                             >
                               —
                             </span>
@@ -389,39 +393,39 @@ export default function AdminDashboard() {
       {/* User table */}
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-          Nutzer
+          {t("usersTitle")}
         </h3>
         {!sortedUsers ? (
           loading ? (
-            <p className="text-sm text-ink-tertiary">Lade Nutzerliste…</p>
+            <p className="text-sm text-ink-tertiary">{t("loadingUserList")}</p>
           ) : null
         ) : sortedUsers.length === 0 ? (
-          <p className="text-sm text-ink-tertiary">Keine Nutzer.</p>
+          <p className="text-sm text-ink-tertiary">{t("noUsers")}</p>
         ) : (
           <div className="rounded-xl border border-border-secondary overflow-x-auto">
             <table className="w-full text-sm">
               <thead className="bg-surface-secondary text-xs uppercase tracking-wider text-ink-tertiary">
                 <tr>
                   <SortableTh active={sortBy === "email"} dir={sortDir} onClick={() => toggleSort("email")}>
-                    E-Mail
+                    {t("colEmail")}
                   </SortableTh>
                   <SortableTh active={sortBy === "registered"} dir={sortDir} onClick={() => toggleSort("registered")}>
-                    Registriert
+                    {t("colRegistered")}
                   </SortableTh>
                   <SortableTh active={sortBy === "last_sign_in"} dir={sortDir} onClick={() => toggleSort("last_sign_in")}>
-                    Letzte Anmeldung
+                    {t("colLastSignIn")}
                   </SortableTh>
                   <SortableTh active={sortBy === "recipes"} dir={sortDir} onClick={() => toggleSort("recipes")} align="right">
-                    Rezepte
+                    {t("colRecipes")}
                   </SortableTh>
                   <SortableTh active={sortBy === "api_calls"} dir={sortDir} onClick={() => toggleSort("api_calls")} align="right">
-                    API-Calls
+                    {t("colApiCalls")}
                   </SortableTh>
                   <SortableTh active={sortBy === "cost"} dir={sortDir} onClick={() => toggleSort("cost")} align="right">
-                    Kosten
+                    {t("colCost")}
                   </SortableTh>
                   <SortableTh active={sortBy === "status"} dir={sortDir} onClick={() => toggleSort("status")}>
-                    Status
+                    {t("colStatus")}
                   </SortableTh>
                 </tr>
               </thead>
@@ -436,7 +440,7 @@ export default function AdminDashboard() {
                         href={`/settings/admin/users/${u.id}?window=${window}`}
                         className="text-forest hover:text-forest-deep"
                       >
-                        {u.email || "(keine E-Mail)"}
+                        {u.email || t("noEmail")}
                       </Link>
                     </td>
                     <td className="px-4 py-2 text-ink-secondary">
@@ -456,9 +460,9 @@ export default function AdminDashboard() {
                     </td>
                     <td className="px-4 py-2">
                       {u.is_disabled ? (
-                        <span className="text-red-700 text-xs">Deaktiviert</span>
+                        <span className="text-red-700 text-xs">{t("statusDisabled")}</span>
                       ) : (
-                        <span className="text-ink-tertiary text-xs">Aktiv</span>
+                        <span className="text-ink-tertiary text-xs">{t("statusActive")}</span>
                       )}
                     </td>
                   </tr>
@@ -471,7 +475,7 @@ export default function AdminDashboard() {
 
       {metrics && (
         <p className="text-xs text-ink-tertiary">
-          Aktualisiert {dateTimeFmt.format(new Date(metrics.generatedAt))}.
+          {t("updatedAt", { date: dateTimeFmt.format(new Date(metrics.generatedAt)) })}
         </p>
       )}
     </div>

@@ -21,6 +21,7 @@ import {
   type SortMode,
 } from "@/lib/shopping-list";
 import { buildGroups, formatRowAmount, type ViewGroup, type ViewRow } from "@/lib/shopping-list-view";
+import { useShoppingListSync } from "@/lib/shopping-list-sync";
 import { getLearnedCategories, CATEGORY_BY_ID, type CategoryId } from "@/lib/ingredient-categories";
 import { useAutoCategorize } from "@/lib/useAutoCategorize";
 
@@ -35,12 +36,26 @@ export default function ShoppingListPage() {
   const [manualInput, setManualInput] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
 
+  useShoppingListSync();
+
   // SSR-safe mount
   useEffect(() => {
     setItems(getList());
     setHideCheckedState(getHideChecked());
     setSortModeState(getSortMode());
     setLearned(getLearnedCategories());
+  }, []);
+
+  // Pick up changes written by the cloud sync (notifyListChanged dispatches
+  // a synthetic "focus" event) and by other tabs ("storage").
+  useEffect(() => {
+    const refreshFromStorage = () => setItems(getList());
+    window.addEventListener("focus", refreshFromStorage);
+    window.addEventListener("storage", refreshFromStorage);
+    return () => {
+      window.removeEventListener("focus", refreshFromStorage);
+      window.removeEventListener("storage", refreshFromStorage);
+    };
   }, []);
 
   useAutoCategorize(items, sortMode, setLearned);
@@ -330,7 +345,7 @@ export default function ShoppingListPage() {
                 if (e.key === "Enter") handleAddManual();
               }}
               placeholder={t("addItemPlaceholder")}
-              className="flex-1 px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
             />
             <button
               type="button"

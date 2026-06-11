@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import UserDetailPanel from "@/components/admin/UserDetailPanel";
@@ -20,10 +21,12 @@ export default async function AdminUserDetailPage({
   if (!user) redirect("/login");
   if (!isAdmin(user)) redirect("/settings");
 
+  const t = await getTranslations("Admin");
+
   return (
     <div className="min-h-screen bg-surface-primary">
       <div className="max-w-[1100px] mx-auto px-8 py-16">
-        <Suspense fallback={<p className="text-sm text-ink-tertiary">Lade…</p>}>
+        <Suspense fallback={<p className="text-sm text-ink-tertiary">{t("loading")}</p>}>
           <UserDetailPanel userId={userId} currentAdminId={user.id} />
         </Suspense>
       </div>

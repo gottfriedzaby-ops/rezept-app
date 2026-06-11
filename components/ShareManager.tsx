@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 interface Share {
   id: string;
@@ -17,6 +18,8 @@ interface Props {
 const dateFormatter = new Intl.DateTimeFormat("de-DE", { dateStyle: "medium" });
 
 export default function ShareManager({ initialShares }: Props) {
+  const t = useTranslations("ShareManager");
+  const tCommon = useTranslations("Common");
   const [shares, setShares] = useState<Share[]>(initialShares);
   const [showCreate, setShowCreate] = useState(false);
   const [newLabel, setNewLabel] = useState("");
@@ -40,14 +43,14 @@ export default function ShareManager({ initialShares }: Props) {
       });
       const json = (await res.json()) as { data: Share; error: string | null };
       if (!res.ok || json.error) {
-        setCreateError("Der Link konnte nicht erstellt werden.");
+        setCreateError(t("createError"));
         return;
       }
       setShares((prev) => [json.data, ...prev]);
       setNewLabel("");
       setShowCreate(false);
     } catch {
-      setCreateError("Der Link konnte nicht erstellt werden.");
+      setCreateError(t("createError"));
     } finally {
       setCreating(false);
     }
@@ -79,7 +82,7 @@ export default function ShareManager({ initialShares }: Props) {
     <div>
       <div className="flex items-center justify-between mb-4">
         <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary">
-          Geteilte Links
+          {t("title")}
         </p>
         {!showCreate && (
           <button
@@ -87,7 +90,7 @@ export default function ShareManager({ initialShares }: Props) {
             onClick={() => setShowCreate(true)}
             className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            Neuen Link erstellen
+            {t("createNew")}
           </button>
         )}
       </div>
@@ -95,13 +98,13 @@ export default function ShareManager({ initialShares }: Props) {
       {/* Inline create form */}
       {showCreate && (
         <div className="rounded-xl border border-border-secondary bg-surface-primary p-5 mb-4">
-          <p className="text-sm font-medium text-ink-primary mb-3">Neuen Link erstellen</p>
+          <p className="text-sm font-medium text-ink-primary mb-3">{t("createNew")}</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
               value={newLabel}
               onChange={(e) => setNewLabel(e.target.value)}
-              placeholder="Bezeichnung (optional)"
+              placeholder={t("labelPlaceholder")}
               className="input-field flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleCreate();
@@ -116,7 +119,7 @@ export default function ShareManager({ initialShares }: Props) {
                 disabled={creating}
                 className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {creating ? "Erstelle…" : "Erstellen"}
+                {creating ? t("creating") : t("create")}
               </button>
               <button
                 type="button"
@@ -127,7 +130,7 @@ export default function ShareManager({ initialShares }: Props) {
                 }}
                 className="text-ink-secondary hover:text-ink-primary text-sm transition-colors px-3 py-2"
               >
-                Abbrechen
+                {tCommon("cancel")}
               </button>
             </div>
           </div>
@@ -139,7 +142,7 @@ export default function ShareManager({ initialShares }: Props) {
 
       {/* Share list */}
       {shares.length === 0 ? (
-        <p className="text-sm text-ink-tertiary py-2">Noch keine geteilten Links.</p>
+        <p className="text-sm text-ink-tertiary py-2">{t("empty")}</p>
       ) : (
         <ul className="space-y-3">
           {shares.map((share) => {
@@ -155,10 +158,12 @@ export default function ShareManager({ initialShares }: Props) {
                 <div className="flex flex-col sm:flex-row sm:items-start gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-ink-primary truncate">
-                      {share.label ?? "Geteilter Link"}
+                      {share.label ?? t("fallbackLabel")}
                     </p>
                     <p className="text-xs text-ink-tertiary mt-0.5">
-                      Erstellt am {dateFormatter.format(new Date(share.created_at))}
+                      {t("createdOn", {
+                        date: dateFormatter.format(new Date(share.created_at)),
+                      })}
                     </p>
                     <p className="text-xs text-ink-tertiary mt-1.5 font-mono truncate">
                       {url}
@@ -168,19 +173,19 @@ export default function ShareManager({ initialShares }: Props) {
                     <button
                       type="button"
                       onClick={() => handleCopy(share.token, share.id)}
-                      aria-label="Link kopieren"
+                      aria-label={t("copyAriaLabel")}
                       className="text-ink-secondary hover:text-ink-primary text-sm transition-colors"
                     >
-                      {isCopied ? "Kopiert!" : "Kopieren"}
+                      {isCopied ? t("copied") : t("copy")}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleRevoke(share.id)}
                       disabled={isRevoking}
-                      aria-label="Link widerrufen"
+                      aria-label={t("revokeAriaLabel")}
                       className="text-red-600 hover:text-red-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isRevoking ? "Wird widerrufen…" : "Widerrufen"}
+                      {isRevoking ? t("revoking") : t("revoke")}
                     </button>
                   </div>
                 </div>

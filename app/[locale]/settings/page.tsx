@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ThemeToggle from "@/components/ThemeToggle";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import ShareManager from "@/components/ShareManager";
@@ -138,6 +139,16 @@ export default async function SettingsPage() {
           </h2>
           <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
             <LanguageSwitcher />
+          </div>
+        </section>
+
+        {/* Appearance */}
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+            {t('appearance')}
+          </h2>
+          <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
+            <ThemeToggle />
           </div>
         </section>
 

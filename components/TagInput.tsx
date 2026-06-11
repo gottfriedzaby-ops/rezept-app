@@ -59,7 +59,7 @@ export default function TagInput({ value, onChange, disabled, placeholder }: Pro
   return (
     <div className="relative">
       <div
-        className="flex flex-wrap items-center gap-2 p-2 border border-stone rounded bg-white focus-within:border-ink-tertiary transition-colors"
+        className="flex flex-wrap items-center gap-2 p-2 border border-stone rounded bg-surface-card focus-within:border-ink-tertiary transition-colors"
         onClick={() => inputRef.current?.focus()}
       >
         {value.map((tag, i) => {
@@ -114,7 +114,7 @@ export default function TagInput({ value, onChange, disabled, placeholder }: Pro
       </div>
 
       {focused && suggestions.length > 0 && (
-        <ul className="absolute z-10 left-0 right-0 mt-1 border border-stone rounded bg-white max-h-48 overflow-y-auto text-sm shadow-sm">
+        <ul className="absolute z-10 left-0 right-0 mt-1 border border-stone rounded bg-surface-card max-h-48 overflow-y-auto text-sm shadow-sm">
           {suggestions.map((s) => {
             const { bg, text } = getTagColor(s);
             return (

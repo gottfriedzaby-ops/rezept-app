@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import type { LibraryShareOutbound, ReshareRequest } from "@/types/library-sharing";
 
 interface Props {
@@ -24,18 +25,27 @@ function StatusBadge({ label, variant }: { label: string; variant: BadgeVariant 
   );
 }
 
-function shareStatusBadge(share: LibraryShareOutbound) {
-  if (share.status === "accepted") return <StatusBadge label="Aktiv" variant="green" />;
+function shareStatusBadge(
+  share: LibraryShareOutbound,
+  t: (key: string) => string,
+) {
+  if (share.status === "accepted")
+    return <StatusBadge label={t("statusActive")} variant="green" />;
   if (share.status === "pending") {
-    const label = share.recipient_id ? "Ausstehend" : "Ausstehend (nicht registriert)";
+    const label = share.recipient_id
+      ? t("statusPending")
+      : t("statusPendingUnregistered");
     return <StatusBadge label={label} variant="amber" />;
   }
-  if (share.status === "declined") return <StatusBadge label="Abgelehnt" variant="gray" />;
-  if (share.status === "left") return <StatusBadge label="Verlassen" variant="gray" />;
+  if (share.status === "declined")
+    return <StatusBadge label={t("statusDeclined")} variant="gray" />;
+  if (share.status === "left")
+    return <StatusBadge label={t("statusLeft")} variant="gray" />;
   return null;
 }
 
 export default function LibraryShareManager({ initialShares, reshareRequests }: Props) {
+  const t = useTranslations("LibraryShares");
   const [shares, setShares] = useState<LibraryShareOutbound[]>(initialShares);
   const [requests, setRequests] = useState<ReshareRequest[]>(reshareRequests);
   const [emailInput, setEmailInput] = useState("");
@@ -56,13 +66,13 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
       });
       const json = await res.json();
       if (!res.ok || json.error) {
-        setSendError(json.error ?? "Einladung konnte nicht gesendet werden.");
+        setSendError(json.error ?? t("inviteError"));
         return;
       }
       setShares((prev) => [{ ...json.data, recipient_display_name: null }, ...prev]);
       setEmailInput("");
     } catch {
-      setSendError("Einladung konnte nicht gesendet werden.");
+      setSendError(t("inviteError"));
     } finally {
       setSending(false);
     }
@@ -113,7 +123,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
       {/* Send invitation */}
       <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
         <label htmlFor="library-share-invite-email" className="block text-sm font-medium text-ink-primary mb-3">
-          Einladung senden
+          {t("sendInvitation")}
         </label>
         <form onSubmit={handleSendInvitation} className="flex flex-col sm:flex-row gap-3">
           <input
@@ -121,7 +131,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
             type="email"
             value={emailInput}
             onChange={(e) => setEmailInput(e.target.value)}
-            placeholder="E-Mail-Adresse"
+            placeholder={t("emailPlaceholder")}
             required
             className="input-field flex-1"
           />
@@ -130,7 +140,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
             disabled={sending}
             className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
           >
-            {sending ? "Wird gesendet…" : "Einladung senden"}
+            {sending ? t("sending") : t("sendInvitation")}
           </button>
         </form>
         {sendError && (
@@ -140,7 +150,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
 
       {/* Outbound share list */}
       {shares.length === 0 ? (
-        <p className="text-sm text-ink-tertiary">Du hast noch keine Bibliotheks-Einladungen gesendet.</p>
+        <p className="text-sm text-ink-tertiary">{t("noOutbound")}</p>
       ) : (
         <ul className="space-y-3">
           {shares.map((share) => (
@@ -154,13 +164,15 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
                     <p className="text-sm font-medium text-ink-primary truncate">
                       {share.recipient_display_name ?? share.recipient_email}
                     </p>
-                    {shareStatusBadge(share)}
+                    {shareStatusBadge(share, t)}
                   </div>
                   {share.recipient_display_name && (
                     <p className="text-xs text-ink-tertiary">{share.recipient_email}</p>
                   )}
                   <p className="text-xs text-ink-tertiary mt-0.5">
-                    Eingeladen am {dateFormatter.format(new Date(share.invited_at))}
+                    {t("invitedOn", {
+                      date: dateFormatter.format(new Date(share.invited_at)),
+                    })}
                   </p>
                 </div>
                 {(share.status === "pending" || share.status === "accepted") && (
@@ -170,7 +182,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
                     disabled={revokingId === share.id}
                     className="text-red-600 hover:text-red-700 text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
                   >
-                    {revokingId === share.id ? "Wird entzogen…" : "Zugriff entziehen"}
+                    {revokingId === share.id ? t("revoking") : t("revokeAccess")}
                   </button>
                 )}
               </div>
@@ -183,7 +195,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
       {requests.length > 0 && (
         <div>
           <p className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
-            Weitergabe-Anfragen
+            {t("reshareRequestsTitle")}
           </p>
           <ul className="space-y-3">
             {requests.map((req) => (
@@ -194,8 +206,9 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
                 <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-ink-primary">
-                      Anfrage, deine Sammlung an{" "}
-                      <span className="font-medium">{req.target_email}</span> weiterzugeben.
+                      {t("reshareRequestPrefix")}{" "}
+                      <span className="font-medium">{req.target_email}</span>{" "}
+                      {t("reshareRequestSuffix")}
                     </p>
                     <p className="text-xs text-ink-tertiary mt-0.5">
                       {dateFormatter.format(new Date(req.created_at))}
@@ -208,7 +221,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
                       disabled={resolvingId === req.id}
                       className="bg-forest text-white hover:bg-forest-deep px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     >
-                      Genehmigen
+                      {t("approve")}
                     </button>
                     <button
                       type="button"
@@ -216,7 +229,7 @@ export default function LibraryShareManager({ initialShares, reshareRequests }: 
                       disabled={resolvingId === req.id}
                       className="text-red-600 hover:text-red-700 text-sm transition-colors disabled:opacity-50 px-2"
                     >
-                      Ablehnen
+                      {t("reject")}
                     </button>
                   </div>
                 </div>

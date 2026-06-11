@@ -35,8 +35,16 @@ export default function MealPlanRecipePicker({
         className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
         onClick={onClose}
       />
-      <div className="relative bg-white rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4 max-h-[80vh] flex flex-col">
-        <h2 className="font-serif text-lg font-medium text-ink-primary mb-4">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meal-plan-picker-title"
+        className="relative bg-white rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4 max-h-[80vh] flex flex-col"
+      >
+        <h2
+          id="meal-plan-picker-title"
+          className="font-serif text-lg font-medium text-ink-primary mb-4"
+        >
           {t("pickerTitle")}
         </h2>
 

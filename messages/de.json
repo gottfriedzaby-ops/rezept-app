@@ -50,7 +50,8 @@
     "unknownOwner": "Unbekannt",
     "loadMore": "Mehr laden ({remaining})",
     "loadError": "Rezepte konnten nicht geladen werden.",
-    "loading": "Lädt…"
+    "loading": "Lädt…",
+    "sortRating": "Beste Bewertung"
   },
   "RecipeDetail": {
     "servings": "Portionen",
@@ -62,7 +63,16 @@
     "preparation": "Zubereitung",
     "step": "Schritt {number}",
     "prepTime": "Vorbereitung",
-    "totalTime": "Gesamt"
+    "totalTime": "Gesamt",
+    "ratingLabel": "Bewertung",
+    "ratingStars": "{count, plural, one {# Stern} other {# Sterne}}",
+    "cookedBadge": "{count}× gekocht",
+    "notesLabel": "Meine Notizen",
+    "notesPlaceholder": "Anpassungen, Ersatzzutaten, Fazit …",
+    "notesSave": "Speichern",
+    "notesSaving": "Speichert …",
+    "notesSaved": "Gespeichert",
+    "notesError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
   },
   "RecipeActions": {
     "addFavorite": "Zu Favoriten hinzufügen",

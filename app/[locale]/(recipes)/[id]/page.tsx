@@ -13,6 +13,8 @@ import PdfExportButton from "@/components/PdfExportButton";
 import RecipeExportMenu from "@/components/RecipeExportMenu";
 import NutritionDisplay from "@/components/NutritionDisplay";
 import PrivacyToggle from "@/components/PrivacyToggle";
+import RecipeRating from "@/components/RecipeRating";
+import RecipeNotes from "@/components/RecipeNotes";
 import { getTagColor } from "@/lib/tag-colors";
 import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
@@ -115,7 +117,16 @@ export default async function RecipeDetailPage({
             </span>
           ) : null}
           {recipe.servings ? <span>{recipe.servings} {tCommon("servings")}</span> : null}
+          {(recipe.cooked_count ?? 0) > 0 ? (
+            <span>{tDetail("cookedBadge", { count: recipe.cooked_count ?? 0 })}</span>
+          ) : null}
         </div>
+
+        {isOwner && (
+          <div className="mb-4">
+            <RecipeRating recipeId={recipe.id} initialRating={recipe.rating ?? null} />
+          </div>
+        )}
 
         <div className="flex gap-1.5 flex-wrap mb-4">
           {(() => {
@@ -176,6 +187,10 @@ export default async function RecipeDetailPage({
         <RecipeDetail recipe={recipe} />
 
         <NutritionDisplay recipe={recipe} />
+
+        {isOwner && (
+          <RecipeNotes recipeId={recipe.id} initialNotes={recipe.notes ?? null} />
+        )}
 
         <div className="mt-8 pt-8 border-t border-stone">
           <AddToShoppingListButton recipe={recipe} />

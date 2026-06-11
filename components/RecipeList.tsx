@@ -70,8 +70,8 @@ export default function RecipeList({
   );
   const showFavoritesOnly = searchParams.get("fav") === "1";
   const sortRaw = searchParams.get("sort") ?? "newest";
-  const sort: "newest" | "az" | "time" =
-    sortRaw === "az" || sortRaw === "time" ? sortRaw : "newest";
+  const sort: "newest" | "az" | "time" | "rating" =
+    sortRaw === "az" || sortRaw === "time" || sortRaw === "rating" ? sortRaw : "newest";
 
   const updateParams = useCallback(
     (mutate: (p: URLSearchParams) => void) => {
@@ -101,7 +101,7 @@ export default function RecipeList({
     });
   };
 
-  const setSort = (value: "newest" | "az" | "time") => {
+  const setSort = (value: "newest" | "az" | "time" | "rating") => {
     updateParams((p) => {
       if (value === "newest") p.delete("sort");
       else p.set("sort", value);
@@ -239,6 +239,8 @@ export default function RecipeList({
           ((a.prep_time ?? 0) + (a.cook_time ?? 0)) -
           ((b.prep_time ?? 0) + (b.cook_time ?? 0))
       );
+    } else if (sort === "rating") {
+      result.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     }
     return result;
   }, [allRecipes, inputValue, activeTags, showFavoritesOnly, favoriteIds, sort]);
@@ -320,12 +322,13 @@ export default function RecipeList({
         <select
           aria-label={t('sortAriaLabel')}
           value={sort}
-          onChange={(e) => setSort(e.target.value as "newest" | "az" | "time")}
+          onChange={(e) => setSort(e.target.value as "newest" | "az" | "time" | "rating")}
           className="input-field w-auto"
         >
           <option value="newest">{t('sortNewest')}</option>
           <option value="az">{t('sortAZ')}</option>
           <option value="time">{t('sortTime')}</option>
+          <option value="rating">{t('sortRating')}</option>
         </select>
       </div>
 
@@ -505,6 +508,7 @@ export default function RecipeList({
                       {[
                         totalTime > 0 ? t('totalTime', { time: totalTime }) : null,
                         recipe.servings ? t('portionen', { count: recipe.servings }) : null,
+                        recipe.rating ? `\u2605 ${recipe.rating}` : null,
                       ]
                         .filter(Boolean)
                         .join(" · ")}

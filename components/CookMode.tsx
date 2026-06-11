@@ -471,6 +471,11 @@ export default function CookMode({ recipe, initialServings }: Props) {
         {isLast ? (
           <Link
             href={`/${recipe.id}`}
+            onClick={() => {
+              // Discovery: bump the cooked counter. Fire-and-forget — fails
+              // silently for shared recipes (owner-scoped) or offline.
+              void fetch(`/api/recipes/${recipe.id}/cooked`, { method: "POST" }).catch(() => {});
+            }}
             className="flex-1 h-14 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors flex items-center justify-center"
           >
             {t("finish")}!

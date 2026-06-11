@@ -50,7 +50,8 @@
     "unknownOwner": "Onbekend",
     "loadMore": "Meer laden ({remaining})",
     "loadError": "Recepten konden niet worden geladen.",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "sortRating": "Best beoordeeld"
   },
   "RecipeDetail": {
     "servings": "Porties",
@@ -62,7 +63,16 @@
     "preparation": "Bereiding",
     "step": "Stap {number}",
     "prepTime": "Voorbereiding",
-    "totalTime": "Totaal"
+    "totalTime": "Totaal",
+    "ratingLabel": "Beoordeling",
+    "ratingStars": "{count, plural, one {# ster} other {# sterren}}",
+    "cookedBadge": "{count}× gekookt",
+    "notesLabel": "Mijn notities",
+    "notesPlaceholder": "Aanpassingen, vervangingen, conclusie …",
+    "notesSave": "Opslaan",
+    "notesSaving": "Opslaan …",
+    "notesSaved": "Opgeslagen",
+    "notesError": "Opslaan mislukt. Probeer het opnieuw."
   },
   "RecipeActions": {
     "addFavorite": "Aan favorieten toevoegen",

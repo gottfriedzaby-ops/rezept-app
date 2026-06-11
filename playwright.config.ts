@@ -23,9 +23,14 @@ export default defineConfig({
 
   use: {
     baseURL: "http://localhost:3000",
+    // Pin the browser locale: next-intl picks the locale from Accept-Language,
+    // and the specs assert German UI text.
+    locale: "de-DE",
     trace: "on-first-retry",
     actionTimeout: 5_000,
-    navigationTimeout: 10_000,
+    // First navigation to a route triggers next dev's on-demand compile,
+    // which can take well over 10s on cold caches.
+    navigationTimeout: 30_000,
   },
 
   projects: [

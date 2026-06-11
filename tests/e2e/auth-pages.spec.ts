@@ -53,9 +53,11 @@ test.describe("/login", () => {
     await expect(page.getByLabel("E-Mail-Adresse")).toBeVisible();
     await expect(page.getByLabel("Passwort")).toBeVisible();
     await expect(page.getByRole("button", { name: "Anmelden", exact: true })).toBeEnabled();
+    // No Google button: the OAuth UI is removed until the go-live setup
+    // (docs/requirements/google-auth-golive.md)
     await expect(
       page.getByRole("button", { name: /Mit Google anmelden/ })
-    ).toBeVisible();
+    ).toHaveCount(0);
   });
 
   test("shows the wrong-credentials error when the API rejects", async ({
@@ -131,7 +133,7 @@ test.describe("/login/forgot-password", () => {
 
     await page.goto("/login/forgot-password");
     await page.getByLabel("E-Mail-Adresse").fill("alice@example.com");
-    await page.getByRole("button", { name: "Link anfordern" }).click();
+    await page.getByRole("button", { name: "Link senden" }).click();
 
     await expect(page.getByText("E-Mail verschickt")).toBeVisible();
   });

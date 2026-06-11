@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useTranslations } from "next-intl";
 import type { LibraryShareInbound } from "@/types/library-sharing";
 
 interface Props {
@@ -9,6 +10,7 @@ interface Props {
 }
 
 export default function IncomingSharesManager({ initialShares }: Props) {
+  const t = useTranslations("LibraryShares");
   const [shares, setShares] = useState<LibraryShareInbound[]>(initialShares);
   const [actingId, setActingId] = useState<string | null>(null);
 
@@ -53,7 +55,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
   if (shares.length === 0) {
     return (
       <p className="text-sm text-ink-tertiary">
-        Du hast noch keine geteilten Sammlungen erhalten.
+        {t("noIncoming")}
       </p>
     );
   }
@@ -76,7 +78,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
                   <p className="text-xs text-ink-tertiary">{share.owner_email}</p>
                 )}
                 <p className="text-xs text-ink-tertiary mt-0.5">
-                  {share.status === "accepted" ? "Aktiver Zugriff" : "Einladung ausstehend"}
+                  {share.status === "accepted" ? t("activeAccess") : t("invitationPending")}
                 </p>
               </div>
 
@@ -87,7 +89,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
                       href={`/library-shares/${share.owner_id}`}
                       className="bg-forest text-white hover:bg-forest-deep px-3 py-1.5 rounded-lg text-sm font-medium transition-colors"
                     >
-                      Sammlung ansehen
+                      {t("viewCollection")}
                     </Link>
                     <button
                       type="button"
@@ -95,7 +97,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
                       disabled={isActing}
                       className="text-red-600 hover:text-red-700 text-sm transition-colors disabled:opacity-50 px-2"
                     >
-                      {isActing ? "…" : "Verlassen"}
+                      {isActing ? "…" : t("leave")}
                     </button>
                   </>
                 )}
@@ -107,7 +109,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
                       disabled={isActing}
                       className="bg-forest text-white hover:bg-forest-deep px-3 py-1.5 rounded-lg text-sm font-medium transition-colors disabled:opacity-50"
                     >
-                      {isActing ? "…" : "Annehmen"}
+                      {isActing ? "…" : t("accept")}
                     </button>
                     <button
                       type="button"
@@ -115,7 +117,7 @@ export default function IncomingSharesManager({ initialShares }: Props) {
                       disabled={isActing}
                       className="text-ink-secondary hover:text-ink-primary text-sm transition-colors disabled:opacity-50 px-2"
                     >
-                      Ablehnen
+                      {t("decline")}
                     </button>
                   </>
                 )}

@@ -15,6 +15,7 @@ import NutritionDisplay from "@/components/NutritionDisplay";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import RecipeRating from "@/components/RecipeRating";
 import RecipeNotes from "@/components/RecipeNotes";
+import CollectionPicker from "@/components/CollectionPicker";
 import { getTagColor } from "@/lib/tag-colors";
 import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
@@ -123,8 +124,9 @@ export default async function RecipeDetailPage({
         </div>
 
         {isOwner && (
-          <div className="mb-4">
+          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
             <RecipeRating recipeId={recipe.id} initialRating={recipe.rating ?? null} />
+            <CollectionPicker recipeId={recipe.id} />
           </div>
         )}
 

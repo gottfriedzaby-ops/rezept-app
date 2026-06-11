@@ -22,7 +22,8 @@
     "sharedCollections": "Gedeelde collecties",
     "shoppingList": "Boodschappenlijst",
     "settings": "Instellingen",
-    "language": "Taal"
+    "language": "Taal",
+    "mealPlan": "Weekmenu"
   },
   "RecipeList": {
     "searchPlaceholder": "Zoeken…",
@@ -417,5 +418,26 @@
     "readOnlyBadge": "Gedeelde collectie — alleen-lezen",
     "invalidLinkTitle": "Deze link is niet meer geldig",
     "invalidLinkText": "De uitnodigingslink is ingetrokken of bestaat niet."
+  },
+  "MealPlan": {
+    "title": "Weekmenu",
+    "prevWeek": "Vorige week",
+    "nextWeek": "Volgende week",
+    "currentWeek": "Deze week",
+    "fruehstueck": "Ontbijt",
+    "mittag": "Lunch",
+    "abend": "Avondeten",
+    "addRecipe": "Recept toevoegen",
+    "pickerTitle": "Kies een recept",
+    "searchPlaceholder": "Recepten zoeken…",
+    "noRecipesFound": "Geen recepten gevonden.",
+    "noRecipesYet": "Je hebt nog geen recepten. Importeer eerst een recept om je weekmenu te vullen.",
+    "removeEntry": "Item verwijderen",
+    "decreaseServings": "Minder porties",
+    "increaseServings": "Meer porties",
+    "servingsShort": "{count} port.",
+    "addWeekToShoppingList": "Week naar boodschappenlijst",
+    "emptyWeek": "Er is nog niets gepland voor deze week.",
+    "errorGeneric": "Actie mislukt. Probeer het opnieuw."
   }
 }

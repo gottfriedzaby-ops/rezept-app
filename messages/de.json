@@ -22,7 +22,8 @@
     "sharedCollections": "Geteilte Sammlungen",
     "shoppingList": "Einkaufsliste",
     "settings": "Einstellungen",
-    "language": "Sprache"
+    "language": "Sprache",
+    "mealPlan": "Wochenplan"
   },
   "RecipeList": {
     "searchPlaceholder": "Suchen…",
@@ -417,5 +418,26 @@
     "readOnlyBadge": "Geteilte Sammlung — nur lesbar",
     "invalidLinkTitle": "Dieser Link ist nicht mehr gültig",
     "invalidLinkText": "Der Einladungslink wurde widerrufen oder existiert nicht."
+  },
+  "MealPlan": {
+    "title": "Wochenplan",
+    "prevWeek": "Vorherige Woche",
+    "nextWeek": "Nächste Woche",
+    "currentWeek": "Diese Woche",
+    "fruehstueck": "Frühstück",
+    "mittag": "Mittag",
+    "abend": "Abend",
+    "addRecipe": "Rezept hinzufügen",
+    "pickerTitle": "Rezept auswählen",
+    "searchPlaceholder": "Rezept suchen…",
+    "noRecipesFound": "Keine Rezepte gefunden.",
+    "noRecipesYet": "Du hast noch keine Rezepte. Importiere zuerst ein Rezept, um den Wochenplan zu füllen.",
+    "removeEntry": "Eintrag entfernen",
+    "decreaseServings": "Weniger Portionen",
+    "increaseServings": "Mehr Portionen",
+    "servingsShort": "{count} Port.",
+    "addWeekToShoppingList": "Woche zur Einkaufsliste",
+    "emptyWeek": "Für diese Woche ist noch nichts eingeplant.",
+    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut."
   }
 }

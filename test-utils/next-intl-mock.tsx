@@ -13,6 +13,15 @@ export function useLocale(): string {
   return "de";
 }
 
+export function useFormatter() {
+  return {
+    dateTime: (date: Date, options?: Intl.DateTimeFormatOptions): string =>
+      new Intl.DateTimeFormat("de-DE", options).format(date),
+    number: (value: number, options?: Intl.NumberFormatOptions): string =>
+      new Intl.NumberFormat("de-DE", options).format(value),
+  };
+}
+
 export function useMessages(): unknown {
   return messages;
 }

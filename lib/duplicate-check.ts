@@ -41,31 +41,37 @@ function titleSimilarity(a: string, b: string): number {
 
 // Fast URL-only check — run this before any expensive processing to short-circuit
 // duplicate imports without triggering Claude API calls.
+// Both stage queries are fired concurrently; results are still evaluated in
+// precedence order (exact source_value before normalised URL).
 export async function checkUrlDuplicate(url: string, userId: string): Promise<DuplicateResult | null> {
-  const { data: exact } = await supabaseAdmin
-    .from("recipes")
-    .select("id, title")
-    .eq("source_value", url)
-    .eq("user_id", userId)
-    .maybeSingle();
+  let hostname = "";
+  if (url.startsWith("http")) {
+    try { hostname = new URL(url).hostname; } catch { /* skip */ }
+  }
+
+  const [{ data: exact }, urlCandidatesResult] = await Promise.all([
+    supabaseAdmin
+      .from("recipes")
+      .select("id, title")
+      .eq("source_value", url)
+      .eq("user_id", userId)
+      .maybeSingle(),
+    hostname
+      ? supabaseAdmin
+          .from("recipes")
+          .select("id, title, source_value")
+          .eq("user_id", userId)
+          .ilike("source_value", `%${hostname}%`)
+      : Promise.resolve({ data: null }),
+  ]);
+
   if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
 
-  if (url.startsWith("http")) {
+  if (urlCandidatesResult.data) {
     const normalizedSource = normalizeUrl(url);
-    let hostname = "";
-    try { hostname = new URL(url).hostname; } catch { /* skip */ }
-    if (hostname) {
-      const { data: candidates } = await supabaseAdmin
-        .from("recipes")
-        .select("id, title, source_value")
-        .eq("user_id", userId)
-        .ilike("source_value", `%${hostname}%`);
-      if (candidates) {
-        for (const row of candidates) {
-          if (normalizeUrl(row.source_value) === normalizedSource) {
-            return { existingRecipeId: row.id, existingTitle: row.title };
-          }
-        }
+    for (const row of urlCandidatesResult.data) {
+      if (normalizeUrl(row.source_value) === normalizedSource) {
+        return { existingRecipeId: row.id, existingTitle: row.title };
       }
     }
   }
@@ -84,61 +90,70 @@ export async function findDuplicateRecipe(
   // on collisions (two different "rezept.pdf"), so skip them — run only stage 3.
   const skipSourceStages = sourceType === "pdf";
 
-  if (!skipSourceStages) {
-    const { data: exact } = await supabaseAdmin
-      .from("recipes")
-      .select("id, title")
-      .eq("source_value", sourceValue)
-      .eq("user_id", userId)
-      .maybeSingle();
-    if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
-  }
-
+  let hostname = "";
   if (!skipSourceStages && sourceValue.startsWith("http")) {
-    const normalizedSource = normalizeUrl(sourceValue);
-    let hostname = "";
     try {
       hostname = new URL(sourceValue).hostname;
     } catch { /* skip */ }
-
-    if (hostname) {
-      const { data: urlCandidates } = await supabaseAdmin
-        .from("recipes")
-        .select("id, title, source_value")
-        .eq("user_id", userId)
-        .ilike("source_value", `%${hostname}%`);
-
-      if (urlCandidates) {
-        for (const row of urlCandidates) {
-          if (normalizeUrl(row.source_value) === normalizedSource) {
-            return { existingRecipeId: row.id, existingTitle: row.title };
-          }
-        }
-      }
-    }
   }
 
-  // 3. Fuzzy title match — search for recipes sharing the most distinctive word,
-  //    then compute Jaccard similarity and flag if ≥ 85 %
+  // Stage 3 candidate word: recipes sharing the most distinctive title word
   const titleWords = title
     .toLowerCase()
     .split(/\s+/)
     .filter((w) => w.length > 4)
     .sort((a, b) => b.length - a.length); // longest (= most distinctive) first
 
-  if (titleWords.length > 0) {
-    const { data: titleCandidates } = await supabaseAdmin
-      .from("recipes")
-      .select("id, title")
-      .eq("user_id", userId)
-      .ilike("title", `%${titleWords[0]}%`)
-      .limit(20);
+  // All applicable stage queries run concurrently; results are evaluated
+  // strictly in precedence order below (exact → normalised URL → fuzzy title).
+  const noRows = Promise.resolve({ data: null });
+  const [exactResult, urlCandidatesResult, titleCandidatesResult] = await Promise.all([
+    skipSourceStages
+      ? noRows
+      : supabaseAdmin
+          .from("recipes")
+          .select("id, title")
+          .eq("source_value", sourceValue)
+          .eq("user_id", userId)
+          .maybeSingle(),
+    hostname
+      ? supabaseAdmin
+          .from("recipes")
+          .select("id, title, source_value")
+          .eq("user_id", userId)
+          .ilike("source_value", `%${hostname}%`)
+      : noRows,
+    titleWords.length > 0
+      ? supabaseAdmin
+          .from("recipes")
+          .select("id, title")
+          .eq("user_id", userId)
+          .ilike("title", `%${titleWords[0]}%`)
+          .limit(20)
+      : noRows,
+  ]);
 
-    if (titleCandidates) {
-      for (const candidate of titleCandidates) {
-        if (titleSimilarity(title, candidate.title) >= 0.85) {
-          return { existingRecipeId: candidate.id, existingTitle: candidate.title };
-        }
+  // 1. Exact source_value match
+  const exact = exactResult.data as { id: string; title: string } | null;
+  if (exact) return { existingRecipeId: exact.id, existingTitle: exact.title };
+
+  // 2. Normalised URL match
+  if (urlCandidatesResult.data) {
+    const normalizedSource = normalizeUrl(sourceValue);
+    const urlCandidates = urlCandidatesResult.data as Array<{ id: string; title: string; source_value: string }>;
+    for (const row of urlCandidates) {
+      if (normalizeUrl(row.source_value) === normalizedSource) {
+        return { existingRecipeId: row.id, existingTitle: row.title };
+      }
+    }
+  }
+
+  // 3. Fuzzy title match — Jaccard similarity ≥ 85 %
+  if (titleCandidatesResult.data) {
+    const titleCandidates = titleCandidatesResult.data as Array<{ id: string; title: string }>;
+    for (const candidate of titleCandidates) {
+      if (titleSimilarity(title, candidate.title) >= 0.85) {
+        return { existingRecipeId: candidate.id, existingTitle: candidate.title };
       }
     }
   }

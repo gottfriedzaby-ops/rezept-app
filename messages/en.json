@@ -22,7 +22,8 @@
     "sharedCollections": "Shared Collections",
     "shoppingList": "Shopping List",
     "settings": "Settings",
-    "language": "Language"
+    "language": "Language",
+    "mealPlan": "Meal plan"
   },
   "RecipeList": {
     "searchPlaceholder": "Search…",
@@ -56,7 +57,9 @@
     "allIngredients": "All Ingredients",
     "ingredients": "Ingredients",
     "preparation": "Instructions",
-    "step": "Step {number}"
+    "step": "Step {number}",
+    "prepTime": "Prep",
+    "totalTime": "Total"
   },
   "RecipeActions": {
     "addFavorite": "Add to favorites",
@@ -70,7 +73,9 @@
     "copying": "Copying…",
     "copiedMessage": "Copied to your collection!",
     "viewRecipe": "View recipe →",
-    "copyError": "Error copying recipe."
+    "copyError": "Error copying recipe.",
+    "favoriteAdded": "Added to favorites",
+    "favoriteRemoved": "Removed from favorites"
   },
   "RecipeTypes": {
     "kochen": "Cook",
@@ -395,5 +400,44 @@
     "de": "Deutsch",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "LibraryShares": {
+    "title": "Shared Collections",
+    "backToMyRecipes": "← My Recipes",
+    "backToShares": "← Shared Collections",
+    "invitationsTitle": "Invitations",
+    "recipeCount": "{count, plural, one {# recipe} other {# recipes}}",
+    "emptyState": "You don't have any shared collections yet. Once someone shares their library with you and you accept the invitation, it will appear here.",
+    "collectionBy": "Collection by",
+    "backToCollectionBy": "← Collection by {name}"
+  },
+  "Shared": {
+    "collectionFallback": "Recipe Collection",
+    "allRecipes": "All Recipes",
+    "emptyCollection": "No recipes in this collection yet.",
+    "readOnlyBadge": "Shared collection — read-only",
+    "invalidLinkTitle": "This link is no longer valid",
+    "invalidLinkText": "The invitation link was revoked or does not exist."
+  },
+  "MealPlan": {
+    "title": "Meal Plan",
+    "prevWeek": "Previous week",
+    "nextWeek": "Next week",
+    "currentWeek": "This week",
+    "fruehstueck": "Breakfast",
+    "mittag": "Lunch",
+    "abend": "Dinner",
+    "addRecipe": "Add recipe",
+    "pickerTitle": "Choose a recipe",
+    "searchPlaceholder": "Search recipes…",
+    "noRecipesFound": "No recipes found.",
+    "noRecipesYet": "You don't have any recipes yet. Import a recipe first to fill your meal plan.",
+    "removeEntry": "Remove entry",
+    "decreaseServings": "Fewer servings",
+    "increaseServings": "More servings",
+    "servingsShort": "{count} serv.",
+    "addWeekToShoppingList": "Add week to shopping list",
+    "emptyWeek": "Nothing planned for this week yet.",
+    "errorGeneric": "Action failed. Please try again."
   }
 }

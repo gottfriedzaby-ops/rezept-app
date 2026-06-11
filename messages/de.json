@@ -22,7 +22,8 @@
     "sharedCollections": "Geteilte Sammlungen",
     "shoppingList": "Einkaufsliste",
     "settings": "Einstellungen",
-    "language": "Sprache"
+    "language": "Sprache",
+    "mealPlan": "Wochenplan"
   },
   "RecipeList": {
     "searchPlaceholder": "Suchen…",
@@ -56,7 +57,9 @@
     "allIngredients": "Alle Zutaten",
     "ingredients": "Zutaten",
     "preparation": "Zubereitung",
-    "step": "Schritt {number}"
+    "step": "Schritt {number}",
+    "prepTime": "Vorbereitung",
+    "totalTime": "Gesamt"
   },
   "RecipeActions": {
     "addFavorite": "Zu Favoriten hinzufügen",
@@ -70,7 +73,9 @@
     "copying": "Wird kopiert…",
     "copiedMessage": "In deine Sammlung kopiert!",
     "viewRecipe": "Rezept ansehen →",
-    "copyError": "Fehler beim Kopieren."
+    "copyError": "Fehler beim Kopieren.",
+    "favoriteAdded": "Zu Favoriten hinzugefügt",
+    "favoriteRemoved": "Aus Favoriten entfernt"
   },
   "RecipeTypes": {
     "kochen": "Kochen",
@@ -395,5 +400,44 @@
     "de": "Deutsch",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "LibraryShares": {
+    "title": "Geteilte Sammlungen",
+    "backToMyRecipes": "← Meine Rezepte",
+    "backToShares": "← Geteilte Sammlungen",
+    "invitationsTitle": "Einladungen",
+    "recipeCount": "{count, plural, one {# Rezept} other {# Rezepte}}",
+    "emptyState": "Du hast noch keine geteilten Sammlungen. Sobald jemand seine Bibliothek mit dir teilt und du die Einladung angenommen hast, erscheint sie hier.",
+    "collectionBy": "Sammlung von",
+    "backToCollectionBy": "← Sammlung von {name}"
+  },
+  "Shared": {
+    "collectionFallback": "Rezeptsammlung",
+    "allRecipes": "Alle Rezepte",
+    "emptyCollection": "Noch keine Rezepte in dieser Sammlung.",
+    "readOnlyBadge": "Geteilte Sammlung — nur lesbar",
+    "invalidLinkTitle": "Dieser Link ist nicht mehr gültig",
+    "invalidLinkText": "Der Einladungslink wurde widerrufen oder existiert nicht."
+  },
+  "MealPlan": {
+    "title": "Wochenplan",
+    "prevWeek": "Vorherige Woche",
+    "nextWeek": "Nächste Woche",
+    "currentWeek": "Diese Woche",
+    "fruehstueck": "Frühstück",
+    "mittag": "Mittag",
+    "abend": "Abend",
+    "addRecipe": "Rezept hinzufügen",
+    "pickerTitle": "Rezept auswählen",
+    "searchPlaceholder": "Rezept suchen…",
+    "noRecipesFound": "Keine Rezepte gefunden.",
+    "noRecipesYet": "Du hast noch keine Rezepte. Importiere zuerst ein Rezept, um den Wochenplan zu füllen.",
+    "removeEntry": "Eintrag entfernen",
+    "decreaseServings": "Weniger Portionen",
+    "increaseServings": "Mehr Portionen",
+    "servingsShort": "{count} Port.",
+    "addWeekToShoppingList": "Woche zur Einkaufsliste",
+    "emptyWeek": "Für diese Woche ist noch nichts eingeplant.",
+    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut."
   }
 }

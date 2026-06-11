@@ -9,7 +9,7 @@ jest.mock("@/lib/supabase", () => ({
 jest.mock("@/lib/supabase/server", () => ({
   createSupabaseServerClient: jest.fn().mockResolvedValue({
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user" } } }),
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
     },
   }),
 }));
@@ -19,10 +19,20 @@ jest.mock("@/lib/claude", () => ({
 }));
 
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { estimateNutrition } from "@/lib/claude";
 
 const fromMock = supabaseAdmin.from as jest.Mock;
+const serverClientMock = createSupabaseServerClient as jest.Mock;
 const estimateNutritionMock = estimateNutrition as jest.Mock;
+
+function setUnauthenticated() {
+  serverClientMock.mockResolvedValueOnce({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: null } }),
+    },
+  });
+}
 
 const RECIPE_ID = "recipe-uuid-123";
 
@@ -100,11 +110,45 @@ const nutritionResult = {
 
 beforeEach(() => {
   fromMock.mockReset();
+  serverClientMock.mockReset();
+  serverClientMock.mockResolvedValue({
+    auth: {
+      getUser: jest.fn().mockResolvedValue({ data: { user: { id: "test-user-id" } } }),
+    },
+  });
   estimateNutritionMock.mockReset();
   estimateNutritionMock.mockResolvedValue(nutritionResult);
 });
 
 describe("POST /api/recipes/[id]/nutrition", () => {
+  // NR-00a
+  it("returns 401 when not authenticated", async () => {
+    setUnauthenticated();
+
+    const res = await POST(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Nicht angemeldet");
+    expect(fromMock).not.toHaveBeenCalled();
+    expect(estimateNutritionMock).not.toHaveBeenCalled();
+  });
+
+  // NR-00b
+  it("returns 403 when the recipe belongs to another user", async () => {
+    const recipe = makeRecipe({ user_id: "someone-else" });
+    fromMock.mockReturnValueOnce(makeSelectChain({ data: recipe, error: null }));
+
+    const res = await POST(makeRequest(), makeParams());
+    const body = await res.json();
+
+    expect(res.status).toBe(403);
+    expect(body.data).toBeNull();
+    expect(body.error).toBe("Keine Berechtigung");
+    expect(estimateNutritionMock).not.toHaveBeenCalled();
+  });
+
   // NR-01
   it("returns 404 when the recipe is not found", async () => {
     fromMock.mockReturnValueOnce(

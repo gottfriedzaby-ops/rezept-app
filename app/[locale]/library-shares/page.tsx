@@ -1,7 +1,9 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import UserNav from "@/components/UserNav";
 
 export const dynamic = "force-dynamic";
@@ -13,6 +15,8 @@ export default async function LibrarySharesPage() {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?redirect=/library-shares");
 
+  const t = await getTranslations("LibraryShares");
+
   const { data: shares } = await supabaseAdmin
     .from("library_shares")
     .select("*")
@@ -20,13 +24,11 @@ export default async function LibrarySharesPage() {
     .eq("status", "accepted")
     .order("accepted_at", { ascending: false });
 
+  const profiles = await getProfilesByIds((shares ?? []).map((share) => share.owner_id));
+
   const collections = await Promise.all(
     (shares ?? []).map(async (share) => {
-      const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(share.owner_id);
-      const ownerName =
-        (ownerData.user?.user_metadata?.full_name as string) ||
-        ownerData.user?.email ||
-        share.recipient_email;
+      const ownerName = profileDisplayName(profiles.get(share.owner_id), share.recipient_email);
 
       const { count } = await supabaseAdmin
         .from("recipes")
@@ -47,10 +49,10 @@ export default async function LibrarySharesPage() {
               href="/"
               className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-4"
             >
-              ← Meine Rezepte
+              {t("backToMyRecipes")}
             </Link>
             <h1 className="font-serif text-3xl sm:text-4xl font-medium text-ink-primary tracking-[-0.02em]">
-              Geteilte Sammlungen
+              {t("title")}
             </h1>
           </div>
           <UserNav />
@@ -58,8 +60,7 @@ export default async function LibrarySharesPage() {
 
         {collections.length === 0 ? (
           <p className="text-ink-secondary text-sm">
-            Du hast noch keine geteilten Sammlungen. Sobald jemand seine Bibliothek mit dir teilt
-            und du die Einladung angenommen hast, erscheint sie hier.
+            {t("emptyState")}
           </p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -87,7 +88,7 @@ export default async function LibrarySharesPage() {
                   {ownerName}
                 </p>
                 <p className="text-xs text-ink-tertiary mt-1">
-                  {recipeCount} {recipeCount === 1 ? "Rezept" : "Rezepte"}
+                  {t("recipeCount", { count: recipeCount })}
                 </p>
               </Link>
             ))}

@@ -47,8 +47,19 @@
   }
 
   .input-field {
-    @apply w-full px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors;
+    @apply w-full px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary focus-visible:border-forest transition-colors;
   }
+}
+
+/* Keyboard focus indicator for every interactive element. Many components use
+   Tailwind's focus:outline-none (.focus\:outline-none:focus, specificity 0-2-0),
+   which would silently beat a plain :focus-visible rule (0-1-0) — hence the
+   !important. Only keyboard/assistive focus triggers :focus-visible, so mouse
+   and touch interactions stay outline-free. Unlayered like .safe-top-bar so it
+   reliably wins against utilities. */
+:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px;
 }
 
 /* Shopping Mode: a satisfying "pop" when an item is ticked, and a celebratory

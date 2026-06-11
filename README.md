@@ -91,7 +91,6 @@ app/
     import-youtube/       # YouTube import
     import-photo/         # Photo import (HEIC conversion, Supabase Storage upload)
     recipes/confirm/      # Save after review; final duplicate check
-    admin/normalize-tags/ # One-time migration — delete after use
 
 components/
   ImportUnified.tsx       # Smart import input with auto-detection

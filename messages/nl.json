@@ -22,7 +22,8 @@
     "sharedCollections": "Gedeelde collecties",
     "shoppingList": "Boodschappenlijst",
     "settings": "Instellingen",
-    "language": "Taal"
+    "language": "Taal",
+    "mealPlan": "Weekmenu"
   },
   "RecipeList": {
     "searchPlaceholder": "Zoeken…",
@@ -56,7 +57,9 @@
     "allIngredients": "Alle ingrediënten",
     "ingredients": "Ingrediënten",
     "preparation": "Bereiding",
-    "step": "Stap {number}"
+    "step": "Stap {number}",
+    "prepTime": "Voorbereiding",
+    "totalTime": "Totaal"
   },
   "RecipeActions": {
     "addFavorite": "Aan favorieten toevoegen",
@@ -70,7 +73,9 @@
     "copying": "Kopiëren…",
     "copiedMessage": "Gekopieerd naar jouw collectie!",
     "viewRecipe": "Recept bekijken →",
-    "copyError": "Fout bij kopiëren."
+    "copyError": "Fout bij kopiëren.",
+    "favoriteAdded": "Toegevoegd aan favorieten",
+    "favoriteRemoved": "Verwijderd uit favorieten"
   },
   "RecipeTypes": {
     "kochen": "Koken",
@@ -395,5 +400,44 @@
     "de": "Deutsch",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "LibraryShares": {
+    "title": "Gedeelde collecties",
+    "backToMyRecipes": "← Mijn recepten",
+    "backToShares": "← Gedeelde collecties",
+    "invitationsTitle": "Uitnodigingen",
+    "recipeCount": "{count, plural, one {# recept} other {# recepten}}",
+    "emptyState": "Je hebt nog geen gedeelde collecties. Zodra iemand zijn bibliotheek met je deelt en je de uitnodiging accepteert, verschijnt die hier.",
+    "collectionBy": "Collectie van",
+    "backToCollectionBy": "← Collectie van {name}"
+  },
+  "Shared": {
+    "collectionFallback": "Receptencollectie",
+    "allRecipes": "Alle recepten",
+    "emptyCollection": "Nog geen recepten in deze collectie.",
+    "readOnlyBadge": "Gedeelde collectie — alleen-lezen",
+    "invalidLinkTitle": "Deze link is niet meer geldig",
+    "invalidLinkText": "De uitnodigingslink is ingetrokken of bestaat niet."
+  },
+  "MealPlan": {
+    "title": "Weekmenu",
+    "prevWeek": "Vorige week",
+    "nextWeek": "Volgende week",
+    "currentWeek": "Deze week",
+    "fruehstueck": "Ontbijt",
+    "mittag": "Lunch",
+    "abend": "Avondeten",
+    "addRecipe": "Recept toevoegen",
+    "pickerTitle": "Kies een recept",
+    "searchPlaceholder": "Recepten zoeken…",
+    "noRecipesFound": "Geen recepten gevonden.",
+    "noRecipesYet": "Je hebt nog geen recepten. Importeer eerst een recept om je weekmenu te vullen.",
+    "removeEntry": "Item verwijderen",
+    "decreaseServings": "Minder porties",
+    "increaseServings": "Meer porties",
+    "servingsShort": "{count} port.",
+    "addWeekToShoppingList": "Week naar boodschappenlijst",
+    "emptyWeek": "Er is nog niets gepland voor deze week.",
+    "errorGeneric": "Actie mislukt. Probeer het opnieuw."
   }
 }

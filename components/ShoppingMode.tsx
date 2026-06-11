@@ -126,16 +126,14 @@ export default function ShoppingMode() {
 
   // Wake Lock — keep the screen on while shopping (same approach as CookMode).
   useEffect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let sentinel: any = null;
+    let sentinel: WakeLockSentinel | null = null;
     let mounted = true;
 
     const acquire = async () => {
       if (sentinel && !sentinel.released) return;
       try {
         if ("wakeLock" in navigator) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const lock = await (navigator as any).wakeLock.request("screen");
+          const lock = await navigator.wakeLock.request("screen");
           if (!mounted) {
             lock.release().catch(() => {});
             return;

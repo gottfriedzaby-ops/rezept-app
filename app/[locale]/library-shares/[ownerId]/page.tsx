@@ -1,8 +1,10 @@
 import { Suspense } from "react";
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import RecipeList from "@/components/RecipeList";
 import UserNav from "@/components/UserNav";
 import type { Recipe } from "@/types/recipe";
@@ -31,11 +33,12 @@ export default async function SharedLibraryPage({
 
   if (!share) notFound();
 
-  const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(params.ownerId);
-  const ownerName =
-    (ownerData.user?.user_metadata?.full_name as string) ||
-    ownerData.user?.email ||
-    "Unbekannt";
+  const [t, tList, profiles] = await Promise.all([
+    getTranslations("LibraryShares"),
+    getTranslations("RecipeList"),
+    getProfilesByIds([params.ownerId]),
+  ]);
+  const ownerName = profileDisplayName(profiles.get(params.ownerId), tList("unknownOwner"));
 
   const { data: recipes } = await supabaseAdmin
     .from("recipes")
@@ -54,11 +57,11 @@ export default async function SharedLibraryPage({
               href="/library-shares"
               className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-4"
             >
-              ← Geteilte Sammlungen
+              {t("backToShares")}
             </Link>
             <div className="flex items-center gap-2 mb-1">
               <span className="text-xs font-medium uppercase tracking-wider text-ink-tertiary">
-                Sammlung von
+                {t("collectionBy")}
               </span>
             </div>
             <h1 className="font-serif text-3xl sm:text-4xl font-medium text-ink-primary tracking-[-0.02em] break-words">

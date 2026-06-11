@@ -1,17 +1,27 @@
 import { notFound, redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import RecipeDetail from "@/components/RecipeDetail";
 import RecipeCover from "@/components/RecipeCover";
 import AddToShoppingListButton from "@/components/AddToShoppingListButton";
 import NutritionDisplay from "@/components/NutritionDisplay";
 import CopyToLibraryButton from "@/components/CopyToLibraryButton";
 import { getTagColor } from "@/lib/tag-colors";
-import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
-import type { Recipe } from "@/types/recipe";
+import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
+import type { Recipe, RecipeType } from "@/types/recipe";
 
 export const dynamic = "force-dynamic";
+
+const cookTimeKeys: Record<RecipeType, string> = {
+  kochen: "cookTimeKochen",
+  backen: "cookTimeBacken",
+  grillen: "cookTimeGrillen",
+  zubereiten: "cookTimeZubereiten",
+  cocktail: "cookTimeCocktail",
+};
 
 export default async function SharedRecipeDetailPage({
   params,
@@ -46,13 +56,18 @@ export default async function SharedRecipeDetailPage({
   const recipe = data as Recipe | null;
   if (!recipe) notFound();
 
-  const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(params.ownerId);
-  const ownerName =
-    (ownerData.user?.user_metadata?.full_name as string) ||
-    ownerData.user?.email ||
-    "Unbekannt";
+  const [t, tCommon, tDetail, tTypes, tList, profiles] = await Promise.all([
+    getTranslations("LibraryShares"),
+    getTranslations("Common"),
+    getTranslations("RecipeDetail"),
+    getTranslations("RecipeTypes"),
+    getTranslations("RecipeList"),
+    getProfilesByIds([params.ownerId]),
+  ]);
+  const ownerName = profileDisplayName(profiles.get(params.ownerId), tList("unknownOwner"));
 
   const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
+  const recipeType: RecipeType = recipe.recipe_type ?? "kochen";
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -69,7 +84,7 @@ export default async function SharedRecipeDetailPage({
           href={`/library-shares/${params.ownerId}`}
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← Sammlung von {ownerName}
+          {t("backToCollectionBy", { name: ownerName })}
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-5">
@@ -88,24 +103,26 @@ export default async function SharedRecipeDetailPage({
         </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
-          {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
+          {recipe.prep_time ? (
+            <span>{tDetail("prepTime")} {recipe.prep_time} {tCommon("minutes")}</span>
+          ) : null}
           {recipe.cook_time ? (
-            <span>
-              {cookTimeLabelFor(recipe.recipe_type ?? "kochen")} {recipe.cook_time} Min.
-            </span>
+            <span>{tTypes(cookTimeKeys[recipeType])} {recipe.cook_time} {tCommon("minutes")}</span>
           ) : null}
           {totalTime > 0 ? (
-            <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span>
+            <span className="text-ink-primary font-medium">
+              {tDetail("totalTime")} {totalTime} {tCommon("minutes")}
+            </span>
           ) : null}
-          {recipe.servings ? <span>{recipe.servings} Portionen</span> : null}
+          {recipe.servings ? <span>{recipe.servings} {tCommon("servings")}</span> : null}
         </div>
 
         <div className="flex gap-1.5 flex-wrap mb-4">
           {(() => {
-            const badge = recipeTypeBadgeFor(recipe.recipe_type ?? "kochen");
+            const badge = recipeTypeBadgeFor(recipeType);
             return (
               <span className="text-xs px-2.5 py-0.5 rounded bg-surface-secondary text-ink-secondary border border-stone">
-                {badge.emoji} {badge.label}
+                {badge.emoji} {tTypes(recipeType)}
               </span>
             );
           })()}

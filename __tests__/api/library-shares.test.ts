@@ -28,10 +28,23 @@ jest.mock("@/lib/email", () => ({
   sendInvitationToUnregistered: jest.fn(),
 }));
 
+// Profile lookups are unit-tested in __tests__/lib/profiles.test.ts; here we
+// mock them so the route tests stay focused. profileDisplayName is pure and
+// kept real.
+jest.mock("@/lib/profiles", () => {
+  const actual = jest.requireActual("@/lib/profiles");
+  return {
+    ...actual,
+    getProfilesByIds: jest.fn(),
+    getProfileIdByEmail: jest.fn(),
+  };
+});
+
 import { GET, POST } from "@/app/api/library-shares/route";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { checkDailyInvitationLimit } from "@/lib/invitation-rate-limit";
+import { getProfilesByIds, getProfileIdByEmail } from "@/lib/profiles";
 import {
   sendInvitationToRegistered,
   sendInvitationToUnregistered,
@@ -40,6 +53,8 @@ import {
 const fromMock = supabaseAdmin.from as jest.Mock;
 const getUserByIdMock = supabaseAdmin.auth.admin.getUserById as jest.Mock;
 const listUsersMock = supabaseAdmin.auth.admin.listUsers as jest.Mock;
+const getProfilesByIdsMock = getProfilesByIds as jest.Mock;
+const getProfileIdByEmailMock = getProfileIdByEmail as jest.Mock;
 const serverClientMock = createSupabaseServerClient as jest.Mock;
 const checkInvitationLimitMock = checkDailyInvitationLimit as jest.Mock;
 const sendRegisteredMock = sendInvitationToRegistered as jest.Mock;
@@ -125,6 +140,10 @@ beforeEach(() => {
     remaining: 5,
   });
   listUsersMock.mockResolvedValue({ data: { users: [] }, error: null });
+  getProfilesByIdsMock.mockReset();
+  getProfilesByIdsMock.mockResolvedValue(new Map());
+  getProfileIdByEmailMock.mockReset();
+  getProfileIdByEmailMock.mockResolvedValue(null);
   sendRegisteredMock.mockResolvedValue({ success: true });
   sendUnregisteredMock.mockResolvedValue({ success: true });
 });
@@ -168,19 +187,19 @@ describe("GET /api/library-shares", () => {
     ];
     fromMock.mockReturnValueOnce(makeListChain({ data: rawShares, error: null }));
 
-    getUserByIdMock
-      .mockResolvedValueOnce({
-        data: { user: { email: "alice@example.com", user_metadata: { full_name: "Alice" } } },
-      })
-      .mockResolvedValueOnce({
-        data: { user: { email: "bob@example.com", user_metadata: null } },
-      });
+    getProfilesByIdsMock.mockResolvedValueOnce(
+      new Map([
+        ["rec-1", { id: "rec-1", email: "alice@example.com", display_name: "Alice" }],
+        ["rec-2", { id: "rec-2", email: "bob@example.com", display_name: null }],
+      ])
+    );
 
     const res = await GET();
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.data).toHaveLength(2);
+    expect(getProfilesByIdsMock).toHaveBeenCalledWith(["rec-1", "rec-2"]);
     expect(body.data[0].recipient_display_name).toBe("Alice");
     expect(body.data[1].recipient_display_name).toBe("bob@example.com"); // falls back to email
   });
@@ -296,12 +315,7 @@ describe("POST /api/library-shares", () => {
     fromMock.mockReturnValueOnce(
       makeExistingShareChain({ data: null, error: null })
     );
-    listUsersMock.mockResolvedValueOnce({
-      data: {
-        users: [{ id: "recipient-uuid", email: "alice@example.com" }],
-      },
-      error: null,
-    });
+    getProfileIdByEmailMock.mockResolvedValueOnce("recipient-uuid");
     fromMock.mockReturnValueOnce(
       makeInsertChain({
         data: { id: "new-share", recipient_id: "recipient-uuid" },
@@ -314,6 +328,7 @@ describe("POST /api/library-shares", () => {
 
     expect(res.status).toBe(201);
     expect(body.data.recipient_id).toBe("recipient-uuid");
+    expect(getProfileIdByEmailMock).toHaveBeenCalledWith("alice@example.com");
     expect(sendRegisteredMock).toHaveBeenCalledTimes(1);
     expect(sendRegisteredMock).toHaveBeenCalledWith({
       ownerName: "Owner Name",
@@ -328,7 +343,7 @@ describe("POST /api/library-shares", () => {
     fromMock.mockReturnValueOnce(
       makeExistingShareChain({ data: null, error: null })
     );
-    // listUsersMock default in beforeEach already returns no matching users
+    // getProfileIdByEmail default in beforeEach already resolves to null (no account)
     const insertChain = makeInsertChain({
       data: { id: "new-share", recipient_id: null },
       error: null,
@@ -379,10 +394,7 @@ describe("POST /api/library-shares", () => {
     fromMock.mockReturnValueOnce(
       makeExistingShareChain({ data: null, error: null })
     );
-    listUsersMock.mockResolvedValueOnce({
-      data: { users: [{ id: "recipient-uuid", email: "alice@example.com" }] },
-      error: null,
-    });
+    getProfileIdByEmailMock.mockResolvedValueOnce("recipient-uuid");
     fromMock.mockReturnValueOnce(
       makeInsertChain({
         data: { id: "new-share", recipient_id: "recipient-uuid" },

@@ -35,6 +35,21 @@ export async function GET() {
     .single();
 
   if (insertError) {
+    // 23505: another concurrent first request inserted the row between our
+    // select and insert — the existing row is what we wanted anyway.
+    if (insertError.code === "23505") {
+      const { data: raced, error: racedError } = await supabaseAdmin
+        .from("user_settings")
+        .select()
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (raced) return NextResponse.json({ data: raced, error: null });
+      console.error("[api/settings] GET re-select after 23505 failed:", racedError);
+      return NextResponse.json(
+        { data: null, error: racedError?.message ?? "Einstellungen konnten nicht geladen werden." },
+        { status: 500 }
+      );
+    }
     console.error("[api/settings] GET insert failed:", insertError);
     return NextResponse.json({ data: null, error: insertError.message }, { status: 500 });
   }

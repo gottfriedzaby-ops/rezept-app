@@ -17,6 +17,9 @@ export async function POST(
     const {
       data: { user },
     } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ data: null, error: "Nicht angemeldet" }, { status: 401 });
+    }
 
     const { data, error } = await supabaseAdmin
       .from("recipes")
@@ -29,6 +32,9 @@ export async function POST(
     }
 
     const recipe = data as Recipe;
+    if (recipe.user_id !== user.id) {
+      return NextResponse.json({ data: null, error: "Keine Berechtigung" }, { status: 403 });
+    }
     const sections = getRecipeSections(recipe);
     const allIngredients = sections.flatMap((s) => s.ingredients);
 
@@ -39,7 +45,7 @@ export async function POST(
       );
     }
 
-    const nutrition = await estimateNutrition(allIngredients, recipe.servings, user?.id ?? null);
+    const nutrition = await estimateNutrition(allIngredients, recipe.servings, user.id);
 
     const { error: updateError } = await supabaseAdmin
       .from("recipes")

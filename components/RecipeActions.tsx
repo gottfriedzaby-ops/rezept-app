@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslations } from 'next-intl';
 import { useRouter, Link } from "@/i18n/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useToast } from "@/contexts/ToastContext";
 
 interface Props {
   recipeId: string;
@@ -14,6 +15,7 @@ interface Props {
 export default function RecipeActions({ recipeId, initialFavorite, readOnly = false }: Props) {
   const t = useTranslations('RecipeActions');
   const router = useRouter();
+  const { showToast } = useToast();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -29,7 +31,11 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ favorite: next }),
       });
-      if (!res.ok) setIsFavorite(!next);
+      if (!res.ok) {
+        setIsFavorite(!next);
+        return;
+      }
+      showToast(next ? t('favoriteAdded') : t('favoriteRemoved'));
     } catch {
       setIsFavorite(!next);
     }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export interface InvitedEmail {
   email: string;
@@ -19,6 +20,8 @@ export default function InvitedEmailsManager({
   initialInvites,
   inviteOnlyEnabled,
 }: Props) {
+  const t = useTranslations("Admin");
+  const tCommon = useTranslations("Common");
   const [invites, setInvites] = useState<InvitedEmail[]>(initialInvites);
   const [showAdd, setShowAdd] = useState(false);
   const [newEmail, setNewEmail] = useState("");
@@ -30,7 +33,7 @@ export default function InvitedEmailsManager({
   async function handleAdd() {
     const email = newEmail.trim().toLowerCase();
     if (!email) {
-      setAddError("E-Mail-Adresse fehlt.");
+      setAddError(t("inviteMissingEmail"));
       return;
     }
     setAdding(true);
@@ -46,14 +49,14 @@ export default function InvitedEmailsManager({
         error: string | null;
       };
       if (!res.ok || !json.data) {
-        setAddError(json.error ?? "Konnte nicht hinzugefügt werden.");
+        setAddError(json.error ?? t("inviteAddError"));
         return;
       }
       setInvites((prev) => [json.data!, ...prev]);
       setNewEmail("");
       setShowAdd(false);
     } catch {
-      setAddError("Konnte nicht hinzugefügt werden.");
+      setAddError(t("inviteAddError"));
     } finally {
       setAdding(false);
     }
@@ -81,8 +84,8 @@ export default function InvitedEmailsManager({
         <div>
           <p className="text-sm text-ink-secondary">
             {inviteOnlyEnabled
-              ? "Nur Personen auf dieser Liste können sich registrieren."
-              : "Registrierung ist aktuell ohne Einladung möglich (INVITE_ONLY_REGISTRATION=\"false\")."}
+              ? t("inviteOnlyEnabledHint")
+              : t("inviteOnlyDisabledHint")}
           </p>
         </div>
         {!showAdd && (
@@ -91,7 +94,7 @@ export default function InvitedEmailsManager({
             onClick={() => setShowAdd(true)}
             className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors"
           >
-            Einladen
+            {t("invite")}
           </button>
         )}
       </div>
@@ -99,14 +102,14 @@ export default function InvitedEmailsManager({
       {showAdd && (
         <div className="rounded-xl border border-border-secondary bg-surface-primary p-5 mb-4">
           <p className="text-sm font-medium text-ink-primary mb-3">
-            Neue E-Mail-Adresse einladen
+            {t("inviteNewTitle")}
           </p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="email"
               value={newEmail}
               onChange={(e) => setNewEmail(e.target.value)}
-              placeholder="name@beispiel.de"
+              placeholder={t("inviteEmailPlaceholder")}
               className="input-field flex-1"
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleAdd();
@@ -125,7 +128,7 @@ export default function InvitedEmailsManager({
                 disabled={adding}
                 className="bg-forest text-white hover:bg-forest-deep px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {adding ? "Speichere…" : "Hinzufügen"}
+                {adding ? t("inviteSaving") : t("inviteAdd")}
               </button>
               <button
                 type="button"
@@ -136,7 +139,7 @@ export default function InvitedEmailsManager({
                 }}
                 className="text-ink-secondary hover:text-ink-primary text-sm transition-colors px-3 py-2"
               >
-                Abbrechen
+                {tCommon("cancel")}
               </button>
             </div>
           </div>
@@ -146,7 +149,7 @@ export default function InvitedEmailsManager({
 
       {invites.length === 0 ? (
         <p className="text-sm text-ink-tertiary py-2">
-          Noch keine eingeladenen E-Mail-Adressen.
+          {t("inviteEmpty")}
         </p>
       ) : (
         <ul className="space-y-3">

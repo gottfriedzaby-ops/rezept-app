@@ -55,7 +55,20 @@ export default async function LocaleLayout({
   const messages = await getMessages();
 
   return (
-    <html lang={locale} className={`${inter.variable} ${fraunces.variable}`}>
+    <html
+      lang={locale}
+      className={`${inter.variable} ${fraunces.variable}`}
+      suppressHydrationWarning
+    >
+      <head>
+        {/* Apply the stored/system theme before paint to avoid a light flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{var t=localStorage.getItem("rezept-app:theme");if(t==="dark"||(t!=="light"&&window.matchMedia("(prefers-color-scheme: dark)").matches)){document.documentElement.classList.add("dark");}}catch(e){}})();',
+          }}
+        />
+      </head>
       <body className="font-sans antialiased bg-surface-primary text-ink-primary">
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>

@@ -164,7 +164,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
   }
 
   const fieldCls = "input-field";
-  const smallCls = "w-full px-3 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors";
+  const smallCls = "w-full px-3 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors";
   const rmCls = "text-ink-tertiary hover:text-ink-primary transition-colors text-lg leading-none disabled:opacity-40";
 
   return (
@@ -185,7 +185,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
           rows={2}
           disabled={saving}
           placeholder={t("descriptionPlaceholder")}
-          className="w-full px-3 py-2 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors resize-y"
+          className="w-full px-3 py-2 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors resize-y"
         />
       </div>
 
@@ -201,8 +201,8 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
               disabled={saving}
               className={`px-3 py-1.5 text-sm rounded border transition-colors ${
                 recipeType === value
-                  ? "bg-ink-primary text-white border-ink-primary"
-                  : "bg-white text-ink-secondary border-stone hover:bg-surface-hover"
+                  ? "bg-ink-primary text-surface-primary border-ink-primary"
+                  : "bg-surface-card text-ink-secondary border-stone hover:bg-surface-hover"
               }`}
             >
               {emoji} {tTypes(value)}
@@ -257,7 +257,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
                 onChange={(e) => setSections((prev) => prev.map((s, i) => i !== sIdx ? s : { ...s, title: e.target.value }))}
                 placeholder={t("sectionPlaceholder")}
                 disabled={saving}
-                className="flex-1 font-medium text-sm px-2.5 py-1.5 bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
+                className="flex-1 font-medium text-sm px-2.5 py-1.5 bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
               />
               <button
                 type="button"
@@ -295,9 +295,9 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
             <div className="flex flex-col gap-2">
               {section.ingredients.map((ing, iIdx) => (
                 <div key={iIdx} className="flex gap-2 items-center">
-                  <input aria-label={`${t("ingredientAmount")} ${iIdx + 1}`} type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input aria-label={`${t("ingredientUnit")} ${iIdx + 1}`} type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
-                  <input aria-label={`${t("ingredientName")} ${iIdx + 1}`} type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`${t("ingredientAmount")} ${iIdx + 1}`} type="number" value={ing.amount} onChange={(e) => updateIngredient(sIdx, iIdx, "amount", e.target.value)} placeholder={t("ingredientAmount")} min={0} step="any" disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`${t("ingredientUnit")} ${iIdx + 1}`} type="text" value={ing.unit} onChange={(e) => updateIngredient(sIdx, iIdx, "unit", e.target.value)} placeholder={t("ingredientUnit")} disabled={saving} className="w-20 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
+                  <input aria-label={`${t("ingredientName")} ${iIdx + 1}`} type="text" value={ing.name} onChange={(e) => updateIngredient(sIdx, iIdx, "name", e.target.value)} placeholder={t("ingredientName")} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors" />
                   <button type="button" aria-label={`${t("removeIngredient")} ${iIdx + 1}`} onClick={() => removeIngredient(sIdx, iIdx)} disabled={saving} className={rmCls}>×</button>
                 </div>
               ))}
@@ -314,7 +314,7 @@ export default function RecipeEditForm({ recipe }: { recipe: Recipe }) {
               {section.steps.map((step, stIdx) => (
                 <div key={stIdx} className="flex gap-2 items-start">
                   <span className="text-xs text-ink-tertiary mt-2 w-5 shrink-0 text-right tabular-nums">{stIdx + 1}.</span>
-                  <textarea aria-label={`${t("step")} ${stIdx + 1}`} value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-white border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
+                  <textarea aria-label={`${t("step")} ${stIdx + 1}`} value={step.text} onChange={(e) => updateStep(sIdx, stIdx, e.target.value)} rows={2} disabled={saving} className="flex-1 px-2.5 py-1.5 text-sm bg-surface-card border border-stone rounded text-ink-primary focus:outline-none focus:border-ink-secondary transition-colors resize-y" />
                   <button type="button" aria-label={`${t("removeStep")} ${stIdx + 1}`} onClick={() => removeStep(sIdx, stIdx)} disabled={saving} className={`${rmCls} mt-1.5`}>×</button>
                 </div>
               ))}

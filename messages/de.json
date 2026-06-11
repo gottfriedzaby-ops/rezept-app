@@ -325,7 +325,11 @@
     "deleteConfirmYes": "Ja, löschen",
     "cancelDelete": "Abbrechen",
     "deletingAccount": "Wird gelöscht…",
-    "deleteProcessing": "Kontolöschung wird bearbeitet."
+    "deleteProcessing": "Kontolöschung wird bearbeitet.",
+    "appearance": "Darstellung",
+    "themeSystem": "System",
+    "themeLight": "Hell",
+    "themeDark": "Dunkel"
   },
   "ShoppingList": {
     "title": "Einkaufsliste",

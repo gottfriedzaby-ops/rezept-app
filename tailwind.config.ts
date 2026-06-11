@@ -1,6 +1,7 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: [
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
@@ -11,22 +12,26 @@ const config: Config = {
         sans: ["var(--font-inter)", "sans-serif"],
         serif: ["var(--font-fraunces)", "serif"],
       },
+      // All palette tokens resolve to RGB-triplet CSS variables defined in
+      // app/globals.css (:root = light, .dark = dark) so the whole app theme
+      // switches with a single class while alpha modifiers keep working.
       colors: {
         surface: {
-          primary: "#FAFAF7",
-          secondary: "#F3F1EC",
-          hover: "#E8E4DC",
+          primary: "rgb(var(--bg-primary) / <alpha-value>)",
+          secondary: "rgb(var(--bg-secondary) / <alpha-value>)",
+          hover: "rgb(var(--bg-accent) / <alpha-value>)",
+          card: "rgb(var(--bg-card) / <alpha-value>)",
         },
         ink: {
-          primary: "#1C1C1A",
-          secondary: "#6B6B66",
-          tertiary: "#A0A09A",
+          primary: "rgb(var(--text-primary) / <alpha-value>)",
+          secondary: "rgb(var(--text-secondary) / <alpha-value>)",
+          tertiary: "rgb(var(--text-tertiary) / <alpha-value>)",
         },
-        stone: "#E8E4DC",
+        stone: "rgb(var(--border) / <alpha-value>)",
         forest: {
-          DEFAULT: "#2D5F3F",
-          soft: "#E8EEE9",
-          deep: "#1F4A2E",
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          soft: "rgb(var(--accent-soft) / <alpha-value>)",
+          deep: "rgb(var(--accent-deep) / <alpha-value>)",
         },
       },
     },

@@ -30,7 +30,7 @@ export default function ConfirmDialog({
         className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
         onClick={onCancel}
       />
-      <div className="relative bg-white rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4">
+      <div className="relative bg-surface-card rounded-lg shadow-lg border border-stone p-6 max-w-sm w-full mx-4">
         <h2 className="font-serif text-lg font-medium text-ink-primary mb-2">{title}</h2>
         <p className="text-sm text-ink-secondary mb-6">{message}</p>
         <div className="flex gap-3">

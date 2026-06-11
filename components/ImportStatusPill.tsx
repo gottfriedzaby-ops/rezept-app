@@ -13,7 +13,7 @@ export default function ImportStatusPill() {
   if (pathname === "/" || (phase !== "loading" && phase !== "review")) return null;
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-lg border border-stone text-sm">
+    <div className="fixed bottom-5 right-5 z-50 flex items-center gap-3 px-4 py-3 bg-surface-card rounded-xl shadow-lg border border-stone text-sm">
       {phase === "loading" && (
         <>
           <span className="w-3 h-3 rounded-full border-2 border-forest border-t-transparent animate-spin" />

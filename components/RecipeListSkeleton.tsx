@@ -13,7 +13,7 @@ export default function RecipeListSkeleton({ count = 6 }: RecipeListSkeletonProp
       {Array.from({ length: count }, (_, i) => (
         <li
           key={i}
-          className="flex flex-col h-full border border-stone rounded overflow-hidden bg-white"
+          className="flex flex-col h-full border border-stone rounded overflow-hidden bg-surface-card"
         >
           <div className="aspect-[4/3] bg-surface-secondary animate-pulse" />
           <div className="p-4 space-y-3">

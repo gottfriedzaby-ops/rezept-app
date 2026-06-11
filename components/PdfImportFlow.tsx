@@ -355,7 +355,7 @@ export default function PdfImportFlow({ file, onCancel }: Props) {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => handleDrop(idx)}
                 onDragEnd={() => setDragIndex(null)}
-                className={`relative rounded overflow-hidden border bg-white aspect-[3/4] cursor-move ${
+                className={`relative rounded overflow-hidden border bg-surface-card aspect-[3/4] cursor-move ${
                   dragIndex === idx ? "border-forest opacity-60" : "border-stone"
                 }`}
               >

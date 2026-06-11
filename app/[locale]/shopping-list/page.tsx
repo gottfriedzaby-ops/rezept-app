@@ -345,7 +345,7 @@ export default function ShoppingListPage() {
                 if (e.key === "Enter") handleAddManual();
               }}
               placeholder={t("addItemPlaceholder")}
-              className="flex-1 px-4 py-2.5 text-sm bg-white border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
+              className="flex-1 px-4 py-2.5 text-sm bg-surface-card border border-stone rounded text-ink-primary placeholder:text-ink-tertiary focus:outline-none focus:border-ink-secondary transition-colors"
             />
             <button
               type="button"

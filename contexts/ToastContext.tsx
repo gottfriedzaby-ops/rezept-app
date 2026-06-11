@@ -50,7 +50,7 @@ export function ToastProvider({ children }: ToastProviderProps) {
           {toasts.map((toast) => (
             <div
               key={toast.id}
-              className="bg-ink-primary text-white text-sm px-4 py-2.5 rounded-lg shadow-lg motion-safe:animate-[shopping-pop_0.28s_ease-out]"
+              className="bg-ink-primary text-surface-primary text-sm px-4 py-2.5 rounded-lg shadow-lg motion-safe:animate-[shopping-pop_0.28s_ease-out]"
             >
               {toast.message}
             </div>

@@ -232,7 +232,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
           return (
             <section
               key={date}
-              className={`border rounded-lg p-3 bg-white ${
+              className={`border rounded-lg p-3 bg-surface-card ${
                 isToday ? "border-forest" : "border-stone"
               }`}
             >

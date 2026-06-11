@@ -325,7 +325,11 @@
     "deleteConfirmYes": "Ja, verwijderen",
     "cancelDelete": "Annuleren",
     "deletingAccount": "Verwijderen…",
-    "deleteProcessing": "Accountverwijdering wordt verwerkt."
+    "deleteProcessing": "Accountverwijdering wordt verwerkt.",
+    "appearance": "Weergave",
+    "themeSystem": "Systeem",
+    "themeLight": "Licht",
+    "themeDark": "Donker"
   },
   "ShoppingList": {
     "title": "Boodschappenlijst",

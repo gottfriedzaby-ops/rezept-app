@@ -278,7 +278,7 @@ export default function ShoppingMode() {
               className={`px-3 py-1.5 text-sm transition-colors ${
                 sortMode === mode
                   ? "bg-forest text-white"
-                  : "bg-white text-ink-secondary hover:bg-surface-hover"
+                  : "bg-surface-card text-ink-secondary hover:bg-surface-hover"
               }`}
             >
               {mode === "recipe" ? t("sortByRecipe") : t("sortByType")}
@@ -328,7 +328,7 @@ export default function ShoppingMode() {
             const isCollapsed = collapsed[group.id] ?? false;
             const complete = group.total > 0 && group.checkedCount === group.total;
             return (
-              <section key={`${group.kind}:${group.id}`} className="rounded-lg bg-white border border-stone overflow-hidden">
+              <section key={`${group.kind}:${group.id}`} className="rounded-lg bg-surface-card border border-stone overflow-hidden">
                 <button
                   type="button"
                   onClick={() => toggleSection(group.id)}

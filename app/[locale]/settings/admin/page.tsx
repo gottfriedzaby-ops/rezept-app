@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
+import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { isAdmin } from "@/lib/admin";
 import AdminDashboard from "@/components/admin/AdminDashboard";
@@ -14,6 +15,8 @@ export default async function AdminDashboardPage() {
   if (!user) redirect("/login");
   if (!isAdmin(user)) redirect("/settings");
 
+  const t = await getTranslations("Admin");
+
   return (
     <div className="min-h-screen bg-surface-primary">
       <div className="max-w-[1100px] mx-auto px-8 py-16">
@@ -21,10 +24,10 @@ export default async function AdminDashboardPage() {
           href="/settings"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← Einstellungen
+          {t("backToSettings")}
         </a>
 
-        <Suspense fallback={<p className="text-sm text-ink-tertiary">Lade…</p>}>
+        <Suspense fallback={<p className="text-sm text-ink-tertiary">{t("loading")}</p>}>
           <AdminDashboard />
         </Suspense>
       </div>

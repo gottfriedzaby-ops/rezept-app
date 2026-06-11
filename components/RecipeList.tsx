@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef, useTransition } from "react";
 import { useTranslations } from 'next-intl';
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Link } from "@/i18n/navigation";
@@ -17,6 +17,17 @@ interface Props {
   shareToken?: string;
   sharedCollectionOwnerId?: string;
   sharedRecipes?: SharedRecipe[];
+  /**
+   * Server mode (main library): `recipes` is the current first page filtered
+   * by the URL params (the page is force-dynamic, so every param change
+   * re-renders it server-side); "load more" appends further pages via
+   * /api/recipes/search. Off for the share pages, which pass complete lists.
+   */
+  serverSearch?: boolean;
+  /** Server mode: globally ranked tag list for the filter bar. */
+  allTags?: string[];
+  /** Server mode: total number of matching recipes. */
+  initialTotal?: number;
 }
 
 export default function RecipeList({
@@ -25,11 +36,15 @@ export default function RecipeList({
   shareToken,
   sharedCollectionOwnerId,
   sharedRecipes,
+  serverSearch = false,
+  allTags,
+  initialTotal,
 }: Props) {
   const t = useTranslations('RecipeList');
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const [isPending, startTransition] = useTransition();
 
   const query = searchParams.get("q") ?? "";
 
@@ -63,7 +78,11 @@ export default function RecipeList({
       const p = new URLSearchParams(Array.from(searchParams.entries()));
       mutate(p);
       const qs = p.toString();
-      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      // In server mode the navigation re-renders the page server-side with
+      // the new filters; the transition gives us a pending indicator.
+      startTransition(() => {
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+      });
     },
     [searchParams, router, pathname]
   );
@@ -103,6 +122,65 @@ export default function RecipeList({
     () => new Set(recipes.filter((r) => r.favorite).map((r) => r.id))
   );
 
+  // ── Server mode: pages appended via /api/recipes/search ──────────────────
+  const [extraItems, setExtraItems] = useState<RecipeEntry[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState(false);
+
+  // Reset appended pages when the server delivered a fresh first page for
+  // changed filters (render-time derived-state reset).
+  const filterSignature = [
+    query,
+    Array.from(activeTags).sort().join(","),
+    showFavoritesOnly ? "1" : "0",
+    sort,
+  ].join("|");
+  const lastSignatureRef = useRef(filterSignature);
+  if (serverSearch && lastSignatureRef.current !== filterSignature) {
+    lastSignatureRef.current = filterSignature;
+    if (extraItems.length > 0) setExtraItems([]);
+    if (loadMoreError) setLoadMoreError(false);
+  }
+
+  // Server re-renders deliver fresh favorite flags — resync the local set.
+  useEffect(() => {
+    if (!serverSearch) return;
+    setFavoriteIds(new Set(recipes.filter((r) => r.favorite).map((r) => r.id)));
+  }, [serverSearch, recipes]);
+
+  const loadedCount = recipes.length + extraItems.length;
+  const total = serverSearch ? initialTotal ?? recipes.length : recipes.length;
+
+  async function loadMore() {
+    if (isLoadingMore) return;
+    setIsLoadingMore(true);
+    setLoadMoreError(false);
+    try {
+      const p = new URLSearchParams();
+      if (query) p.set("q", query);
+      activeTags.forEach((tag) => p.append("tag", tag));
+      if (showFavoritesOnly) p.set("fav", "1");
+      if (sort !== "newest") p.set("sort", sort);
+      p.set("offset", String(loadedCount));
+      const res = await fetch(`/api/recipes/search?${p.toString()}`);
+      const json = await res.json();
+      if (!res.ok || json.error || !json.data) throw new Error(json.error ?? "load failed");
+      const fetched = json.data.recipes as RecipeEntry[];
+      setExtraItems((prev) => [...prev, ...fetched]);
+      setFavoriteIds((prev) => {
+        const s = new Set(prev);
+        fetched.forEach((r) => {
+          if (r.favorite) s.add(r.id);
+        });
+        return s;
+      });
+    } catch {
+      setLoadMoreError(true);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }
+
   async function toggleFavorite(id: string) {
     const next = !favoriteIds.has(id);
     setFavoriteIds((prev) => {
@@ -133,8 +211,11 @@ export default function RecipeList({
   }
 
   const allRecipes = useMemo<RecipeEntry[]>(
-    () => [...recipes, ...(sharedRecipes ?? [])],
-    [recipes, sharedRecipes]
+    () =>
+      serverSearch
+        ? [...(recipes as RecipeEntry[]), ...extraItems]
+        : [...recipes, ...(sharedRecipes ?? [])],
+    [serverSearch, recipes, extraItems, sharedRecipes]
   );
 
   const filtered = useMemo(() => {
@@ -163,9 +244,19 @@ export default function RecipeList({
   }, [allRecipes, inputValue, activeTags, showFavoritesOnly, favoriteIds, sort]);
 
   // Tags shown in the filter bar, ranked: active tags first, then by usage
-  // count desc (alphabetical tiebreaker). Counts come from the currently
-  // filtered recipe set so the bar shrinks consistently with the result list.
+  // count desc (alphabetical tiebreaker). In client mode counts come from the
+  // currently filtered set; in server mode the globally ranked list from the
+  // server is used (the loaded page is only a subset).
   const availableTags = useMemo(() => {
+    if (serverSearch) {
+      const base = allTags ?? [];
+      const active = Array.from(activeTags);
+      return [
+        ...active.filter((tag) => base.includes(tag)),
+        ...active.filter((tag) => !base.includes(tag)),
+        ...base.filter((tag) => !activeTags.has(tag)),
+      ];
+    }
     const counts = new Map<string, number>();
     filtered.forEach((r) =>
       r.tags.forEach((t) => counts.set(t, (counts.get(t) ?? 0) + 1))
@@ -182,7 +273,7 @@ export default function RecipeList({
         return a.localeCompare(b, "de");
       })
       .map(([t]) => t);
-  }, [filtered, activeTags]);
+  }, [serverSearch, allTags, filtered, activeTags]);
 
   const [tagsExpanded, setTagsExpanded] = useState(false);
   const COLLAPSED_TAG_COUNT = 12;
@@ -327,7 +418,12 @@ export default function RecipeList({
           <p className="text-ink-tertiary text-sm">{t('noRecipes')}</p>
         )
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <ul
+          aria-busy={serverSearch && isPending ? true : undefined}
+          className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 ${
+            serverSearch && isPending ? "opacity-60 transition-opacity" : ""
+          }`}
+        >
           {filtered.map((recipe) => {
             const isShared = !!(recipe as RecipeEntry)._ownerName;
             const ownerName = (recipe as RecipeEntry)._ownerName;
@@ -419,6 +515,27 @@ export default function RecipeList({
             );
           })}
         </ul>
+      )}
+
+      {/* Server mode: pagination */}
+      {serverSearch && loadedCount < total && (
+        <div className="flex flex-col items-center gap-2 mt-10">
+          {loadMoreError && (
+            <p className="text-sm text-red-600" role="alert">
+              {t('loadError')}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="btn-ghost"
+          >
+            {isLoadingMore
+              ? t('loading')
+              : t('loadMore', { remaining: total - loadedCount })}
+          </button>
+        </div>
       )}
     </div>
   );

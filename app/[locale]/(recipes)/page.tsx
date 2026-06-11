@@ -1,9 +1,14 @@
 import { Suspense } from "react";
+import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase";
 import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
-import type { Recipe } from "@/types/recipe";
+import {
+  getSharedOwnerIds,
+  getVisibleTags,
+  parseSort,
+  searchRecipes,
+} from "@/lib/recipe-search";
 import ImportTabs from "@/components/ImportTabs";
 import RecipeList from "@/components/RecipeList";
 import RecipeListSkeleton from "@/components/RecipeListSkeleton";
@@ -11,67 +16,57 @@ import UserNav from "@/components/UserNav";
 
 export const dynamic = "force-dynamic";
 
-export default async function RecipesPage() {
+interface RecipesPageSearchParams {
+  q?: string;
+  tag?: string | string[];
+  fav?: string;
+  sort?: string;
+}
+
+export default async function RecipesPage({
+  searchParams,
+}: {
+  searchParams: RecipesPageSearchParams;
+}) {
   const t = await getTranslations("RecipeList");
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect("/login");
 
-  const query = supabaseAdmin
-    .from("recipes")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const activeTags =
+    typeof searchParams.tag === "string"
+      ? [searchParams.tag]
+      : searchParams.tag ?? [];
 
-  if (user) {
-    query.eq("user_id", user.id);
-  }
+  const sharedOwnerIds = await getSharedOwnerIds(user.id);
+  const [result, allTags] = await Promise.all([
+    searchRecipes(user.id, sharedOwnerIds, {
+      q: searchParams.q,
+      tags: activeTags,
+      favoritesOnly: searchParams.fav === "1",
+      sort: parseSort(searchParams.sort),
+      offset: 0,
+    }),
+    getVisibleTags(user.id, sharedOwnerIds),
+  ]);
 
-  const { data: recipes } = await query.returns<Recipe[]>();
+  // Attach owner display names to recipes from shared libraries
+  const foreignOwnerIds = result.recipes
+    .map((r) => r.user_id)
+    .filter((id): id is string => Boolean(id) && id !== user.id);
+  const profiles = await getProfilesByIds(foreignOwnerIds);
+  const recipes = result.recipes.map((recipe) =>
+    recipe.user_id && recipe.user_id !== user.id
+      ? {
+          ...recipe,
+          _ownerName: profileDisplayName(profiles.get(recipe.user_id), t("unknownOwner")),
+        }
+      : recipe
+  );
 
-  // Fetch shared recipes from accepted library shares
-  let sharedRecipes: Array<Recipe & { _ownerName: string }> = [];
-
-  if (user) {
-    const { data: acceptedShares } = await supabaseAdmin
-      .from("library_shares")
-      .select("owner_id")
-      .eq("recipient_id", user.id)
-      .eq("status", "accepted");
-
-    if (acceptedShares && acceptedShares.length > 0) {
-      const ownerIds = acceptedShares.map((s) => s.owner_id);
-
-      const [{ data: sharedRecipesRaw }, { data: settings }] = await Promise.all([
-        supabaseAdmin
-          .from("recipes")
-          .select("*")
-          .in("user_id", ownerIds)
-          .eq("is_private", false)
-          .order("created_at", { ascending: false })
-          .returns<Recipe[]>(),
-        supabaseAdmin
-          .from("user_settings")
-          .select("show_shared_in_main_library")
-          .eq("user_id", user.id)
-          .maybeSingle(),
-      ]);
-
-      const showSharedInMainLibrary = settings?.show_shared_in_main_library ?? true;
-
-      // Enrich with owner names
-      const profiles = await getProfilesByIds(ownerIds);
-      const ownerNames = new Map<string, string>();
-      ownerIds.forEach((ownerId) => {
-        ownerNames.set(ownerId, profileDisplayName(profiles.get(ownerId), t("unknownOwner")));
-      });
-
-      if (showSharedInMainLibrary) {
-        sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({
-          ...r,
-          _ownerName: ownerNames.get(r.user_id ?? "") ?? t("unknownOwner"),
-        }));
-      }
-    }
-  }
+  const hasActiveFilter =
+    Boolean(searchParams.q) || activeTags.length > 0 || searchParams.fav === "1";
+  const libraryIsEmpty = result.total === 0 && !hasActiveFilter;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -93,15 +88,17 @@ export default async function RecipesPage() {
 
         <section>
           <p className="label-overline mb-8">{t("allRecipesSection")}</p>
-          {(!recipes || recipes.length === 0) && sharedRecipes.length === 0 ? (
+          {libraryIsEmpty ? (
             <p className="text-ink-secondary">
               {t("emptyState")}
             </p>
           ) : (
             <Suspense fallback={<RecipeListSkeleton />}>
               <RecipeList
-                recipes={recipes ?? []}
-                sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}
+                recipes={recipes}
+                serverSearch
+                allTags={allTags}
+                initialTotal={result.total}
               />
             </Suspense>
           )}

@@ -47,7 +47,10 @@
     "importSection": "Import recipe",
     "allRecipesSection": "All Recipes",
     "emptyState": "No recipes yet. Import the first one!",
-    "unknownOwner": "Unknown"
+    "unknownOwner": "Unknown",
+    "loadMore": "Load more ({remaining})",
+    "loadError": "Could not load recipes.",
+    "loading": "Loading…"
   },
   "RecipeDetail": {
     "servings": "Servings",

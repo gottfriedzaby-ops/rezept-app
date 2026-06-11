@@ -47,7 +47,10 @@
     "importSection": "Recept importeren",
     "allRecipesSection": "Alle recepten",
     "emptyState": "Nog geen recepten. Importeer het eerste!",
-    "unknownOwner": "Onbekend"
+    "unknownOwner": "Onbekend",
+    "loadMore": "Meer laden ({remaining})",
+    "loadError": "Recepten konden niet worden geladen.",
+    "loading": "Laden…"
   },
   "RecipeDetail": {
     "servings": "Porties",

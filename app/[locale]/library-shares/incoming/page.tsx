@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
@@ -15,6 +16,8 @@ export default async function IncomingSharesPage() {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect("/login?redirect=/library-shares/incoming");
+
+  const t = await getTranslations("LibraryShares");
 
   const { data: shares } = await supabaseAdmin
     .from("library_shares")
@@ -43,10 +46,10 @@ export default async function IncomingSharesPage() {
               href="/library-shares"
               className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-4"
             >
-              ← Geteilte Sammlungen
+              {t("backToShares")}
             </Link>
             <h1 className="font-serif text-3xl font-medium text-ink-primary tracking-[-0.02em]">
-              Einladungen
+              {t("invitationsTitle")}
             </h1>
           </div>
           <UserNav />

@@ -6,6 +6,7 @@ import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import type { Recipe } from "@/types/recipe";
 import ImportTabs from "@/components/ImportTabs";
 import RecipeList from "@/components/RecipeList";
+import RecipeListSkeleton from "@/components/RecipeListSkeleton";
 import UserNav from "@/components/UserNav";
 
 export const dynamic = "force-dynamic";
@@ -97,7 +98,7 @@ export default async function RecipesPage() {
               {t("emptyState")}
             </p>
           ) : (
-            <Suspense fallback={null}>
+            <Suspense fallback={<RecipeListSkeleton />}>
               <RecipeList
                 recipes={recipes ?? []}
                 sharedRecipes={sharedRecipes.length > 0 ? sharedRecipes : undefined}

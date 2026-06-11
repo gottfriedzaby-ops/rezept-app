@@ -56,7 +56,9 @@
     "allIngredients": "Alle ingrediënten",
     "ingredients": "Ingrediënten",
     "preparation": "Bereiding",
-    "step": "Stap {number}"
+    "step": "Stap {number}",
+    "prepTime": "Voorbereiding",
+    "totalTime": "Totaal"
   },
   "RecipeActions": {
     "addFavorite": "Aan favorieten toevoegen",
@@ -70,7 +72,9 @@
     "copying": "Kopiëren…",
     "copiedMessage": "Gekopieerd naar jouw collectie!",
     "viewRecipe": "Recept bekijken →",
-    "copyError": "Fout bij kopiëren."
+    "copyError": "Fout bij kopiëren.",
+    "favoriteAdded": "Toegevoegd aan favorieten",
+    "favoriteRemoved": "Verwijderd uit favorieten"
   },
   "RecipeTypes": {
     "kochen": "Koken",
@@ -395,5 +399,23 @@
     "de": "Deutsch",
     "en": "English",
     "nl": "Nederlands"
+  },
+  "LibraryShares": {
+    "title": "Gedeelde collecties",
+    "backToMyRecipes": "← Mijn recepten",
+    "backToShares": "← Gedeelde collecties",
+    "invitationsTitle": "Uitnodigingen",
+    "recipeCount": "{count, plural, one {# recept} other {# recepten}}",
+    "emptyState": "Je hebt nog geen gedeelde collecties. Zodra iemand zijn bibliotheek met je deelt en je de uitnodiging accepteert, verschijnt die hier.",
+    "collectionBy": "Collectie van",
+    "backToCollectionBy": "← Collectie van {name}"
+  },
+  "Shared": {
+    "collectionFallback": "Receptencollectie",
+    "allRecipes": "Alle recepten",
+    "emptyCollection": "Nog geen recepten in deze collectie.",
+    "readOnlyBadge": "Gedeelde collectie — alleen-lezen",
+    "invalidLinkTitle": "Deze link is niet meer geldig",
+    "invalidLinkText": "De uitnodigingslink is ingetrokken of bestaat niet."
   }
 }

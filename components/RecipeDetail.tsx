@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { useTranslations } from 'next-intl';
 import { Link } from "@/i18n/navigation";
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
+import { isOptimizableImageHost } from "@/lib/image-host";
 
 const ctaKeys = {
   kochen: 'ctaKochen',
@@ -18,6 +20,7 @@ const ctaKeys = {
 export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
   const t = useTranslations('RecipeDetail');
   const tTypes = useTranslations('RecipeTypes');
+  const tCommon = useTranslations('Common');
   const [servings, setServings] = useState(recipe.servings ?? 1);
   const minServings = recipe.scalable === false ? (recipe.servings ?? 1) : 1;
 
@@ -146,15 +149,18 @@ export default function RecipeDetail({ recipe }: { recipe: Recipe }) {
                         {resolveStepText(step.text, section.ingredients, servings)}
                         {step.timerSeconds ? (
                           <span className="ml-2 text-xs text-ink-tertiary">
-                            ({Math.round(step.timerSeconds / 60)} Min.)
+                            ({Math.round(step.timerSeconds / 60)} {tCommon('minutes')})
                           </span>
                         ) : null}
                       </p>
                       {imgUrl && (
-                        <img
+                        <Image
                           src={imgUrl}
-                          alt={`Schritt ${step.order}`}
-                          className="mt-4 rounded max-w-sm w-full object-cover"
+                          alt={t('step', { number: step.order })}
+                          width={384}
+                          height={288}
+                          unoptimized={!isOptimizableImageHost(imgUrl)}
+                          className="mt-4 rounded max-w-sm w-full h-auto object-cover"
                           loading="lazy"
                         />
                       )}

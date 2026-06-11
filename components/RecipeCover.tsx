@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { getRecipeGradient } from "@/lib/tag-colors";
+import { isOptimizableImageHost } from "@/lib/image-host";
 import type { RecipeType } from "@/types/recipe";
 
 interface Props {
@@ -20,13 +21,6 @@ function gradientBlurDataURL(from: string, to: string): string {
   return `data:image/svg+xml;base64,${base64}`;
 }
 
-function isOptimizableHost(url: string): boolean {
-  try {
-    return new URL(url).hostname.endsWith(".supabase.co");
-  } catch {
-    return false;
-  }
-}
 
 export default function RecipeCover({ imageUrl, title, tags, variant = "card", recipeType }: Props) {
   const [from, to] = getRecipeGradient(tags);
@@ -34,7 +28,7 @@ export default function RecipeCover({ imageUrl, title, tags, variant = "card", r
 
   if (imageUrl) {
     const blurDataURL = gradientBlurDataURL(from, to);
-    const unoptimized = !isOptimizableHost(imageUrl);
+    const unoptimized = !isOptimizableImageHost(imageUrl);
     if (isHero) {
       return (
         <div className="w-full overflow-hidden">

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { addRecipeItems } from "@/lib/shopping-list";
+import { useToast } from "@/contexts/ToastContext";
 
 interface AddToShoppingListButtonProps {
   recipe: Recipe;
@@ -13,10 +14,10 @@ interface AddToShoppingListButtonProps {
 export default function AddToShoppingListButton({ recipe }: AddToShoppingListButtonProps) {
   const t = useTranslations("ShoppingList");
   const tCommon = useTranslations("Common");
+  const { showToast } = useToast();
   const defaultServings = recipe.servings ?? 1;
   const [modalOpen, setModalOpen] = useState(false);
   const [desiredServings, setDesiredServings] = useState(defaultServings);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const sections = getRecipeSections(recipe);
   const allIngredients = sections.flatMap((s) => s.ingredients);
@@ -47,8 +48,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
       desiredServings
     );
     setModalOpen(false);
-    setToastMessage(t("addedToast", { count }));
-    setTimeout(() => setToastMessage(null), 3000);
+    showToast(t("addedToast", { count }));
   }
 
   return (
@@ -147,12 +147,6 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {toastMessage && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-ink-primary text-white text-sm px-4 py-2.5 rounded-lg shadow-lg pointer-events-none">
-          {toastMessage}
         </div>
       )}
     </>

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { supabaseAdmin } from "@/lib/supabase";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -13,10 +14,19 @@ import RecipeExportMenu from "@/components/RecipeExportMenu";
 import NutritionDisplay from "@/components/NutritionDisplay";
 import PrivacyToggle from "@/components/PrivacyToggle";
 import { getTagColor } from "@/lib/tag-colors";
-import { cookTimeLabelFor, recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
+import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
+import type { RecipeType } from "@/types/recipe";
 
 export const dynamic = "force-dynamic";
+
+const cookTimeKeys: Record<RecipeType, string> = {
+  kochen: "cookTimeKochen",
+  backen: "cookTimeBacken",
+  grillen: "cookTimeGrillen",
+  zubereiten: "cookTimeZubereiten",
+  cocktail: "cookTimeCocktail",
+};
 
 export default async function RecipeDetailPage({
   params,
@@ -34,7 +44,14 @@ export default async function RecipeDetailPage({
 
   const isOwner = user?.id === recipe.user_id;
 
+  const [tCommon, tDetail, tTypes] = await Promise.all([
+    getTranslations("Common"),
+    getTranslations("RecipeDetail"),
+    getTranslations("RecipeTypes"),
+  ]);
+
   const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
+  const recipeType: RecipeType = recipe.recipe_type ?? "kochen";
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -59,7 +76,7 @@ export default async function RecipeDetailPage({
           href="/"
           className="inline-block text-sm text-ink-tertiary hover:text-ink-primary transition-colors mb-10"
         >
-          ← Alle Rezepte
+          {tCommon("allRecipes")}
         </Link>
 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-4 mb-5">
@@ -86,22 +103,26 @@ export default async function RecipeDetailPage({
         </div>
 
         <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-ink-secondary mb-4">
-          {recipe.prep_time ? <span>Vorbereitung {recipe.prep_time} Min.</span> : null}
+          {recipe.prep_time ? (
+            <span>{tDetail("prepTime")} {recipe.prep_time} {tCommon("minutes")}</span>
+          ) : null}
           {recipe.cook_time ? (
-            <span>{cookTimeLabelFor(recipe.recipe_type ?? "kochen")} {recipe.cook_time} Min.</span>
+            <span>{tTypes(cookTimeKeys[recipeType])} {recipe.cook_time} {tCommon("minutes")}</span>
           ) : null}
           {totalTime > 0 ? (
-            <span className="text-ink-primary font-medium">Gesamt {totalTime} Min.</span>
+            <span className="text-ink-primary font-medium">
+              {tDetail("totalTime")} {totalTime} {tCommon("minutes")}
+            </span>
           ) : null}
-          {recipe.servings ? <span>{recipe.servings} Portionen</span> : null}
+          {recipe.servings ? <span>{recipe.servings} {tCommon("servings")}</span> : null}
         </div>
 
         <div className="flex gap-1.5 flex-wrap mb-4">
           {(() => {
-            const badge = recipeTypeBadgeFor(recipe.recipe_type ?? "kochen");
+            const badge = recipeTypeBadgeFor(recipeType);
             return (
               <span className="text-xs px-2.5 py-0.5 rounded bg-surface-secondary text-ink-secondary border border-stone">
-                {badge.emoji} {badge.label}
+                {badge.emoji} {tTypes(recipeType)}
               </span>
             );
           })()}

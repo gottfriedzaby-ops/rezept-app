@@ -177,8 +177,9 @@ export default function RecipePdfDocument({ recipe }: Props) {
       language="de"
     >
       <Page size="A4" style={s.page}>
-        {/* Cover image */}
+        {/* Cover image — @react-pdf's Image has no alt prop (false positive) */}
         {recipe.image_url && (
+          // eslint-disable-next-line jsx-a11y/alt-text
           <Image src={recipe.image_url} style={s.coverImage} />
         )}
 

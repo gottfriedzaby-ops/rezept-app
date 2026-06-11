@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as cheerio from "cheerio";
+import type { Element } from "domhandler";
 import { parseRecipeFromText, reviewAndImproveRecipe } from "@/lib/claude";
 import { decideSkipReviewPass } from "@/lib/canSkipReviewPass";
 import type { JsonLdRecipeData } from "@/lib/claude";
@@ -193,8 +194,7 @@ function extractStepImages($: $Type, pageUrl: string): string[] {
     } catch { /* invalid URL */ }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function srcOf(el: any): string | undefined {
+  function srcOf(el: Element): string | undefined {
     const $el = $(el);
     return (
       $el.attr("src") ||

@@ -39,8 +39,11 @@ function makeFile(opts: { name?: string; type?: string; size?: number; content?:
     name: opts.name ?? "foto.jpg",
     type: opts.type ?? "image/jpeg",
     size: opts.size ?? content.length,
-    arrayBuffer: async () =>
-      content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength),
+    arrayBuffer: async () => {
+      const copy = new ArrayBuffer(content.byteLength);
+      new Uint8Array(copy).set(content);
+      return copy;
+    },
   };
 }
 

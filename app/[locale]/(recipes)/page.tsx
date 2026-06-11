@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import type { Recipe } from "@/types/recipe";
 import ImportTabs from "@/components/ImportTabs";
 import RecipeList from "@/components/RecipeList";
@@ -56,17 +57,11 @@ export default async function RecipesPage() {
       const showSharedInMainLibrary = settings?.show_shared_in_main_library ?? true;
 
       // Enrich with owner names
+      const profiles = await getProfilesByIds(ownerIds);
       const ownerNames = new Map<string, string>();
-      await Promise.all(
-        ownerIds.map(async (ownerId) => {
-          const { data } = await supabaseAdmin.auth.admin.getUserById(ownerId);
-          const name =
-            (data.user?.user_metadata?.full_name as string) ||
-            data.user?.email ||
-            t("unknownOwner");
-          ownerNames.set(ownerId, name);
-        })
-      );
+      ownerIds.forEach((ownerId) => {
+        ownerNames.set(ownerId, profileDisplayName(profiles.get(ownerId), t("unknownOwner")));
+      });
 
       if (showSharedInMainLibrary) {
         sharedRecipes = (sharedRecipesRaw ?? []).map((r) => ({

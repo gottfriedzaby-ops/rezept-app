@@ -10,6 +10,7 @@ import {
   sendInvitationToUnregistered,
 } from "@/lib/email";
 import { sendPushToUser } from "@/lib/push";
+import { getProfilesByIds, getProfileIdByEmail, profileDisplayName } from "@/lib/profiles";
 import type { LibraryShareOutbound } from "@/types/library-sharing";
 import crypto from "crypto";
 
@@ -35,21 +36,17 @@ export async function GET() {
 
   if (error) return NextResponse.json({ data: null, error: error.message }, { status: 500 });
 
-  const enriched: LibraryShareOutbound[] = await Promise.all(
-    (shares ?? []).map(async (share) => {
-      let recipient_display_name: string | null = null;
-      if (share.recipient_id) {
-        const { data } = await supabaseAdmin.auth.admin.getUserById(share.recipient_id);
-        if (data.user) {
-          recipient_display_name = displayName(
-            data.user.user_metadata ?? null,
-            data.user.email ?? share.recipient_email
-          );
-        }
-      }
-      return { ...share, recipient_display_name };
-    })
-  );
+  const recipientIds = (shares ?? [])
+    .map((share) => share.recipient_id)
+    .filter((id): id is string => Boolean(id));
+  const profiles = await getProfilesByIds(recipientIds);
+
+  const enriched: LibraryShareOutbound[] = (shares ?? []).map((share) => ({
+    ...share,
+    recipient_display_name: share.recipient_id
+      ? profileDisplayName(profiles.get(share.recipient_id), share.recipient_email)
+      : null,
+  }));
 
   return NextResponse.json({ data: enriched, error: null });
 }
@@ -107,12 +104,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Check if recipient is already registered
-  let recipientId: string | null = null;
-  const { data: recipientAuthData } = await supabaseAdmin.auth.admin.listUsers();
-  const recipientUser = recipientAuthData?.users?.find(
-    (u) => u.email?.toLowerCase() === recipientEmail
-  );
-  if (recipientUser) recipientId = recipientUser.id;
+  const recipientId = await getProfileIdByEmail(recipientEmail);
 
   const invitationToken = crypto.randomBytes(32).toString("base64url");
   const ownerName = displayName(user.user_metadata ?? null, user.email ?? "");

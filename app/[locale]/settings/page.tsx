@@ -14,6 +14,7 @@ import InvitedEmailsManager, {
 } from "@/components/admin/InvitedEmailsManager";
 import { isAdmin } from "@/lib/admin";
 import { isInviteOnlyEnabled } from "@/lib/invited-emails";
+import { getProfilesByIds } from "@/lib/profiles";
 import type { LibraryShareOutbound, LibraryShareInbound, ReshareRequest } from "@/types/library-sharing";
 
 export const dynamic = "force-dynamic";
@@ -67,29 +68,29 @@ export default async function SettingsPage() {
       .maybeSingle(),
   ]);
 
-  const libraryShares: LibraryShareOutbound[] = await Promise.all(
-    (librarySharesRaw ?? []).map(async (share) => {
-      let recipient_display_name: string | null = null;
-      if (share.recipient_id) {
-        const { data } = await supabaseAdmin.auth.admin.getUserById(share.recipient_id);
-        if (data.user) {
-          recipient_display_name =
-            (data.user.user_metadata?.full_name as string) || null;
-        }
-      }
-      return { ...share, recipient_display_name };
-    })
-  );
+  const profileIds = [
+    ...(librarySharesRaw ?? [])
+      .map((share) => share.recipient_id)
+      .filter((id): id is string => Boolean(id)),
+    ...(incomingSharesRaw ?? []).map((share) => share.owner_id),
+  ];
+  const profiles = await getProfilesByIds(profileIds);
 
-  const incomingShares: LibraryShareInbound[] = await Promise.all(
-    (incomingSharesRaw ?? []).map(async (share) => {
-      const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(share.owner_id);
-      const owner_email = ownerData.user?.email ?? share.recipient_email;
-      const owner_display_name =
-        (ownerData.user?.user_metadata?.full_name as string) || null;
-      return { ...share, owner_display_name, owner_email };
-    })
-  );
+  const libraryShares: LibraryShareOutbound[] = (librarySharesRaw ?? []).map((share) => ({
+    ...share,
+    recipient_display_name: share.recipient_id
+      ? profiles.get(share.recipient_id)?.display_name ?? null
+      : null,
+  }));
+
+  const incomingShares: LibraryShareInbound[] = (incomingSharesRaw ?? []).map((share) => {
+    const owner = profiles.get(share.owner_id);
+    return {
+      ...share,
+      owner_display_name: owner?.display_name ?? null,
+      owner_email: owner?.email ?? share.recipient_email,
+    };
+  });
 
   const ownedShareIds = libraryShares.map((s) => s.id);
   const { data: reshareRequestsRaw } = ownedShareIds.length

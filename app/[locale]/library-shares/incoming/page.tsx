@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { getProfilesByIds } from "@/lib/profiles";
 import IncomingSharesManager from "@/components/IncomingSharesManager";
 import UserNav from "@/components/UserNav";
 import type { LibraryShareInbound } from "@/types/library-sharing";
@@ -22,15 +23,16 @@ export default async function IncomingSharesPage() {
     .in("status", ["pending", "accepted"])
     .order("invited_at", { ascending: false });
 
-  const enriched: LibraryShareInbound[] = await Promise.all(
-    (shares ?? []).map(async (share) => {
-      const { data: ownerData } = await supabaseAdmin.auth.admin.getUserById(share.owner_id);
-      const owner_email = ownerData.user?.email ?? share.recipient_email;
-      const owner_display_name =
-        (ownerData.user?.user_metadata?.full_name as string) || null;
-      return { ...share, owner_display_name, owner_email };
-    })
-  );
+  const profiles = await getProfilesByIds((shares ?? []).map((share) => share.owner_id));
+
+  const enriched: LibraryShareInbound[] = (shares ?? []).map((share) => {
+    const owner = profiles.get(share.owner_id);
+    return {
+      ...share,
+      owner_display_name: owner?.display_name ?? null,
+      owner_email: owner?.email ?? share.recipient_email,
+    };
+  });
 
   return (
     <div className="min-h-screen bg-surface-primary">

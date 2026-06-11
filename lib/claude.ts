@@ -34,14 +34,25 @@ export interface JsonLdRecipeData {
 
 const client = new Anthropic();
 
-type ClaudeFunctionName =
+export type ClaudeFunctionName =
   | "parseRecipeFromText"
   | "parseRecipeFromImage"
   | "parseRecipeFromImages"
   | "parseRecipeFromPdf"
   | "reviewAndImproveRecipe"
   | "estimateNutrition"
-  | "categorizeIngredients";
+  | "categorizeIngredients"
+  | "suggestRecipesFromPantry"
+  | "suggestWeekPlan"
+  | "answerCookingQuestion";
+
+// Functions counted against the assistant's daily rate limit
+// (lib/assistant-rate-limit.ts).
+export const ASSISTANT_FUNCTION_NAMES: ClaudeFunctionName[] = [
+  "suggestRecipesFromPantry",
+  "suggestWeekPlan",
+  "answerCookingQuestion",
+];
 
 // Replace base64 image data with a placeholder so log entries stay readable.
 function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
@@ -65,7 +76,9 @@ function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.Message
   });
 }
 
-async function claudeCreate(
+// Exported for lib/assistant.ts — all Claude call sites share this wrapper
+// so every call lands in claude_api_calls with consistent token logging.
+export async function claudeCreate(
   functionName: ClaudeFunctionName,
   params: Parameters<typeof client.messages.create>[0],
   userId: string | null = null,
@@ -207,11 +220,18 @@ const RULES = `
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
 function extractJson(raw: string): string {
-  const start = raw.indexOf("{");
+  // Supports both top-level objects and arrays (the assistant call sites
+  // return arrays) — whichever opens first wins.
+  const objStart = raw.indexOf("{");
+  const arrStart = raw.indexOf("[");
+  const start =
+    objStart === -1 ? arrStart : arrStart === -1 ? objStart : Math.min(objStart, arrStart);
   if (start === -1) throw new Error("No JSON object found in Claude response");
+  const open = raw[start];
+  const close = open === "{" ? "}" : "]";
 
-  // Balanced brace walk — skips braces inside string literals so extra text
-  // after the closing brace doesn't corrupt the slice.
+  // Balanced bracket walk — skips brackets inside string literals so extra
+  // text after the closing bracket doesn't corrupt the slice.
   let depth = 0;
   let inString = false;
   let escape = false;
@@ -224,13 +244,13 @@ function extractJson(raw: string): string {
       continue;
     }
     if (ch === '"') { inString = true; continue; }
-    if (ch === "{") depth++;
-    else if (ch === "}") { depth--; if (depth === 0) return raw.slice(start, i + 1); }
+    if (ch === open) depth++;
+    else if (ch === close) { depth--; if (depth === 0) return raw.slice(start, i + 1); }
   }
 
   // Fallback: unescaped quotes in Claude's output may confuse the string tracker.
-  // Use simple first-{/last-} boundaries so repairUnescapedQuotes() can fix the rest.
-  const end = raw.lastIndexOf("}");
+  // Use simple first-open/last-close boundaries so repairUnescapedQuotes() can fix the rest.
+  const end = raw.lastIndexOf(close);
   if (end > start) return raw.slice(start, end + 1);
   throw new Error("No JSON object found in Claude response");
 }
@@ -262,7 +282,7 @@ function repairUnescapedQuotes(raw: string): string {
   return out;
 }
 
-function parseClaudeJson<T>(raw: string): T {
+export function parseClaudeJson<T>(raw: string): T {
   const json = extractJson(raw);
   try {
     return JSON.parse(json) as T;

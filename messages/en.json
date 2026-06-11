@@ -23,7 +23,9 @@
     "shoppingList": "Shopping List",
     "settings": "Settings",
     "language": "Language",
-    "mealPlan": "Meal plan"
+    "mealPlan": "Meal plan",
+    "collections": "Collections",
+    "assistant": "Assistant"
   },
   "RecipeList": {
     "searchPlaceholder": "Search…",
@@ -406,7 +408,12 @@
     "pauseTimer": "Pause timer",
     "resetTimer": "Reset timer",
     "timerDone": "Done!",
-    "timerForStep": "Timer for step {step}"
+    "timerForStep": "Timer for step {step}",
+    "assistantTitle": "Ask about this recipe",
+    "assistantPlaceholder": "e.g. Can I replace butter with oil?",
+    "assistantAsk": "Ask",
+    "assistantLoading": "Thinking …",
+    "assistantError": "Request failed. Please try again."
   },
   "ConfirmDialog": {
     "cancel": "Cancel",
@@ -480,7 +487,16 @@
     "servingsShort": "{count} serv.",
     "addWeekToShoppingList": "Add week to shopping list",
     "emptyWeek": "Nothing planned for this week yet.",
-    "errorGeneric": "Action failed. Please try again."
+    "errorGeneric": "Action failed. Please try again.",
+    "suggestWeek": "Suggest week",
+    "suggesting": "Planning week …",
+    "suggestTitle": "Suggestion for your week",
+    "suggestIntro": "For the open dinner slots I suggest:",
+    "suggestEmpty": "All dinner slots this week are taken — or no recipes matched.",
+    "suggestApply": "Apply",
+    "suggestApplying": "Applying …",
+    "suggestDiscard": "Discard",
+    "suggestAppliedToast": "{count} recipes planned"
   },
   "Admin": {
     "loading": "Loading…",
@@ -603,5 +619,43 @@
     "revokeAriaLabel": "Revoke link",
     "revoking": "Revoking…",
     "revoke": "Revoke"
+  },
+  "Collections": {
+    "title": "Collections",
+    "createPlaceholder": "New collection …",
+    "create": "Create",
+    "creating": "Creating …",
+    "createError": "Could not create the collection.",
+    "duplicateName": "A collection with this name already exists.",
+    "emptyState": "No collections yet. Create your first one, e.g. “Quick weeknight dinners”.",
+    "recipeCount": "{count, plural, one {# recipe} other {# recipes}}",
+    "deleteAriaLabel": "Delete collection",
+    "confirmDeleteTitle": "Delete collection?",
+    "confirmDeleteMessage": "The collection will be deleted. The recipes themselves are kept.",
+    "delete": "Delete",
+    "deleting": "Deleting …",
+    "backToCollections": "← Collections",
+    "emptyCollection": "This collection is still empty. Add recipes from the recipe detail page.",
+    "pickerButton": "Add to collection",
+    "pickerTitle": "Save to collections",
+    "pickerEmpty": "No collections yet — create your first one below.",
+    "pickerError": "Action failed. Please try again.",
+    "pickerClose": "Done",
+    "loadError": "Could not load collections."
+  },
+  "Assistant": {
+    "title": "Cooking Assistant",
+    "intro": "Tell me what you have at home — I'll suggest matching recipes from your library.",
+    "pantryLabel": "What's in your fridge / pantry?",
+    "pantryPlaceholder": "e.g. chicken, bell peppers, rice, some cream …",
+    "submit": "Suggest recipes",
+    "loading": "Searching your library …",
+    "noSuggestions": "I couldn't find a good match in your library for that.",
+    "emptyLibrary": "Your library is still empty — import a few recipes first.",
+    "missingLabel": "Still missing:",
+    "addMissing": "Add missing to shopping list",
+    "missingAddedToast": "{count} ingredients added to the shopping list",
+    "errorGeneric": "Request failed. Please try again.",
+    "openRecipe": "Open recipe →"
   }
 }

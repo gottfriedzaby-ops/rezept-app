@@ -41,9 +41,11 @@ describe("checkUrlDuplicate", () => {
   });
 
   it("returns duplicate info on exact URL match", async () => {
+    // Both stage queries fire concurrently — the hostname query needs a chain too
     fromMock.mockReturnValueOnce(
       makeChain({ data: { id: "abc-123", title: "Tomatensoße" }, error: null })
     );
+    fromMock.mockReturnValueOnce(makeChain({ data: null, error: null }));
     const result = await checkUrlDuplicate("https://example.com/recipe", TEST_USER);
     expect(result).toEqual({ existingRecipeId: "abc-123", existingTitle: "Tomatensoße" });
   });
@@ -115,6 +117,7 @@ describe("checkUrlDuplicate", () => {
     fromMock.mockReturnValueOnce(
       makeChain({ data: { id: "owned-id", title: "Mein Rezept" }, error: null })
     );
+    fromMock.mockReturnValueOnce(makeChain({ data: null, error: null }));
     const result = await checkUrlDuplicate("https://example.com/recipe", "user-a");
     expect(result).toEqual({ existingRecipeId: "owned-id", existingTitle: "Mein Rezept" });
   });
@@ -128,9 +131,12 @@ describe("findDuplicateRecipe", () => {
   });
 
   it("returns duplicate on exact source_value match", async () => {
+    // All three stage queries fire concurrently; exact match wins by precedence
     fromMock.mockReturnValueOnce(
       makeChain({ data: { id: "dup-id", title: "Tomatensoße" }, error: null })
     );
+    fromMock.mockReturnValueOnce(makeChain({ data: null, error: null })); // URL stage
+    fromMock.mockReturnValueOnce(makeChain({ data: null, error: null })); // title stage
     const result = await findDuplicateRecipe(
       "Tomatensoße",
       "https://example.com/tomaten",

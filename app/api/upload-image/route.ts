@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import heicConvert from "heic-convert";
 import { supabaseAdmin } from "@/lib/supabase";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sniffImageType } from "@/lib/image-validation";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 30;
@@ -8,6 +10,7 @@ export const maxDuration = 30;
 type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 const SUPPORTED = new Set<ImageMediaType>(["image/jpeg", "image/png", "image/gif", "image/webp"]);
 const HEIC_TYPES = new Set(["image/heic", "image/heif"]);
+const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10 MB
 
 async function uploadToStorage(
   buffer: Buffer,
@@ -31,11 +34,26 @@ async function uploadToStorage(
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ data: null, error: "Nicht angemeldet" }, { status: 401 });
+    }
+
     const formData = await request.formData();
     const image = formData.get("image") as File | null;
 
     if (!image) {
       return NextResponse.json({ data: null, error: "image ist erforderlich" }, { status: 400 });
+    }
+
+    if (image.size > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { data: null, error: "Bild ist zu groß (max. 10 MB)" },
+        { status: 413 }
+      );
     }
 
     const mimeType = image.type;
@@ -49,8 +67,25 @@ export async function POST(request: NextRequest) {
     }
 
     const arrayBuffer = await image.arrayBuffer();
+    // The File API reports the size the client claims; the buffer is the truth.
+    if (arrayBuffer.byteLength > MAX_UPLOAD_BYTES) {
+      return NextResponse.json(
+        { data: null, error: "Bild ist zu groß (max. 10 MB)" },
+        { status: 413 }
+      );
+    }
     let buffer = Buffer.from(arrayBuffer);
-    let finalMediaType: ImageMediaType = mimeType as ImageMediaType;
+
+    // The claimed MIME type is attacker-controlled — verify the actual bytes.
+    const sniffed = sniffImageType(buffer);
+    if (!sniffed || (sniffed === "image/heic") !== isHeic) {
+      return NextResponse.json(
+        { data: null, error: "Dateiinhalt ist kein unterstütztes Bildformat" },
+        { status: 415 }
+      );
+    }
+
+    let finalMediaType: ImageMediaType = sniffed === "image/heic" ? "image/jpeg" : sniffed;
 
     if (isHeic) {
       try {

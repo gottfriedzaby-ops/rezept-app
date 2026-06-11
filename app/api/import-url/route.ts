@@ -232,7 +232,7 @@ function isBlockedByCloudflare(html: string): boolean {
 type FetchAttempt = { html: string | null; status: number; cfBlocked: boolean };
 
 async function fetchOnce(targetUrl: string, headers: Record<string, string>): Promise<FetchAttempt> {
-  const r = await fetch(targetUrl, { headers });
+  const r = await fetch(targetUrl, { headers, signal: AbortSignal.timeout(20_000) });
   if (!r.ok) return { html: null, status: r.status, cfBlocked: false };
   const body = await r.text();
   if (isBlockedByCloudflare(body)) return { html: null, status: r.status, cfBlocked: true };

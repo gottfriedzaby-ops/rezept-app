@@ -109,6 +109,42 @@ describe("GET /api/settings", () => {
     expect(res.status).toBe(401);
   });
 
+  it("recovers from a concurrent-insert race (23505) by re-selecting", async () => {
+    setAuthenticated();
+    const raced = {
+      user_id: USER_ID,
+      show_shared_in_main_library: true,
+    };
+    const selectChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+    };
+    const insertChain = {
+      insert: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({
+        data: null,
+        error: { code: "23505", message: "duplicate key value" },
+      }),
+    };
+    const reSelectChain = {
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: raced, error: null }),
+    };
+    fromMock
+      .mockReturnValueOnce(selectChain)
+      .mockReturnValueOnce(insertChain)
+      .mockReturnValueOnce(reSelectChain);
+
+    const res = await GET();
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body).toEqual({ data: raced, error: null });
+  });
+
   it("returns 500 + logs when the select fails", async () => {
     setAuthenticated();
     const selectChain = {

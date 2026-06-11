@@ -14,6 +14,7 @@ import {
   type SortMode,
 } from "@/lib/shopping-list";
 import { buildGroups, formatRowAmount, type ViewGroup, type ViewRow } from "@/lib/shopping-list-view";
+import { useShoppingListSync } from "@/lib/shopping-list-sync";
 import { getLearnedCategories, CATEGORY_BY_ID, type CategoryId } from "@/lib/ingredient-categories";
 import { useAutoCategorize } from "@/lib/useAutoCategorize";
 
@@ -113,6 +114,8 @@ export default function ShoppingMode() {
   const celebrateTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(() => setItems(getList()), []);
+
+  useShoppingListSync();
 
   // SSR-safe mount: hydrate from localStorage.
   useEffect(() => {

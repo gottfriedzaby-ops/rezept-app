@@ -54,6 +54,17 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // AI week suggestion (Feature 18)
+  interface WeekSuggestion {
+    date: string;
+    meal_slot: MealSlot;
+    recipe_id: string;
+    recipe_title: string;
+  }
+  const [suggesting, setSuggesting] = useState(false);
+  const [suggestions, setSuggestions] = useState<WeekSuggestion[] | null>(null);
+  const [applying, setApplying] = useState(false);
+
   const weekDates = getWeekDates(weekStart);
   const todayIso = localTodayIso();
   const isCurrentWeek = weekStart === getWeekStart();
@@ -146,6 +157,55 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
     }
   }
 
+  async function handleSuggestWeek() {
+    if (suggesting) return;
+    setSuggesting(true);
+    try {
+      const res = await fetch("/api/assistant/week-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ week: weekStart }),
+      });
+      const json = await res.json().catch(() => null);
+      if (!res.ok || !json?.data) {
+        showToast(json?.error ?? t("errorGeneric"));
+        return;
+      }
+      setSuggestions(json.data.suggestions as WeekSuggestion[]);
+    } catch {
+      showToast(t("errorGeneric"));
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
+  async function handleApplySuggestions() {
+    if (!suggestions || suggestions.length === 0 || applying) return;
+    setApplying(true);
+    let appliedCount = 0;
+    try {
+      for (const s of suggestions) {
+        const res = await fetch("/api/meal-plan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            date: s.date,
+            meal_slot: s.meal_slot,
+            recipe_id: s.recipe_id,
+          }),
+        });
+        if (res.ok) appliedCount++;
+      }
+      setSuggestions(null);
+      router.refresh();
+      if (appliedCount > 0) {
+        showToast(t("suggestAppliedToast", { count: appliedCount }));
+      }
+    } finally {
+      setApplying(false);
+    }
+  }
+
   function handleAddWeekToShoppingList() {
     let total = 0;
     for (const entry of entries) {
@@ -195,6 +255,32 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
           )}
         </div>
 
+        <div className="flex items-center gap-2 flex-wrap">
+        {recipes.length > 0 && (
+          <button
+            type="button"
+            onClick={handleSuggestWeek}
+            disabled={suggesting}
+            className="btn-ghost inline-flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              className="w-5 h-5 shrink-0"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
+              />
+            </svg>
+            {suggesting ? t("suggesting") : t("suggestWeek")}
+          </button>
+        )}
         {entries.length > 0 && (
           <button
             type="button"
@@ -219,6 +305,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
             {t("addWeekToShoppingList")}
           </button>
         )}
+        </div>
       </div>
 
       {entries.length === 0 && (
@@ -328,6 +415,75 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
           onPick={handlePick}
           onClose={() => setPickerTarget(null)}
         />
+      )}
+
+      {/* AI week-suggestion preview */}
+      {suggestions !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+            onClick={() => !applying && setSuggestions(null)}
+          />
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="week-suggest-title"
+            className="relative bg-surface-card rounded-lg shadow-lg border border-stone p-6 max-w-md w-full mx-4 max-h-[80vh] flex flex-col"
+          >
+            <h2
+              id="week-suggest-title"
+              className="font-serif text-lg font-medium text-ink-primary mb-2"
+            >
+              {t("suggestTitle")}
+            </h2>
+
+            {suggestions.length === 0 ? (
+              <p className="text-sm text-ink-secondary">{t("suggestEmpty")}</p>
+            ) : (
+              <>
+                <p className="text-sm text-ink-secondary mb-4">{t("suggestIntro")}</p>
+                <ul className="overflow-y-auto space-y-2 mb-5">
+                  {suggestions.map((s) => (
+                    <li
+                      key={`${s.date}|${s.meal_slot}`}
+                      className="flex items-baseline gap-3 text-sm"
+                    >
+                      <span className="text-ink-tertiary tabular-nums shrink-0 w-24">
+                        {format.dateTime(isoToDate(s.date), {
+                          weekday: "short",
+                          day: "numeric",
+                          month: "numeric",
+                        })}
+                      </span>
+                      <span className="text-ink-primary">{s.recipe_title}</span>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+
+            <div className="flex gap-3 mt-auto pt-2">
+              <button
+                type="button"
+                onClick={() => setSuggestions(null)}
+                disabled={applying}
+                className="btn-ghost flex-1"
+              >
+                {t("suggestDiscard")}
+              </button>
+              {suggestions.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleApplySuggestions}
+                  disabled={applying}
+                  className="btn-primary flex-1"
+                >
+                  {applying ? t("suggestApplying") : t("suggestApply")}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

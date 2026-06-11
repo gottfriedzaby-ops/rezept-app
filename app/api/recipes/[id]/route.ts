@@ -24,6 +24,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     const {
       title, description, servings, prep_time, cook_time,
       sections, recipe_type, ingredients, steps, tags, image_url, favorite, is_private,
+      rating, notes,
     } = body;
 
     const update: Record<string, unknown> = {};
@@ -49,19 +50,46 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (image_url !== undefined)   update.image_url = image_url;
     if (favorite !== undefined)    update.favorite = favorite;
     if (is_private !== undefined)  update.is_private = is_private;
+    if (rating !== undefined) {
+      const valid = rating === null ||
+        (typeof rating === "number" && Number.isInteger(rating) && rating >= 1 && rating <= 5);
+      if (!valid) {
+        return NextResponse.json(
+          { data: null, error: "Bewertung muss zwischen 1 und 5 liegen." },
+          { status: 400 }
+        );
+      }
+      update.rating = rating;
+    }
+    if (notes !== undefined) {
+      const valid = notes === null || (typeof notes === "string" && notes.length <= 2000);
+      if (!valid) {
+        return NextResponse.json(
+          { data: null, error: "Notizen dürfen höchstens 2000 Zeichen lang sein." },
+          { status: 400 }
+        );
+      }
+      update.notes = notes;
+    }
 
     if (Object.keys(update).length === 0) {
       return NextResponse.json({ data: null, error: "Keine Felder zum Aktualisieren" }, { status: 400 });
     }
 
+    // Scoped to the owner — without this any signed-in user could edit
+    // foreign recipes by id.
     const { data, error } = await supabaseAdmin
       .from("recipes")
       .update(update)
       .eq("id", params.id)
+      .eq("user_id", user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
+    if (!data) {
+      return NextResponse.json({ data: null, error: "Rezept nicht gefunden" }, { status: 404 });
+    }
     return NextResponse.json({ data, error: null });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Aktualisierung fehlgeschlagen";
@@ -76,13 +104,20 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       return NextResponse.json({ data: null, error: "Nicht angemeldet" }, { status: 401 });
     }
 
+    // Scoped to the owner — without this any signed-in user could delete
+    // foreign recipes by id.
     const { data: recipe } = await supabaseAdmin
       .from("recipes")
-      .select("image_url")
+      .select("image_url, user_id")
       .eq("id", params.id)
-      .single();
+      .eq("user_id", user.id)
+      .maybeSingle();
 
-    if (recipe?.image_url) {
+    if (!recipe) {
+      return NextResponse.json({ data: null, error: "Rezept nicht gefunden" }, { status: 404 });
+    }
+
+    if (recipe.image_url) {
       const storagePrefix = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/recipe-images/`;
       if (recipe.image_url.startsWith(storagePrefix)) {
         const path = recipe.image_url.slice(storagePrefix.length);
@@ -93,7 +128,8 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     const { error } = await supabaseAdmin
       .from("recipes")
       .delete()
-      .eq("id", params.id);
+      .eq("id", params.id)
+      .eq("user_id", user.id);
 
     if (error) throw error;
     return NextResponse.json({ data: null, error: null });

@@ -6,6 +6,7 @@ import { Link } from "@/i18n/navigation";
 import type { Recipe, Step, Ingredient } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
+import CookAssistant from "@/components/CookAssistant";
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -342,6 +343,12 @@ export default function CookMode({ recipe, initialServings }: Props) {
             </div>
           </div>
         )}
+
+        <CookAssistant
+          recipeId={recipe.id}
+          stepIndex={stepIndex}
+          servings={initialServings}
+        />
       </main>
 
       {/* Persistent timer banner — keeps the active timer visible and controllable
@@ -471,6 +478,11 @@ export default function CookMode({ recipe, initialServings }: Props) {
         {isLast ? (
           <Link
             href={`/${recipe.id}`}
+            onClick={() => {
+              // Discovery: bump the cooked counter. Fire-and-forget — fails
+              // silently for shared recipes (owner-scoped) or offline.
+              void fetch(`/api/recipes/${recipe.id}/cooked`, { method: "POST" }).catch(() => {});
+            }}
             className="flex-1 h-14 rounded bg-forest text-white font-medium hover:bg-forest-deep transition-colors flex items-center justify-center"
           >
             {t("finish")}!

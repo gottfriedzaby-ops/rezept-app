@@ -23,7 +23,9 @@
     "shoppingList": "Einkaufsliste",
     "settings": "Einstellungen",
     "language": "Sprache",
-    "mealPlan": "Wochenplan"
+    "mealPlan": "Wochenplan",
+    "collections": "Sammlungen",
+    "assistant": "Assistent"
   },
   "RecipeList": {
     "searchPlaceholder": "Suchen…",
@@ -50,7 +52,8 @@
     "unknownOwner": "Unbekannt",
     "loadMore": "Mehr laden ({remaining})",
     "loadError": "Rezepte konnten nicht geladen werden.",
-    "loading": "Lädt…"
+    "loading": "Lädt…",
+    "sortRating": "Beste Bewertung"
   },
   "RecipeDetail": {
     "servings": "Portionen",
@@ -62,7 +65,16 @@
     "preparation": "Zubereitung",
     "step": "Schritt {number}",
     "prepTime": "Vorbereitung",
-    "totalTime": "Gesamt"
+    "totalTime": "Gesamt",
+    "ratingLabel": "Bewertung",
+    "ratingStars": "{count, plural, one {# Stern} other {# Sterne}}",
+    "cookedBadge": "{count}× gekocht",
+    "notesLabel": "Meine Notizen",
+    "notesPlaceholder": "Anpassungen, Ersatzzutaten, Fazit …",
+    "notesSave": "Speichern",
+    "notesSaving": "Speichert …",
+    "notesSaved": "Gespeichert",
+    "notesError": "Speichern fehlgeschlagen. Bitte erneut versuchen."
   },
   "RecipeActions": {
     "addFavorite": "Zu Favoriten hinzufügen",
@@ -396,7 +408,12 @@
     "pauseTimer": "Timer pausieren",
     "resetTimer": "Timer zurücksetzen",
     "timerDone": "Fertig!",
-    "timerForStep": "Timer für Schritt {step}"
+    "timerForStep": "Timer für Schritt {step}",
+    "assistantTitle": "Frage zum Rezept",
+    "assistantPlaceholder": "z. B. Kann ich Butter durch Öl ersetzen?",
+    "assistantAsk": "Fragen",
+    "assistantLoading": "Denke nach …",
+    "assistantError": "Anfrage fehlgeschlagen. Bitte versuche es erneut."
   },
   "ConfirmDialog": {
     "cancel": "Abbrechen",
@@ -470,7 +487,16 @@
     "servingsShort": "{count} Port.",
     "addWeekToShoppingList": "Woche zur Einkaufsliste",
     "emptyWeek": "Für diese Woche ist noch nichts eingeplant.",
-    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut."
+    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut.",
+    "suggestWeek": "Woche vorschlagen",
+    "suggesting": "Plane Woche …",
+    "suggestTitle": "Vorschlag für deine Woche",
+    "suggestIntro": "Für die freien Abend-Slots schlage ich vor:",
+    "suggestEmpty": "Alle Abend-Slots dieser Woche sind schon belegt — oder es gab keine passenden Rezepte.",
+    "suggestApply": "Übernehmen",
+    "suggestApplying": "Übernehme …",
+    "suggestDiscard": "Verwerfen",
+    "suggestAppliedToast": "{count} Rezepte eingeplant"
   },
   "Admin": {
     "loading": "Lade…",
@@ -593,5 +619,43 @@
     "revokeAriaLabel": "Link widerrufen",
     "revoking": "Wird widerrufen…",
     "revoke": "Widerrufen"
+  },
+  "Collections": {
+    "title": "Sammlungen",
+    "createPlaceholder": "Neue Sammlung …",
+    "create": "Anlegen",
+    "creating": "Wird angelegt …",
+    "createError": "Sammlung konnte nicht angelegt werden.",
+    "duplicateName": "Eine Sammlung mit diesem Namen existiert bereits.",
+    "emptyState": "Noch keine Sammlungen. Lege deine erste Sammlung an, z. B. „Schnelle Feierabendküche“.",
+    "recipeCount": "{count, plural, one {# Rezept} other {# Rezepte}}",
+    "deleteAriaLabel": "Sammlung löschen",
+    "confirmDeleteTitle": "Sammlung löschen?",
+    "confirmDeleteMessage": "Die Sammlung wird gelöscht. Die Rezepte selbst bleiben erhalten.",
+    "delete": "Löschen",
+    "deleting": "Wird gelöscht …",
+    "backToCollections": "← Sammlungen",
+    "emptyCollection": "Diese Sammlung ist noch leer. Füge Rezepte über die Rezept-Detailseite hinzu.",
+    "pickerButton": "Zu Sammlung hinzufügen",
+    "pickerTitle": "In Sammlungen speichern",
+    "pickerEmpty": "Noch keine Sammlungen — lege unten deine erste an.",
+    "pickerError": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
+    "pickerClose": "Fertig",
+    "loadError": "Sammlungen konnten nicht geladen werden."
+  },
+  "Assistant": {
+    "title": "Koch-Assistent",
+    "intro": "Sag mir, was du zu Hause hast — ich schlage dir passende Rezepte aus deiner Bibliothek vor.",
+    "pantryLabel": "Was hast du im Kühlschrank / Vorrat?",
+    "pantryPlaceholder": "z. B. Hähnchen, Paprika, Reis, etwas Sahne …",
+    "submit": "Rezepte vorschlagen",
+    "loading": "Durchsuche deine Bibliothek …",
+    "noSuggestions": "Dafür habe ich in deiner Bibliothek leider nichts Passendes gefunden.",
+    "emptyLibrary": "Deine Bibliothek ist noch leer — importiere zuerst ein paar Rezepte.",
+    "missingLabel": "Fehlt noch:",
+    "addMissing": "Fehlende zur Einkaufsliste",
+    "missingAddedToast": "{count} Zutaten zur Einkaufsliste hinzugefügt",
+    "errorGeneric": "Anfrage fehlgeschlagen. Bitte versuche es erneut.",
+    "openRecipe": "Zum Rezept →"
   }
 }

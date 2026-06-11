@@ -6,7 +6,7 @@ import type { Recipe } from "@/types/recipe";
 // title + tags + ingredient names (search_text column), AND-combined tag
 // filters, favorites restricted to own recipes.
 
-export type RecipeSort = "newest" | "az" | "time";
+export type RecipeSort = "newest" | "az" | "time" | "rating";
 
 export interface RecipeSearchParams {
   q?: string;
@@ -38,7 +38,7 @@ function escapeIlike(value: string): string {
 }
 
 export function parseSort(value: string | null | undefined): RecipeSort {
-  return value === "az" || value === "time" ? value : "newest";
+  return value === "az" || value === "time" || value === "rating" ? value : "newest";
 }
 
 function buildQuery(
@@ -83,6 +83,10 @@ function buildQuery(
   } else if (sort === "time" && !opts.degraded) {
     query = query
       .order("total_time", { ascending: true })
+      .order("created_at", { ascending: false });
+  } else if (sort === "rating" && !opts.degraded) {
+    query = query
+      .order("rating", { ascending: false, nullsFirst: false })
       .order("created_at", { ascending: false });
   } else {
     query = query.order("created_at", { ascending: false });

@@ -55,6 +55,11 @@ export interface Recipe {
   carbs_g: number | null;
   fat_g: number | null;
   nutrition_breakdown: NutritionIngredient[] | null;
+  /** Feature 17 (Discovery) — nullable until the migration is applied */
+  rating?: number | null;
+  notes?: string | null;
+  cooked_count?: number;
+  last_cooked_at?: string | null;
 }
 
 export interface ImportJob {

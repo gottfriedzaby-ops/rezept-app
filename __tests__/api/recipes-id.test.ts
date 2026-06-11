@@ -48,7 +48,7 @@ function makeUpdateChain(result: { data: unknown; error: unknown }) {
     update: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue(result),
+    maybeSingle: jest.fn().mockResolvedValue(result),
   };
 }
 
@@ -56,15 +56,19 @@ function makeSelectChain(result: { data: unknown; error: unknown }) {
   return {
     select: jest.fn().mockReturnThis(),
     eq: jest.fn().mockReturnThis(),
-    single: jest.fn().mockResolvedValue(result),
+    maybeSingle: jest.fn().mockResolvedValue(result),
   };
 }
 
+/** delete().eq().eq() — awaited after the second eq, so the chain is thenable */
 function makeDeleteChain(result: { error: unknown }) {
-  return {
+  const chain: Record<string, unknown> = {
     delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockResolvedValue(result),
+    eq: jest.fn().mockReturnThis(),
   };
+  chain.then = (onF: (v: unknown) => unknown, onR?: (e: unknown) => unknown) =>
+    Promise.resolve(result).then(onF, onR);
+  return chain;
 }
 
 beforeEach(() => {
@@ -110,13 +114,13 @@ describe("PATCH /api/recipes/[id]", () => {
     const updateMock = jest.fn().mockReturnThis();
     const eqMock = jest.fn().mockReturnThis();
     const selectMock = jest.fn().mockReturnThis();
-    const singleMock = jest.fn().mockResolvedValue({ data: { id: RECIPE_ID }, error: null });
+    const maybeSingleMock = jest.fn().mockResolvedValue({ data: { id: RECIPE_ID }, error: null });
 
     fromMock.mockReturnValue({
       update: updateMock,
       eq: eqMock,
       select: selectMock,
-      single: singleMock,
+      maybeSingle: maybeSingleMock,
     });
 
     const sections = [
@@ -134,6 +138,44 @@ describe("PATCH /api/recipes/[id]", () => {
     expect(updateArg.sections).toEqual(sections);
     expect(updateArg.ingredients).toEqual([{ amount: 100, unit: "g", name: "Mehl" }]);
     expect(updateArg.steps[0].order).toBe(1);
+  });
+
+  it("returns 404 when the recipe belongs to another user (scoped update)", async () => {
+    const chain = makeUpdateChain({ data: null, error: null });
+    fromMock.mockReturnValue(chain);
+
+    const req = makePatchRequest({ title: "Fremdes Rezept" });
+    const res = await PATCH(req, makeParams());
+
+    expect(res.status).toBe(404);
+    expect((chain.eq as jest.Mock).mock.calls).toContainEqual(["user_id", "test-user-id"]);
+  });
+
+  it("accepts a valid rating and rejects an invalid one", async () => {
+    fromMock.mockReturnValue(
+      makeUpdateChain({ data: { id: RECIPE_ID, rating: 4 }, error: null })
+    );
+    const ok = await PATCH(makePatchRequest({ rating: 4 }), makeParams());
+    expect(ok.status).toBe(200);
+
+    const bad = await PATCH(makePatchRequest({ rating: 7 }), makeParams());
+    expect(bad.status).toBe(400);
+    const badType = await PATCH(makePatchRequest({ rating: "fünf" }), makeParams());
+    expect(badType.status).toBe(400);
+  });
+
+  it("accepts notes up to 2000 chars and rejects longer ones", async () => {
+    fromMock.mockReturnValue(
+      makeUpdateChain({ data: { id: RECIPE_ID, notes: "Lecker" }, error: null })
+    );
+    const ok = await PATCH(makePatchRequest({ notes: "Lecker" }), makeParams());
+    expect(ok.status).toBe(200);
+
+    const tooLong = await PATCH(
+      makePatchRequest({ notes: "x".repeat(2001) }),
+      makeParams()
+    );
+    expect(tooLong.status).toBe(400);
   });
 
   it("returns 500 when the database update fails", async () => {
@@ -188,6 +230,15 @@ describe("DELETE /api/recipes/[id]", () => {
     const req = makeDeleteRequest();
     await DELETE(req, makeParams());
 
+    expect(storageFromMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 404 when deleting a foreign recipe (scoped select)", async () => {
+    fromMock.mockReturnValueOnce(makeSelectChain({ data: null, error: null }));
+
+    const res = await DELETE(makeDeleteRequest(), makeParams());
+
+    expect(res.status).toBe(404);
     expect(storageFromMock).not.toHaveBeenCalled();
   });
 

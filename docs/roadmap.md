@@ -89,9 +89,10 @@ hundreds of recipes each.
 5. Optional: create a Sentry project and set `NEXT_PUBLIC_SENTRY_DSN`
    (+ `SENTRY_ORG`/`SENTRY_PROJECT`/`SENTRY_AUTH_TOKEN` for source maps) in Vercel
 
-## Phase 3 — Product differentiation
+## Phase 3 — Product differentiation ✅ (this branch)
 
-1. **AI cooking assistant** — new `lib/claude.ts` call sites:
+1. ✅ **AI cooking assistant** (Feature 18) — three new call sites via the shared
+   `claudeCreate` wrapper; 30 calls/user/day over `claude_api_calls`:
    - „Was kann ich kochen?": match free-text pantry input against the user's
      library (title + ingredients), rank and explain suggestions.
    - Weekly plan suggestions: generate a draft week (respecting recipe_type
@@ -101,12 +102,18 @@ hundreds of recipes each.
    Reuses the per-portion data model; budget via the existing
    `claude_api_calls` logging; respects the daily import-style rate limits.
    Effort: L.
-2. **Discovery & collections** — user-defined collections (folders),
+2. ✅ **Discovery & collections** (Feature 17) — user-defined collections (folders),
    ratings + personal notes per recipe, „gekocht"-counter (feeds the
    assistant's suggestions), seasonal/tag-based highlights on the list page.
    Effort: M–L.
-3. **Unified library search across shares** — extend Phase-2 server search to
-   accepted library shares (Feature 11 follow-up). Effort: S–M.
+3. ✅ **Unified library search across shares** — shipped early as part of the
+   Phase-2 server search (`lib/recipe-search.ts` visibility OR-filter).
+
+### 🔑 Operator checklist (after merge, in addition to Phases 1–2)
+
+6. Supabase SQL editor → run `supabase/migrations/20260611000004_feature17_discovery.sql`
+   (ratings/notes/cooked columns + collections — until then: rating/notes UI
+   errors are caught, cooked counter is a no-op, collections report 503)
 
 ## Phase 4 — Launch readiness
 

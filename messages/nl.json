@@ -23,7 +23,9 @@
     "shoppingList": "Boodschappenlijst",
     "settings": "Instellingen",
     "language": "Taal",
-    "mealPlan": "Weekmenu"
+    "mealPlan": "Weekmenu",
+    "collections": "Collecties",
+    "assistant": "Assistent"
   },
   "RecipeList": {
     "searchPlaceholder": "Zoeken…",
@@ -50,7 +52,8 @@
     "unknownOwner": "Onbekend",
     "loadMore": "Meer laden ({remaining})",
     "loadError": "Recepten konden niet worden geladen.",
-    "loading": "Laden…"
+    "loading": "Laden…",
+    "sortRating": "Best beoordeeld"
   },
   "RecipeDetail": {
     "servings": "Porties",
@@ -62,7 +65,16 @@
     "preparation": "Bereiding",
     "step": "Stap {number}",
     "prepTime": "Voorbereiding",
-    "totalTime": "Totaal"
+    "totalTime": "Totaal",
+    "ratingLabel": "Beoordeling",
+    "ratingStars": "{count, plural, one {# ster} other {# sterren}}",
+    "cookedBadge": "{count}× gekookt",
+    "notesLabel": "Mijn notities",
+    "notesPlaceholder": "Aanpassingen, vervangingen, conclusie …",
+    "notesSave": "Opslaan",
+    "notesSaving": "Opslaan …",
+    "notesSaved": "Opgeslagen",
+    "notesError": "Opslaan mislukt. Probeer het opnieuw."
   },
   "RecipeActions": {
     "addFavorite": "Aan favorieten toevoegen",
@@ -396,7 +408,12 @@
     "pauseTimer": "Timer pauzeren",
     "resetTimer": "Timer resetten",
     "timerDone": "Klaar!",
-    "timerForStep": "Timer voor stap {step}"
+    "timerForStep": "Timer voor stap {step}",
+    "assistantTitle": "Vraag over dit recept",
+    "assistantPlaceholder": "bijv. Kan ik boter vervangen door olie?",
+    "assistantAsk": "Vragen",
+    "assistantLoading": "Denken …",
+    "assistantError": "Aanvraag mislukt. Probeer het opnieuw."
   },
   "ConfirmDialog": {
     "cancel": "Annuleren",
@@ -470,7 +487,16 @@
     "servingsShort": "{count} port.",
     "addWeekToShoppingList": "Week naar boodschappenlijst",
     "emptyWeek": "Er is nog niets gepland voor deze week.",
-    "errorGeneric": "Actie mislukt. Probeer het opnieuw."
+    "errorGeneric": "Actie mislukt. Probeer het opnieuw.",
+    "suggestWeek": "Week voorstellen",
+    "suggesting": "Week plannen …",
+    "suggestTitle": "Voorstel voor je week",
+    "suggestIntro": "Voor de vrije avond-slots stel ik voor:",
+    "suggestEmpty": "Alle avond-slots deze week zijn al bezet — of er pasten geen recepten.",
+    "suggestApply": "Overnemen",
+    "suggestApplying": "Overnemen …",
+    "suggestDiscard": "Verwerpen",
+    "suggestAppliedToast": "{count} recepten gepland"
   },
   "Admin": {
     "loading": "Laden…",
@@ -593,5 +619,43 @@
     "revokeAriaLabel": "Link intrekken",
     "revoking": "Intrekken…",
     "revoke": "Intrekken"
+  },
+  "Collections": {
+    "title": "Collecties",
+    "createPlaceholder": "Nieuwe collectie …",
+    "create": "Aanmaken",
+    "creating": "Aanmaken …",
+    "createError": "Collectie kon niet worden aangemaakt.",
+    "duplicateName": "Er bestaat al een collectie met deze naam.",
+    "emptyState": "Nog geen collecties. Maak je eerste aan, bijv. “Snelle doordeweekse maaltijden”.",
+    "recipeCount": "{count, plural, one {# recept} other {# recepten}}",
+    "deleteAriaLabel": "Collectie verwijderen",
+    "confirmDeleteTitle": "Collectie verwijderen?",
+    "confirmDeleteMessage": "De collectie wordt verwijderd. De recepten zelf blijven bewaard.",
+    "delete": "Verwijderen",
+    "deleting": "Verwijderen …",
+    "backToCollections": "← Collecties",
+    "emptyCollection": "Deze collectie is nog leeg. Voeg recepten toe via de receptpagina.",
+    "pickerButton": "Aan collectie toevoegen",
+    "pickerTitle": "In collecties opslaan",
+    "pickerEmpty": "Nog geen collecties — maak hieronder je eerste aan.",
+    "pickerError": "Actie mislukt. Probeer het opnieuw.",
+    "pickerClose": "Klaar",
+    "loadError": "Collecties konden niet worden geladen."
+  },
+  "Assistant": {
+    "title": "Kookassistent",
+    "intro": "Vertel me wat je in huis hebt — ik stel passende recepten uit je bibliotheek voor.",
+    "pantryLabel": "Wat heb je in de koelkast / voorraadkast?",
+    "pantryPlaceholder": "bijv. kip, paprika, rijst, wat room …",
+    "submit": "Recepten voorstellen",
+    "loading": "Bibliotheek doorzoeken …",
+    "noSuggestions": "Daarvoor heb ik helaas niets passends in je bibliotheek gevonden.",
+    "emptyLibrary": "Je bibliotheek is nog leeg — importeer eerst een paar recepten.",
+    "missingLabel": "Ontbreekt nog:",
+    "addMissing": "Ontbrekende naar boodschappenlijst",
+    "missingAddedToast": "{count} ingrediënten aan de boodschappenlijst toegevoegd",
+    "errorGeneric": "Aanvraag mislukt. Probeer het opnieuw.",
+    "openRecipe": "Naar het recept →"
   }
 }

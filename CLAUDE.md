@@ -23,7 +23,9 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
 /app
   /[locale]                  # next-intl Routing (de/en/nl)
     /(recipes)               # Rezeptliste, [id] Detail, [id]/edit, [id]/cook
-    /meal-plan               # Wochenplan (Feature 16)
+    /meal-plan               # Wochenplan (Feature 16, + KI-Wochenvorschlag)
+    /assistant               # KI-Kochassistent („Was kann ich kochen?“)
+    /collections             # Sammlungen (+ /[id] Detail)
     /shopping-list           # Einkaufsliste (+ /shop In-Store-Modus)
     /library-shares          # Geteilte Bibliotheken (incoming, [ownerId], [ownerId]/[recipeId])
     /shared/[token]          # Öffentliche read-only Rezeptsammlung
@@ -35,6 +37,8 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
     /recipes/confirm         # Speichern + Nährwertschätzung (best-effort)
     /recipes/[id]            # GET/PATCH/DELETE, + /duplicate, + /nutrition (POST, auth-pflichtig)
     /meal-plan               # GET ?week= / POST, + /[id] PATCH/DELETE
+    /assistant               # suggest, week-plan, cooking-question (Limit 30/Tag)
+    /collections             # CRUD + /[id]/recipes Mitgliedschaft
     /shares /library-shares  # Token-Links bzw. Account-Sharing (invitation, reshare, …)
     /shopping/categorize     # Zutaten-Kategorisierung (Haiku)
     /settings /upload-image /push/subscribe /auth/preflight-register
@@ -44,7 +48,9 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
 /components                  # UI-Komponenten (RecipeList, CookMode, ShoppingMode, Import*, MealPlan*, admin/*)
 /contexts                    # AuthContext, ImportContext, ToastContext
 /lib
-  claude.ts                  # Alle Claude-Call-Sites (parse/review/nutrition/categorize) + Token-Logging
+  claude.ts                  # Claude-Wrapper (claudeCreate) + Parse/Review/Nutrition/Categorize
+  assistant.ts               # KI-Assistent (Pantry-Vorschläge, Wochenplan, Koch-Fragen)
+  assistant-rate-limit.ts    # 30 Assistent-Calls/User/Tag (über claude_api_calls)
   supabase.ts                # Lazy-Proxy Admin-Client (Service-Role); supabase/server.ts + client.ts (SSR/Browser)
   profiles.ts                # Batch-User-Lookups über profiles-Tabelle (42P01-Fallback auf auth.admin)
   duplicate-check.ts         # 3-stufige Duplikatprüfung (user-scoped, parallel gefetcht)
@@ -72,6 +78,8 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
   `favorite`, `image_url`, `step_images`, `tags`, `is_private`, `search_vector` (tsvector, noch ungenutzt)
 - `profiles` — Spiegel von `auth.users` (id, email, display_name), Trigger-synced; für Batch-Lookups statt `auth.admin`
 - `meal_plan_entries` — Wochenplan: user_id, recipe_id, date, meal_slot (fruehstueck/mittag/abend), servings-Override
+- `collections` (+ `collection_recipes`) — Rezept-Sammlungen pro User (UNIQUE name)
+- `recipes` zusätzlich: `rating` (1–5), `notes`, `cooked_count`, `last_cooked_at` (Feature 17)
 - `library_shares` (+ `library_share_reshare_requests`) — Account-zu-Account-Sharing
 - `shares` — öffentliche Token-Links (read-only, widerrufbar)
 - `user_settings`, `push_subscriptions`, `pdf_import_sessions`, `invited_emails`, `claude_api_calls`
@@ -117,12 +125,11 @@ Siehe `.env.local.example` (vollständig kommentiert): Supabase-Keys, `ANTHROPIC
 - ✅ Toasts, Loading-Skeletons, globale Fokus-Indikatoren
 
 ## Noch NICHT implementiert (siehe docs/roadmap.md)
-- AI-Kochassistent, Collections/Ratings (Phase 3)
 - Google OAuth-, Push-, Store-Go-Lives; Prompt-Caching (Phase 4)
 
 ## Betriebshinweise
-- Vier Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`, `recipe_search`,
-  `shopping_list_sync`) müssen vom Operator im Supabase SQL-Editor ausgeführt
-  werden — Code degradiert bis dahin graceful (Checkliste in docs/roadmap.md).
+- Fünf Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`, `recipe_search`,
+  `shopping_list_sync`, `feature17_discovery`) müssen vom Operator im Supabase
+  SQL-Editor ausgeführt werden — Code degradiert bis dahin graceful (Checkliste in docs/roadmap.md).
 - Sentry ist ohne `NEXT_PUBLIC_SENTRY_DSN` ein No-op; DSN + Auth-Token in Vercel setzen.
 - Beim Multi-User-Rollout wurden alle Alt-Rezepte gelöscht; jeder Nutzer startet leer.

@@ -579,7 +579,14 @@
       "analyzePhoto": "Foto analysieren",
       "analyzing": "Wird analysiert…",
       "photoEstimateNote": "Aus Foto geschätzt — bitte prüfen und anpassen.",
-      "photoFailed": "Foto konnte nicht analysiert werden."
+      "photoFailed": "Foto konnte nicht analysiert werden.",
+      "photoDescriptionLabel": "Beschreibung (optional)",
+      "photoDescriptionPlaceholder": "z. B. großer Teller, mit extra Käse",
+      "lookup": "Nachschlagen",
+      "lookingUp": "Wird gesucht…",
+      "lookupNotFound": "Für dieses Lebensmittel konnten keine Nährwerte gefunden werden.",
+      "fromDatabase": "Aus der Datenbank übernommen — bitte prüfen.",
+      "estimatedNote": "Geschätzt — bitte prüfen und anpassen."
     }
   },
   "Fasting": {

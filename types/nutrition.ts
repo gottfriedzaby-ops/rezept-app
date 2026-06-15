@@ -62,6 +62,18 @@ export interface MacroTotals {
   fat_g: number;
 }
 
+/** Response shape of POST /api/nutrition/food-lookup (values per serving). */
+export interface FoodLookupResult {
+  display_name: string;
+  kcal_per_serving: number;
+  protein_g: number;
+  carbs_g: number;
+  fat_g: number;
+  serving_desc: string | null;
+  /** Where the values came from: a cache hit ("db") vs a fresh LLM estimate. */
+  origin: "db" | "estimate";
+}
+
 /** Recipe summary used by the diary's recipe picker. */
 export interface NutritionRecipeItem {
   id: string;

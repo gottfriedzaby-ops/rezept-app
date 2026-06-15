@@ -579,7 +579,14 @@
       "analyzePhoto": "Analyze photo",
       "analyzing": "Analyzing…",
       "photoEstimateNote": "Estimated from a photo — please review and adjust.",
-      "photoFailed": "Couldn't analyze the photo."
+      "photoFailed": "Couldn't analyze the photo.",
+      "photoDescriptionLabel": "Description (optional)",
+      "photoDescriptionPlaceholder": "e.g. large plate, with extra cheese",
+      "lookup": "Look up",
+      "lookingUp": "Searching…",
+      "lookupNotFound": "No nutrition data found for this food.",
+      "fromDatabase": "Taken from the database — please review.",
+      "estimatedNote": "Estimated — please review and adjust."
     }
   },
   "Fasting": {

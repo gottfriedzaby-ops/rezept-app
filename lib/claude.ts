@@ -45,7 +45,8 @@ export type ClaudeFunctionName =
   | "categorizeIngredients"
   | "suggestRecipesFromPantry"
   | "suggestWeekPlan"
-  | "answerCookingQuestion";
+  | "answerCookingQuestion"
+  | "lookupFoodNutrition";
 
 // Functions counted against the assistant's daily rate limit
 // (lib/assistant-rate-limit.ts).
@@ -758,6 +759,87 @@ export async function estimateNutrition(
   }
 }
 
+interface FoodLookupRaw extends NutritionResult {
+  display_name: string;
+  serving_desc: string;
+}
+
+export interface FoodNutritionLookup extends NutritionEstimate {
+  /** Cleaned German display name, or null on failure. */
+  display_name: string | null;
+  /** Free-text serving description (e.g. "1 Portion (ca. 150 g)"), or null. */
+  serving_desc: string | null;
+}
+
+const EMPTY_FOOD_LOOKUP: FoodNutritionLookup = {
+  display_name: null,
+  serving_desc: null,
+  kcal_per_serving: null,
+  protein_g: null,
+  carbs_g: null,
+  fat_g: null,
+};
+
+// Look up per-serving nutrition for a single named food (Claude Haiku, German
+// in/out). Backs the diary's manual "Nachschlagen" button. Best-effort: returns
+// the all-null sentinel on any failure, like estimateNutrition.
+export async function lookupFoodNutrition(
+  foodName: string,
+  userId: string | null = null,
+): Promise<FoodNutritionLookup> {
+  const cleaned = foodName.trim();
+  if (!cleaned) return EMPTY_FOOD_LOOKUP;
+
+  const prompt =
+    `Gib die typischen Nährwerte pro Portion für das folgende Lebensmittel an: "${cleaned}".\n\n` +
+    `Antworte NUR mit gültigem JSON (keine Markdown-Codeblöcke, kein weiterer Text):\n` +
+    `{"display_name":string,"serving_desc":string,"kcal_per_serving":number,"protein_g":number,"carbs_g":number,"fat_g":number}\n\n` +
+    `"display_name" ist ein kurzer deutscher Name des Lebensmittels. "serving_desc" beschreibt ` +
+    `die zugrunde gelegte Portion (z. B. "1 Portion (ca. 150 g)"). Runde alle Zahlen auf ganze ` +
+    `Werte. Wenn es sich nicht um ein essbares Lebensmittel handelt, setze kcal_per_serving auf 0.`;
+
+  try {
+    const { message } = await claudeCreate(
+      "lookupFoodNutrition",
+      {
+        model: "claude-haiku-4-5",
+        max_tokens: 256,
+        messages: [{ role: "user", content: prompt }],
+      },
+      userId,
+    );
+
+    const block = message.content[0];
+    if (block.type !== "text") return EMPTY_FOOD_LOOKUP;
+
+    const result = parseClaudeJson<FoodLookupRaw>(block.text);
+    const kcal = Math.round(Number(result.kcal_per_serving));
+    if (!Number.isFinite(kcal)) return EMPTY_FOOD_LOOKUP;
+
+    const roundOrZero = (value: unknown): number => {
+      const n = Math.round(Number(value));
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    return {
+      display_name:
+        typeof result.display_name === "string" && result.display_name.trim()
+          ? result.display_name.trim()
+          : cleaned,
+      serving_desc:
+        typeof result.serving_desc === "string" && result.serving_desc.trim()
+          ? result.serving_desc.trim()
+          : null,
+      kcal_per_serving: kcal,
+      protein_g: roundOrZero(result.protein_g),
+      carbs_g: roundOrZero(result.carbs_g),
+      fat_g: roundOrZero(result.fat_g),
+    };
+  } catch {
+    return EMPTY_FOOD_LOOKUP;
+  }
+}
+
 interface PhotoNutritionResult extends NutritionResult {
   label: string;
 }
@@ -781,10 +863,16 @@ export async function estimateNutritionFromPhoto(
   base64: string,
   mediaType: ImageMediaType,
   userId: string | null = null,
+  description?: string | null,
 ): Promise<PhotoNutritionEstimate> {
+  const hint = description?.trim()
+    ? `\n\nDer Nutzer beschreibt das abgebildete Essen so: "${description.trim()}". ` +
+      `Nutze diese Beschreibung, um das Gericht und die Portionsgröße genauer zu erkennen ` +
+      `und die Schätzung zu präzisieren.`
+    : "";
   const prompt =
     `This is a photo of a meal or food item. Identify the dish and estimate the ` +
-    `nutritional content for one typical serving of what is shown.\n\n` +
+    `nutritional content for one typical serving of what is shown.${hint}\n\n` +
     `Return ONLY valid JSON (no markdown fences, no extra text):\n` +
     `{"label":string,"kcal_per_serving":number,"protein_g":number,"carbs_g":number,"fat_g":number}\n\n` +
     `"label" is a short German name for the dish (e.g. "Spaghetti Bolognese"). ` +

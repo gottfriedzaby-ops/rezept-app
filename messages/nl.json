@@ -579,7 +579,14 @@
       "analyzePhoto": "Foto analyseren",
       "analyzing": "Bezig met analyseren…",
       "photoEstimateNote": "Geschat op basis van een foto — controleer en pas aan.",
-      "photoFailed": "Kan de foto niet analyseren."
+      "photoFailed": "Kan de foto niet analyseren.",
+      "photoDescriptionLabel": "Omschrijving (optioneel)",
+      "photoDescriptionPlaceholder": "bijv. groot bord, met extra kaas",
+      "lookup": "Opzoeken",
+      "lookingUp": "Bezig met zoeken…",
+      "lookupNotFound": "Geen voedingswaarden gevonden voor dit voedsel.",
+      "fromDatabase": "Overgenomen uit de database — controleer.",
+      "estimatedNote": "Geschat — controleer en pas aan."
     }
   },
   "Fasting": {

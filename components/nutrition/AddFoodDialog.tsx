@@ -5,7 +5,7 @@ import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useToast } from "@/contexts/ToastContext";
 import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
-import type { LogMealSlot, NutritionRecipeItem } from "@/types/nutrition";
+import type { FoodLookupResult, LogMealSlot, NutritionRecipeItem } from "@/types/nutrition";
 
 const MAX_RESULTS = 50;
 
@@ -38,6 +38,17 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
   // True once the manual form was prefilled from a photo estimate — the entry
   // is then logged with source "photo" rather than "manual".
   const [photoEstimate, setPhotoEstimate] = useState(false);
+  // Optional user description sent with a photo to sharpen the Vision estimate.
+  const [photoDescription, setPhotoDescription] = useState("");
+  // Manual-tab food-database lookup ("Nachschlagen").
+  const [lookingUp, setLookingUp] = useState(false);
+  const [lookupOrigin, setLookupOrigin] = useState<"db" | "estimate" | null>(null);
+  const [lookupServingDesc, setLookupServingDesc] = useState<string | null>(null);
+
+  function clearLookupNote() {
+    setLookupOrigin(null);
+    setLookupServingDesc(null);
+  }
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -111,6 +122,7 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
     try {
       const fd = new FormData();
       fd.append("photo", file);
+      if (photoDescription.trim()) fd.append("description", photoDescription.trim());
       const res = await fetch("/api/nutrition/estimate-photo", { method: "POST", body: fd });
       const json = await res.json().catch(() => ({ data: null, error: null }));
       if (!res.ok || !json.data) {
@@ -130,11 +142,45 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
       setCarbs(est.carbs_g != null ? String(est.carbs_g) : "");
       setFat(est.fat_g != null ? String(est.fat_g) : "");
       setPhotoEstimate(true);
+      clearLookupNote();
       setTab("manual");
     } catch {
       showToast(t("addFood.photoFailed"));
     } finally {
       setAnalyzing(false);
+    }
+  }
+
+  async function handleLookup() {
+    const name = label.trim();
+    if (!name || lookingUp || busy) return;
+    setLookingUp(true);
+    clearLookupNote();
+    try {
+      const res = await fetch("/api/nutrition/food-lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      const json = await res.json().catch(() => ({ data: null, error: null }));
+      if (!res.ok || !json.data) {
+        showToast(json.error ?? t("addFood.lookupNotFound"));
+        return;
+      }
+      const d = json.data as FoodLookupResult;
+      setLabel(d.display_name || name);
+      setKcal(String(d.kcal_per_serving));
+      setProtein(String(d.protein_g));
+      setCarbs(String(d.carbs_g));
+      setFat(String(d.fat_g));
+      // A looked-up food is a manual entry, not a photo one.
+      setPhotoEstimate(false);
+      setLookupOrigin(d.origin);
+      setLookupServingDesc(d.serving_desc);
+    } catch {
+      showToast(t("addFood.lookupNotFound"));
+    } finally {
+      setLookingUp(false);
     }
   }
 
@@ -237,6 +283,17 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
         ) : tab === "photo" ? (
           <div className="space-y-4">
             <p className="text-sm text-ink-secondary">{t("addFood.photoHint")}</p>
+            <label className="block">
+              <span className="label-overline block mb-1">{t("addFood.photoDescriptionLabel")}</span>
+              <input
+                type="text"
+                value={photoDescription}
+                onChange={(e) => setPhotoDescription(e.target.value)}
+                placeholder={t("addFood.photoDescriptionPlaceholder")}
+                maxLength={300}
+                className="input-field"
+              />
+            </label>
             <label className="btn-primary w-full inline-flex items-center justify-center cursor-pointer">
               {analyzing ? t("addFood.analyzing") : t("addFood.analyzePhoto")}
               <input
@@ -257,15 +314,34 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
                 {t("addFood.photoEstimateNote")}
               </p>
             )}
-            <input
-              type="text"
-              autoFocus
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              placeholder={t("addFood.namePlaceholder")}
-              maxLength={200}
-              className="input-field"
-            />
+            {lookupOrigin && (
+              <p className="text-xs text-forest-deep bg-forest-soft rounded px-3 py-2">
+                {lookupOrigin === "db" ? t("addFood.fromDatabase") : t("addFood.estimatedNote")}
+                {lookupServingDesc ? ` · ${lookupServingDesc}` : ""}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                autoFocus
+                value={label}
+                onChange={(e) => {
+                  setLabel(e.target.value);
+                  clearLookupNote();
+                }}
+                placeholder={t("addFood.namePlaceholder")}
+                maxLength={200}
+                className="input-field flex-1"
+              />
+              <button
+                type="button"
+                onClick={handleLookup}
+                disabled={lookingUp || busy || label.trim().length === 0}
+                className="btn-ghost shrink-0 whitespace-nowrap"
+              >
+                {lookingUp ? t("addFood.lookingUp") : t("addFood.lookup")}
+              </button>
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
                 <span className="label-overline block mb-1">{t("addFood.kcal")}</span>

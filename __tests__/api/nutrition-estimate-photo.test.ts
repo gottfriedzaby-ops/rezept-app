@@ -22,9 +22,10 @@ const estimateMock = estimateNutritionFromPhoto as jest.Mock;
 const JPEG = Buffer.concat([Buffer.from([0xff, 0xd8, 0xff, 0xe0]), Buffer.alloc(12)]);
 const NOT_AN_IMAGE = Buffer.alloc(16); // all zeros → sniff returns null
 
-function photoRequest(bytes: Buffer, type = "image/jpeg") {
+function photoRequest(bytes: Buffer, type = "image/jpeg", description?: string) {
   const fd = new FormData();
   fd.append("photo", new Blob([bytes], { type }), "photo.jpg");
+  if (description !== undefined) fd.append("description", description);
   return new NextRequest("http://localhost/api/nutrition/estimate-photo", {
     method: "POST",
     body: fd,
@@ -76,7 +77,26 @@ describe("POST /api/nutrition/estimate-photo", () => {
     expect(res.status).toBe(200);
     expect(body.data.label).toBe("Pizza Margherita");
     expect(body.data.kcal_per_serving).toBe(800);
-    expect(estimateMock).toHaveBeenCalledWith(expect.any(String), "image/jpeg", "u1");
+    expect(estimateMock).toHaveBeenCalledWith(expect.any(String), "image/jpeg", "u1", null);
+  });
+
+  it("forwards an optional description to the estimator", async () => {
+    allow();
+    estimateMock.mockResolvedValueOnce({
+      label: "Pizza Margherita",
+      kcal_per_serving: 800,
+      protein_g: 30,
+      carbs_g: 90,
+      fat_g: 28,
+    });
+    const res = await POST(photoRequest(JPEG, "image/jpeg", "großer Teller, mit extra Käse"));
+    expect(res.status).toBe(200);
+    expect(estimateMock).toHaveBeenCalledWith(
+      expect.any(String),
+      "image/jpeg",
+      "u1",
+      "großer Teller, mit extra Käse"
+    );
   });
 
   it("returns 422 when the estimate has no calories", async () => {

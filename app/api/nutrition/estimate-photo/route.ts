@@ -27,6 +27,9 @@ export async function POST(request: NextRequest) {
     if (!photo) {
       return NextResponse.json({ data: null, error: "photo ist erforderlich" }, { status: 400 });
     }
+    const descRaw = formData.get("description");
+    const description =
+      typeof descRaw === "string" && descRaw.trim() ? descRaw.trim().slice(0, 300) : null;
     if (photo.size > MAX_BYTES) {
       return NextResponse.json(
         { data: null, error: "Das Bild ist zu groß (max. 10 MB)." },
@@ -64,7 +67,12 @@ export async function POST(request: NextRequest) {
     }
 
     const base64 = buffer.toString("base64");
-    const estimate = await estimateNutritionFromPhoto(base64, finalMediaType, rateLimit.userId);
+    const estimate = await estimateNutritionFromPhoto(
+      base64,
+      finalMediaType,
+      rateLimit.userId,
+      description
+    );
 
     if (estimate.kcal_per_serving == null) {
       return NextResponse.json(

@@ -135,6 +135,13 @@ review → saved with `source='photo'`. Capped at 15/user/day
 (`lib/fasting.ts` + `FastingTimer`), stop, and a history list. New table
 `fasting_sessions` (partial unique index = one open fast/user), `/api/nutrition/fasting`
 routes. No Wake Lock for multi-hour fasts.
+**Smarter food entry (shipped):** the add-food dialog now lets the user (a) add a short
+text description on the "Foto" tab that is woven into the Vision prompt for a sharper
+estimate, and (b) tap **„Nachschlagen"** on the manual tab to auto-fill per-serving
+kcal/macros for a typed food. Lookups hit a new **global, shared `food_database` cache**
+(seeded with ~32 common German foods); a miss asks Claude Haiku once
+(`lookupFoodNutrition`, capped 30/user/day via `lib/food-lookup-rate-limit.ts`) and
+persists the answer for every user. New route `POST /api/nutrition/food-lookup`.
 
 ### 🔑 Operator checklist (after merge, in addition to Phases 1–3)
 
@@ -145,6 +152,10 @@ routes. No Wake Lock for multi-hour fasts.
 8. Supabase SQL editor → run
    `supabase/migrations/20260615000001_feature19_fasting.sql`
    (until then: `/fasting` shows an empty state and starting a fast reports 503).
+9. Supabase SQL editor → run
+   `supabase/migrations/20260615000002_feature19_food_database.sql`
+   (until then: manual „Nachschlagen" still works — every lookup just goes to Claude
+   and nothing is cached; the seeded common foods are unavailable — all graceful).
 
 ## Phase 4 — Launch readiness
 

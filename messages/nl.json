@@ -343,7 +343,55 @@
     "appearance": "Weergave",
     "themeSystem": "Systeem",
     "themeLight": "Licht",
-    "themeDark": "Donker"
+    "themeDark": "Donker",
+    "about": "Over de app",
+    "appVersion": "Versie {version}",
+    "viewChangelog": "Wat is er nieuw?"
+  },
+  "WhatsNew": {
+    "eyebrow": "Update",
+    "title": "Wat is er nieuw",
+    "dismiss": "Begrepen",
+    "versionShort": "v{version}",
+    "releases": {
+      "v1_4_0": {
+        "title": "Releaseopmerkingen & verfijning",
+        "items": [
+          "Nieuw: dit venster! Na elke update zie je in één oogopslag wat er is veranderd — gemiste updates worden samen getoond.",
+          "De huidige app-versie vind je nu bij Instellingen onder “Over de app”.",
+          "Voedingsschatting via foto: extra omschrijving mogelijk en veelgebruikte producten worden bewaard.",
+          "Opgelost: overlappende pictogrammen in de mobiele navigatiebalk."
+        ]
+      },
+      "v1_3_0": {
+        "title": "Intermittent fasten & voeding via foto",
+        "items": [
+          "Nieuwe intermittent-fasting-tracker met live timer en presets (16:8, 18:6, 20:4, OMAD).",
+          "Schat voedingswaarden direct vanaf een foto van je maaltijd."
+        ]
+      },
+      "v1_2_0": {
+        "title": "Voedingsdagboek & dagdoelen",
+        "items": [
+          "Houd een voedingsdagboek bij per maaltijd — via recepten, handmatig of met een foto.",
+          "Een persoonlijk dagbudget op basis van je lichaamsgegevens, met caloriering en macrobalken."
+        ]
+      },
+      "v1_1_0": {
+        "title": "Collecties & AI-kookassistent",
+        "items": [
+          "Organiseer je recepten in eigen collecties.",
+          "Vraag de AI-kookassistent wat je kunt maken met je voorraad."
+        ]
+      },
+      "v1_0_0": {
+        "title": "Weekmenu, donkere modus & snellere zoekfunctie",
+        "items": [
+          "Plan je week per maaltijd en zet hem direct op je boodschappenlijst.",
+          "Donker thema en een snellere, server-side receptzoekfunctie."
+        ]
+      }
+    }
   },
   "ShoppingList": {
     "title": "Boodschappenlijst",

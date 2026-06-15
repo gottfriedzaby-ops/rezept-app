@@ -35,4 +35,19 @@ export function translate(
   );
 }
 
+// Like `translate`, but returns the raw message value (string, array or
+// object) for use with next-intl's `t.raw`. Returns the key path when missing.
+export function translateRaw(namespace: string | undefined, key: string): unknown {
+  const path = namespace ? `${namespace}.${key}` : key;
+  let current: unknown = messages;
+  for (const part of path.split(".")) {
+    if (current !== null && typeof current === "object" && part in (current as JsonObject)) {
+      current = (current as JsonObject)[part];
+    } else {
+      return path;
+    }
+  }
+  return current;
+}
+
 export { messages };

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ThemeToggle from "@/components/ThemeToggle";
+import AppVersionSection from "@/components/AppVersionSection";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import ShareManager from "@/components/ShareManager";
@@ -150,6 +151,14 @@ export default async function SettingsPage() {
           <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
             <ThemeToggle />
           </div>
+        </section>
+
+        {/* About / version */}
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+            {t('about')}
+          </h2>
+          <AppVersionSection />
         </section>
 
         {/* Library sharing — outbound */}

@@ -8,6 +8,7 @@ import { ImportProvider } from "@/contexts/ImportContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import ImportStatusPill from "@/components/ImportStatusPill";
+import WhatsNewPopup from "@/components/WhatsNewPopup";
 import "../globals.css";
 
 const inter = Inter({
@@ -76,6 +77,7 @@ export default async function LocaleLayout({
               <ImportProvider>
                 {children}
                 <ImportStatusPill />
+                <WhatsNewPopup />
               </ImportProvider>
             </ToastProvider>
           </AuthProvider>

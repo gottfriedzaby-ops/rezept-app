@@ -343,7 +343,55 @@
     "appearance": "Appearance",
     "themeSystem": "System",
     "themeLight": "Light",
-    "themeDark": "Dark"
+    "themeDark": "Dark",
+    "about": "About",
+    "appVersion": "Version {version}",
+    "viewChangelog": "What's new?"
+  },
+  "WhatsNew": {
+    "eyebrow": "Update",
+    "title": "What's new",
+    "dismiss": "Got it",
+    "versionShort": "v{version}",
+    "releases": {
+      "v1_4_0": {
+        "title": "Release notes & polish",
+        "items": [
+          "New: this window! After every update you'll see what changed at a glance — missed updates are shown together.",
+          "You can now find the current app version in Settings under “About”.",
+          "Photo nutrition estimate: add an extra description, and common foods are now cached.",
+          "Fixed: overlapping icons in the mobile navigation bar."
+        ]
+      },
+      "v1_3_0": {
+        "title": "Intermittent fasting & photo nutrition",
+        "items": [
+          "New intermittent fasting tracker with a live timer and presets (16:8, 18:6, 20:4, OMAD).",
+          "Estimate nutrition straight from a photo of your meal."
+        ]
+      },
+      "v1_2_0": {
+        "title": "Food diary & daily goals",
+        "items": [
+          "Keep a food diary per meal — from recipes, manually, or by photo.",
+          "A personal daily budget from your body data, with a calorie ring and macro bars."
+        ]
+      },
+      "v1_1_0": {
+        "title": "Collections & AI cooking assistant",
+        "items": [
+          "Organise your recipes into your own collections.",
+          "Ask the AI cooking assistant what you can make from your pantry."
+        ]
+      },
+      "v1_0_0": {
+        "title": "Meal plan, dark mode & faster search",
+        "items": [
+          "Plan your week by meal and send it straight to your shopping list.",
+          "Dark theme and a faster, server-side recipe search."
+        ]
+      }
+    }
   },
   "ShoppingList": {
     "title": "Shopping List",

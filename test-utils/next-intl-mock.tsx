@@ -1,12 +1,15 @@
 import React from "react";
-import { messages, translate } from "./intl";
+import { messages, translate, translateRaw } from "./intl";
 
 // Jest mock for `next-intl` (mapped in jest.config.ts). Returns real German
 // strings so existing assertions on translated text keep working without a
-// provider.
+// provider. `.raw` mirrors next-intl's raw lookup (arrays/objects).
 export function useTranslations(namespace?: string) {
-  return (key: string, values?: Record<string, unknown>): string =>
+  const t = (key: string, values?: Record<string, unknown>): string =>
     translate(namespace, key, values);
+  return Object.assign(t, {
+    raw: (key: string): unknown => translateRaw(namespace, key),
+  });
 }
 
 export function useLocale(): string {

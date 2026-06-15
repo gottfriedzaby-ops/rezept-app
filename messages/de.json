@@ -343,7 +343,55 @@
     "appearance": "Darstellung",
     "themeSystem": "System",
     "themeLight": "Hell",
-    "themeDark": "Dunkel"
+    "themeDark": "Dunkel",
+    "about": "Über die App",
+    "appVersion": "Version {version}",
+    "viewChangelog": "Was ist neu?"
+  },
+  "WhatsNew": {
+    "eyebrow": "Update",
+    "title": "Was ist neu",
+    "dismiss": "Verstanden",
+    "versionShort": "v{version}",
+    "releases": {
+      "v1_4_0": {
+        "title": "Versionshinweise & Feinschliff",
+        "items": [
+          "Neu: Dieses Fenster! Nach jedem Update siehst du auf einen Blick, was sich geändert hat – verpasste Updates werden gesammelt angezeigt.",
+          "Die aktuelle App-Version findest du jetzt in den Einstellungen unter „Über die App“.",
+          "Foto-Nährwertschätzung: zusätzliche Beschreibung möglich, häufige Lebensmittel werden zwischengespeichert.",
+          "Behoben: überlappende Symbole in der mobilen Navigationsleiste."
+        ]
+      },
+      "v1_3_0": {
+        "title": "Intervallfasten & Foto-Nährwerte",
+        "items": [
+          "Neuer Intervallfasten-Tracker mit Live-Timer und Presets (16:8, 18:6, 20:4, OMAD).",
+          "Nährwerte direkt aus einem Foto deiner Mahlzeit schätzen lassen."
+        ]
+      },
+      "v1_2_0": {
+        "title": "Ernährungstagebuch & Tagesziele",
+        "items": [
+          "Führe ein Ernährungstagebuch pro Mahlzeit – mit Rezepten, manuell oder per Foto.",
+          "Persönliches Tagesbudget aus deinen Körperdaten, mit Kalorienring und Makro-Balken."
+        ]
+      },
+      "v1_1_0": {
+        "title": "Sammlungen & KI-Kochassistent",
+        "items": [
+          "Organisiere deine Rezepte in eigenen Sammlungen.",
+          "Frag den KI-Kochassistenten, was du aus deinen Vorräten kochen kannst."
+        ]
+      },
+      "v1_0_0": {
+        "title": "Wochenplan, Dark Mode & schnellere Suche",
+        "items": [
+          "Plane deine Woche nach Mahlzeiten und übernimm sie in die Einkaufsliste.",
+          "Dunkles Design und eine schnellere, serverseitige Rezeptsuche."
+        ]
+      }
+    }
   },
   "ShoppingList": {
     "title": "Einkaufsliste",

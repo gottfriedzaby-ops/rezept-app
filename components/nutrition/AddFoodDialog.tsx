@@ -17,7 +17,7 @@ interface AddFoodDialogProps {
   onAdded: () => void;
 }
 
-type Tab = "recipe" | "manual";
+type Tab = "recipe" | "manual" | "photo";
 
 export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }: AddFoodDialogProps) {
   const t = useTranslations("Nutrition");
@@ -27,6 +27,7 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
   const [tab, setTab] = useState<Tab>("recipe");
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState(false);
+  const [analyzing, setAnalyzing] = useState(false);
 
   // Manual entry form
   const [label, setLabel] = useState("");
@@ -34,6 +35,9 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
   const [protein, setProtein] = useState("");
   const [carbs, setCarbs] = useState("");
   const [fat, setFat] = useState("");
+  // True once the manual form was prefilled from a photo estimate — the entry
+  // is then logged with source "photo" rather than "manual".
+  const [photoEstimate, setPhotoEstimate] = useState(false);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -85,7 +89,7 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
       return;
     }
     const ok = await logEntry({
-      source: "manual",
+      source: photoEstimate ? "photo" : "manual",
       label: label.trim(),
       servings: 1,
       kcal_per_serving: kcalNum,
@@ -96,6 +100,41 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
     if (ok) {
       router.refresh();
       onAdded();
+    }
+  }
+
+  async function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file later
+    if (!file || analyzing) return;
+    setAnalyzing(true);
+    try {
+      const fd = new FormData();
+      fd.append("photo", file);
+      const res = await fetch("/api/nutrition/estimate-photo", { method: "POST", body: fd });
+      const json = await res.json().catch(() => ({ data: null, error: null }));
+      if (!res.ok || !json.data) {
+        showToast(json.error ?? t("addFood.photoFailed"));
+        return;
+      }
+      const est = json.data as {
+        label: string | null;
+        kcal_per_serving: number | null;
+        protein_g: number | null;
+        carbs_g: number | null;
+        fat_g: number | null;
+      };
+      setLabel(est.label ?? "");
+      setKcal(est.kcal_per_serving != null ? String(est.kcal_per_serving) : "");
+      setProtein(est.protein_g != null ? String(est.protein_g) : "");
+      setCarbs(est.carbs_g != null ? String(est.carbs_g) : "");
+      setFat(est.fat_g != null ? String(est.fat_g) : "");
+      setPhotoEstimate(true);
+      setTab("manual");
+    } catch {
+      showToast(t("addFood.photoFailed"));
+    } finally {
+      setAnalyzing(false);
     }
   }
 
@@ -122,6 +161,15 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
             }`}
           >
             {t("addFood.tabRecipe")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("photo")}
+            className={`flex-1 text-sm px-3 py-1.5 rounded transition-colors ${
+              tab === "photo" ? "bg-surface-card text-ink-primary font-medium shadow-sm" : "text-ink-secondary"
+            }`}
+          >
+            {t("addFood.tabPhoto")}
           </button>
           <button
             type="button"
@@ -186,8 +234,29 @@ export default function AddFoodDialog({ slot, date, recipes, onClose, onAdded }:
               )}
             </>
           )
+        ) : tab === "photo" ? (
+          <div className="space-y-4">
+            <p className="text-sm text-ink-secondary">{t("addFood.photoHint")}</p>
+            <label className="btn-primary w-full inline-flex items-center justify-center cursor-pointer">
+              {analyzing ? t("addFood.analyzing") : t("addFood.analyzePhoto")}
+              <input
+                type="file"
+                accept="image/*"
+                capture="environment"
+                disabled={analyzing}
+                onChange={handlePhotoSelect}
+                className="sr-only"
+              />
+            </label>
+            <p className="text-xs text-ink-tertiary">{t("disclaimer")}</p>
+          </div>
         ) : (
           <form onSubmit={handleManualSubmit} className="space-y-3">
+            {photoEstimate && (
+              <p className="text-xs text-forest-deep bg-forest-soft rounded px-3 py-2">
+                {t("addFood.photoEstimateNote")}
+              </p>
+            )}
             <input
               type="text"
               autoFocus

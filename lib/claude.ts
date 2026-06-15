@@ -41,6 +41,7 @@ export type ClaudeFunctionName =
   | "parseRecipeFromPdf"
   | "reviewAndImproveRecipe"
   | "estimateNutrition"
+  | "estimateNutritionFromPhoto"
   | "categorizeIngredients"
   | "suggestRecipesFromPantry"
   | "suggestWeekPlan"
@@ -53,6 +54,9 @@ export const ASSISTANT_FUNCTION_NAMES: ClaudeFunctionName[] = [
   "suggestWeekPlan",
   "answerCookingQuestion",
 ];
+
+// Counted against the photo-nutrition daily limit (lib/nutrition-photo-rate-limit.ts).
+export const PHOTO_NUTRITION_FUNCTION: ClaudeFunctionName = "estimateNutritionFromPhoto";
 
 // Replace base64 image data with a placeholder so log entries stay readable.
 function sanitizeMessages(messages: Anthropic.MessageParam[]): Anthropic.MessageParam[] {
@@ -217,7 +221,7 @@ const RULES = `
 - Do NOT draw on your training knowledge of how a dish is typically prepared. Extract ONLY what is explicitly written in the provided text — nothing more, nothing less. If an ingredient is not mentioned in the text, do not add it.
 `.trim();
 
-type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
+export type ImageMediaType = "image/jpeg" | "image/png" | "image/gif" | "image/webp";
 
 function extractJson(raw: string): string {
   // Supports both top-level objects and arrays (the assistant call sites
@@ -751,6 +755,73 @@ export async function estimateNutrition(
     };
   } catch {
     return { kcal_per_serving: null, protein_g: null, carbs_g: null, fat_g: null };
+  }
+}
+
+interface PhotoNutritionResult extends NutritionResult {
+  label: string;
+}
+
+export interface PhotoNutritionEstimate extends NutritionEstimate {
+  /** A short German name for the recognised dish, or null on failure. */
+  label: string | null;
+}
+
+const EMPTY_PHOTO_ESTIMATE: PhotoNutritionEstimate = {
+  label: null,
+  kcal_per_serving: null,
+  protein_g: null,
+  carbs_g: null,
+  fat_g: null,
+};
+
+// Estimate nutrition for a single dish from a food photo (Claude Vision).
+// Best-effort: returns all-null on any failure, like estimateNutrition.
+export async function estimateNutritionFromPhoto(
+  base64: string,
+  mediaType: ImageMediaType,
+  userId: string | null = null,
+): Promise<PhotoNutritionEstimate> {
+  const prompt =
+    `This is a photo of a meal or food item. Identify the dish and estimate the ` +
+    `nutritional content for one typical serving of what is shown.\n\n` +
+    `Return ONLY valid JSON (no markdown fences, no extra text):\n` +
+    `{"label":string,"kcal_per_serving":number,"protein_g":number,"carbs_g":number,"fat_g":number}\n\n` +
+    `"label" is a short German name for the dish (e.g. "Spaghetti Bolognese"). ` +
+    `Round all numbers to the nearest integer. If you cannot tell, give your best approximation.`;
+
+  try {
+    const { message } = await claudeCreate(
+      PHOTO_NUTRITION_FUNCTION,
+      {
+        model: "claude-sonnet-4-6",
+        max_tokens: 512,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "image", source: { type: "base64", media_type: mediaType, data: base64 } },
+              { type: "text", text: prompt },
+            ],
+          },
+        ],
+      },
+      userId,
+    );
+
+    const block = message.content[0];
+    if (block.type !== "text") return EMPTY_PHOTO_ESTIMATE;
+
+    const result = parseClaudeJson<PhotoNutritionResult>(block.text);
+    return {
+      label: typeof result.label === "string" && result.label.trim() ? result.label.trim() : null,
+      kcal_per_serving: Math.round(result.kcal_per_serving),
+      protein_g: Math.round(result.protein_g),
+      carbs_g: Math.round(result.carbs_g),
+      fat_g: Math.round(result.fat_g),
+    };
+  } catch {
+    return EMPTY_PHOTO_ESTIMATE;
   }
 }
 

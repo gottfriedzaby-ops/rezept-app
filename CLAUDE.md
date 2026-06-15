@@ -38,7 +38,7 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
     /recipes/confirm         # Speichern + Nährwertschätzung (best-effort)
     /recipes/[id]            # GET/PATCH/DELETE, + /duplicate, + /nutrition (POST, auth-pflichtig)
     /meal-plan               # GET ?week= / POST, + /[id] PATCH/DELETE
-    /nutrition               # /profile GET/PUT (Ziele), /log GET ?date=/POST, /log/[id] PATCH/DELETE
+    /nutrition               # /profile GET/PUT (Ziele), /log GET ?date=/POST, /log/[id] PATCH/DELETE, /estimate-photo (Vision, 15/Tag)
     /assistant               # suggest, week-plan, cooking-question (Limit 30/Tag)
     /collections             # CRUD + /[id]/recipes Mitgliedschaft
     /shares /library-shares  # Token-Links bzw. Account-Sharing (invitation, reshare, …)
@@ -121,8 +121,8 @@ Siehe `.env.local.example` (vollständig kommentiert): Supabase-Keys, `ANTHROPIC
 - ✅ Einkaufsliste (localStorage, Skalierung, In-Store-Modus, Kategorisierung) + Kochmodus (Timer, Wake-Lock, Tastatur)
 - ✅ Wochenplan (Feature 16): Woche × Mahlzeit-Slots, Portions-Override, „Woche zur Einkaufsliste"
 - ✅ Ernährungstagebuch + Ziele (Feature 19, Yazio-Kern): Körperprofil → Tagesbudget (BMR/TDEE,
-  `lib/nutrition-goals.ts`), Tagebuch pro Mahlzeit (Rezept-Snapshot oder manuell), Kalorienring +
-  Makro-Balken. Phase 2 (Foto-Schätzung) / Phase 3 (Intervallfasten) skizziert
+  `lib/nutrition-goals.ts`), Tagebuch pro Mahlzeit (Rezept-Snapshot, manuell oder Foto-Schätzung
+  via Claude Vision, 15/Tag), Kalorienring + Makro-Balken. Phase 3 (Intervallfasten) skizziert
 - ✅ Nährwertschätzung, PDF-/Cookidoo-Export
 - ✅ Server-seitige Suche + Pagination (`lib/recipe-search.ts`, Trigram-Index auf `search_text`;
   Hauptseite SSRt die erste Seite, „Mehr laden" via `/api/recipes/search`)

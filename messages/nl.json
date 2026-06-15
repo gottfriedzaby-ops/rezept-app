@@ -572,7 +572,13 @@
       "kcalRequired": "Voer de calorieën in.",
       "kcal": "kcal",
       "add": "Toevoegen",
-      "adding": "Bezig met toevoegen…"
+      "adding": "Bezig met toevoegen…",
+      "tabPhoto": "Foto",
+      "photoHint": "Maak of kies een foto van je maaltijd — wij schatten de voedingswaarden.",
+      "analyzePhoto": "Foto analyseren",
+      "analyzing": "Bezig met analyseren…",
+      "photoEstimateNote": "Geschat op basis van een foto — controleer en pas aan.",
+      "photoFailed": "Kan de foto niet analyseren."
     }
   },
   "Admin": {

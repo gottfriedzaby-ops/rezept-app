@@ -572,7 +572,13 @@
       "kcalRequired": "Bitte gib die Kalorien an.",
       "kcal": "kcal",
       "add": "Hinzufügen",
-      "adding": "Wird hinzugefügt…"
+      "adding": "Wird hinzugefügt…",
+      "tabPhoto": "Foto",
+      "photoHint": "Mach ein Foto deiner Mahlzeit oder wähle eines aus — wir schätzen die Nährwerte.",
+      "analyzePhoto": "Foto analysieren",
+      "analyzing": "Wird analysiert…",
+      "photoEstimateNote": "Aus Foto geschätzt — bitte prüfen und anpassen.",
+      "photoFailed": "Foto konnte nicht analysiert werden."
     }
   },
   "Admin": {

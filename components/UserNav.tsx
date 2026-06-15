@@ -181,6 +181,29 @@ export default function UserNav() {
         </svg>
       </Link>
 
+      {/* Fasting tracker link */}
+      <Link
+        href="/fasting"
+        aria-label={t('fasting')}
+        className="flex items-center gap-1 hover:text-ink-primary transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          className="w-5 h-5 shrink-0"
+          aria-hidden="true"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M12 6v6h4.5m4.5 0a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+          />
+        </svg>
+      </Link>
+
       {/* Shopping list link */}
       <Link
         href="/shopping-list"

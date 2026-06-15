@@ -115,7 +115,7 @@ hundreds of recipes each.
    (ratings/notes/cooked columns + collections — until then: rating/notes UI
    errors are caught, cooked counter is a no-op, collections report 503)
 
-## Phase 3.5 — Nutrition tracking (Feature 19) ✅ Phase 1 + 2
+## Phase 3.5 — Nutrition tracking (Feature 19) ✅ Phases 1–3
 
 Yazio-style **food diary + personalized calorie/macro goals**. New `/nutrition`
 daily dashboard: a body-profile form computes a daily kcal + macro budget
@@ -129,8 +129,12 @@ de/en/nl i18n. Spec: [requirements/19-nutrition-tracking.md](./requirements/19-n
 dish photo to `POST /api/nutrition/estimate-photo` → Claude Vision
 (`estimateNutritionFromPhoto`) estimates kcal/macros → prefills the manual form for
 review → saved with `source='photo'`. Capped at 15/user/day
-(`lib/nutrition-photo-rate-limit.ts`); the photo is not persisted. Intermittent
-fasting (Phase 3) remains outlined in the spec but not built.
+(`lib/nutrition-photo-rate-limit.ts`); the photo is not persisted.
+**Phase 3 (shipped):** an intermittent-fasting tracker at `/fasting` — start a fast
+(presets 16:8/18:6/20:4/OMAD or custom hours), a live SVG countdown ring
+(`lib/fasting.ts` + `FastingTimer`), stop, and a history list. New table
+`fasting_sessions` (partial unique index = one open fast/user), `/api/nutrition/fasting`
+routes. No Wake Lock for multi-hour fasts.
 
 ### 🔑 Operator checklist (after merge, in addition to Phases 1–3)
 
@@ -138,6 +142,9 @@ fasting (Phase 3) remains outlined in the spec but not built.
    `supabase/migrations/20260615000000_feature19_nutrition_tracking.sql`
    (until then: `/nutrition` shows the onboarding/empty state, profile GET
    returns null, and diary writes report 503 — all graceful).
+8. Supabase SQL editor → run
+   `supabase/migrations/20260615000001_feature19_fasting.sql`
+   (until then: `/fasting` shows an empty state and starting a fast reports 503).
 
 ## Phase 4 — Launch readiness
 

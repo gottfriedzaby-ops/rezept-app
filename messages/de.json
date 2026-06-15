@@ -25,7 +25,8 @@
     "language": "Sprache",
     "mealPlan": "Wochenplan",
     "collections": "Sammlungen",
-    "assistant": "Assistent"
+    "assistant": "Assistent",
+    "nutrition": "Ernährung"
   },
   "RecipeList": {
     "searchPlaceholder": "Suchen…",
@@ -497,6 +498,82 @@
     "suggestApplying": "Übernehme …",
     "suggestDiscard": "Verwerfen",
     "suggestAppliedToast": "{count} Rezepte eingeplant"
+  },
+  "Nutrition": {
+    "title": "Ernährungstagebuch",
+    "today": "Heute",
+    "prevDay": "Vorheriger Tag",
+    "nextDay": "Nächster Tag",
+    "remaining": "übrig",
+    "over": "drüber",
+    "removeEntry": "Eintrag entfernen",
+    "decreaseServings": "Weniger Portionen",
+    "increaseServings": "Mehr Portionen",
+    "cancel": "Abbrechen",
+    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut.",
+    "disclaimer": "Schätzwerte — ersetzen keine ärztliche oder ernährungswissenschaftliche Beratung.",
+    "units": {
+      "kcal": "kcal",
+      "gram": "g"
+    },
+    "onboarding": {
+      "title": "Richte dein Ernährungsziel ein",
+      "intro": "Gib ein paar Eckdaten an, und wir berechnen dein tägliches Kalorien- und Nährwertbudget."
+    },
+    "slots": {
+      "fruehstueck": "Frühstück",
+      "mittag": "Mittag",
+      "abend": "Abend",
+      "snacks": "Snacks"
+    },
+    "goals": {
+      "sex": "Geschlecht",
+      "sexOptions": {
+        "male": "Männlich",
+        "female": "Weiblich",
+        "diverse": "Divers"
+      },
+      "birthDate": "Geburtsdatum",
+      "height": "Größe (cm)",
+      "weight": "Gewicht (kg)",
+      "activity": "Aktivität",
+      "activityOptions": {
+        "sedentary": "Sitzend",
+        "light": "Leicht aktiv",
+        "moderate": "Mäßig aktiv",
+        "active": "Aktiv",
+        "very_active": "Sehr aktiv"
+      },
+      "goal": "Ziel",
+      "goalOptions": {
+        "lose": "Abnehmen",
+        "maintain": "Halten",
+        "gain": "Zunehmen"
+      },
+      "computedBudget": "Dein Tagesbudget",
+      "protein": "Protein",
+      "carbs": "Kohlenhydrate",
+      "fat": "Fett",
+      "edit": "Ziele bearbeiten",
+      "save": "Speichern",
+      "saving": "Wird gespeichert…",
+      "savedToast": "Ziel gespeichert"
+    },
+    "addFood": {
+      "title": "Lebensmittel hinzufügen",
+      "tabRecipe": "Rezept",
+      "tabManual": "Eigene Eingabe",
+      "noRecipesYet": "Du hast noch keine Rezepte.",
+      "searchPlaceholder": "Rezept suchen…",
+      "noRecipesFound": "Keine Rezepte gefunden.",
+      "noNutrition": "keine Nährwerte",
+      "namePlaceholder": "Name des Lebensmittels",
+      "nameRequired": "Bitte gib einen Namen ein.",
+      "kcalRequired": "Bitte gib die Kalorien an.",
+      "kcal": "kcal",
+      "add": "Hinzufügen",
+      "adding": "Wird hinzugefügt…"
+    }
   },
   "Admin": {
     "loading": "Lade…",

@@ -36,6 +36,7 @@ This directory contains feature requirement documents for the **Rezept-App** —
 | 16 | Meal Planning (Wochenplan) | Week view (Mon–Sun × Frühstück/Mittag/Abend), per-entry servings, recipe picker, "Woche zur Einkaufsliste" | ✅ MVP | [16-meal-planning.md](./16-meal-planning.md) |
 | 17 | Discovery | Ratings (1–5), personal notes, „gekocht"-counter, collections (folders) | ✅ Done | [17-discovery.md](./17-discovery.md) |
 | 18 | AI Cooking Assistant | „Was kann ich kochen?", Wochenplan-Vorschläge, Koch-Fragen im Kochmodus — 30 Calls/Tag, eigene Bibliothek only | ✅ Done | [18-ai-assistant.md](./18-ai-assistant.md) |
+| 19 | Nutrition Tracking | Yazio-style food diary + personalized calorie/macro goals (BMR/TDEE). Phase 1 shipped; photo estimate (P2) + fasting (P3) outlined | ✅ Phase 1 | [19-nutrition-tracking.md](./19-nutrition-tracking.md) |
 
 ### Frontend Improvements (no DB migrations)
 
@@ -97,4 +98,4 @@ Each feature doc follows this template:
 
 ---
 
-*Last updated: 2026-06-11 — Features 16 (Wochenplan), 17 (Discovery) and 18 (AI-Assistent) shipped; 13 (Admin Dashboard) live, doc pending status update; 14 (Equal-Height Tiles) drafted*
+*Last updated: 2026-06-15 — Feature 19 (Nutrition Tracking) Phase 1 shipped. Earlier: Features 16 (Wochenplan), 17 (Discovery) and 18 (AI-Assistent) shipped; 13 (Admin Dashboard) live, doc pending status update; 14 (Equal-Height Tiles) drafted*

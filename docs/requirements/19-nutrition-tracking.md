@@ -3,7 +3,7 @@
 |               |                                                                        |
 | ------------- | ---------------------------------------------------------------------- |
 | ID            | 19                                                                     |
-| Status        | ✅ Phase 1 + 2 shipped (2026-06-15)                                    |
+| Status        | ✅ Phases 1–3 shipped (2026-06-15)                                     |
 | Priority      | High                                                                   |
 | Effort        | L                                                                      |
 | Components    | `app/[locale]/nutrition/`, `app/api/nutrition/`, `components/nutrition/*`, `lib/nutrition-goals.ts`, `types/nutrition.ts` |
@@ -103,11 +103,18 @@ German 429). The photo is **not persisted** — only the estimate is returned. A
 review; the confirmed entry is stored with `source='photo'` (already in the CHECK
 constraint). Estimates are clearly labelled as such.
 
-## Phase 3 — Intermittent fasting (planned)
+## Phase 3 — Intermittent fasting ✅ shipped (2026-06-15)
 
-`fasting_sessions` table (`started_at`, nullable `ended_at`, `target_hours`,
-`preset`; partial unique index `WHERE ended_at IS NULL` = one open session per
-user). Start/stop/history API + a live timer UI with presets (16:8 …).
+New migration `20260615000001_feature19_fasting.sql`: `fasting_sessions`
+(`started_at`, nullable `ended_at`, `target_hours`, `preset`; partial unique index
+`WHERE ended_at IS NULL` = at most one open fast per user; owner RLS). Pure math in
+`lib/fasting.ts` (`computeFastingProgress`, presets 16:8/18:6/20:4/OMAD + custom).
+API `GET/POST /api/nutrition/fasting` (start; 23505→409 "läuft bereits") and
+`PATCH/DELETE /api/nutrition/fasting/[id]` (stop only-open / delete history). A
+dedicated `/fasting` page (own `UserNav` entry) shows preset chips to start a fast,
+a **live SVG countdown ring** (`FastingTimer`, hydration-safe via a server `initialNow`
++ client `setInterval`), a stop button, and a history list. No Wake Lock (a multi-hour
+fast must not pin the screen on). de/en/nl i18n under the `Fasting` namespace.
 
 ## Open Questions
 

@@ -26,7 +26,8 @@
     "mealPlan": "Meal plan",
     "collections": "Collections",
     "assistant": "Assistant",
-    "nutrition": "Nutrition"
+    "nutrition": "Nutrition",
+    "fasting": "Fasting"
   },
   "RecipeList": {
     "searchPlaceholder": "Search…",
@@ -579,6 +580,33 @@
       "analyzing": "Analyzing…",
       "photoEstimateNote": "Estimated from a photo — please review and adjust.",
       "photoFailed": "Couldn't analyze the photo."
+    }
+  },
+  "Fasting": {
+    "title": "Fasting",
+    "chooseProgram": "Choose a fasting program",
+    "startFast": "Start fasting",
+    "starting": "Starting…",
+    "stopFast": "End fast",
+    "stopping": "Ending…",
+    "custom": "Custom",
+    "customHours": "Hours",
+    "hoursShort": "h",
+    "elapsed": "Elapsed",
+    "remaining": "Remaining",
+    "goalReached": "Goal reached",
+    "overtimeLabel": "over",
+    "target": "Goal",
+    "history": "History",
+    "historyEmpty": "No completed fasts yet.",
+    "achieved": "Achieved",
+    "removeEntry": "Remove entry",
+    "errorGeneric": "Action failed. Please try again.",
+    "presets": {
+      "16:8": "16:8",
+      "18:6": "18:6",
+      "20:4": "20:4",
+      "omad": "OMAD"
     }
   },
   "Admin": {

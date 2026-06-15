@@ -26,7 +26,8 @@
     "mealPlan": "Wochenplan",
     "collections": "Sammlungen",
     "assistant": "Assistent",
-    "nutrition": "Ernährung"
+    "nutrition": "Ernährung",
+    "fasting": "Fasten"
   },
   "RecipeList": {
     "searchPlaceholder": "Suchen…",
@@ -579,6 +580,33 @@
       "analyzing": "Wird analysiert…",
       "photoEstimateNote": "Aus Foto geschätzt — bitte prüfen und anpassen.",
       "photoFailed": "Foto konnte nicht analysiert werden."
+    }
+  },
+  "Fasting": {
+    "title": "Fasten",
+    "chooseProgram": "Fasten-Programm wählen",
+    "startFast": "Fasten starten",
+    "starting": "Startet…",
+    "stopFast": "Fasten beenden",
+    "stopping": "Wird beendet…",
+    "custom": "Benutzerdefiniert",
+    "customHours": "Stunden",
+    "hoursShort": "Std.",
+    "elapsed": "Vergangen",
+    "remaining": "Verbleibend",
+    "goalReached": "Ziel erreicht",
+    "overtimeLabel": "darüber",
+    "target": "Ziel",
+    "history": "Verlauf",
+    "historyEmpty": "Noch keine abgeschlossenen Fasten.",
+    "achieved": "Geschafft",
+    "removeEntry": "Eintrag entfernen",
+    "errorGeneric": "Aktion fehlgeschlagen. Bitte versuche es erneut.",
+    "presets": {
+      "16:8": "16:8",
+      "18:6": "18:6",
+      "20:4": "20:4",
+      "omad": "OMAD"
     }
   },
   "Admin": {

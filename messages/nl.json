@@ -26,7 +26,8 @@
     "mealPlan": "Weekmenu",
     "collections": "Collecties",
     "assistant": "Assistent",
-    "nutrition": "Voeding"
+    "nutrition": "Voeding",
+    "fasting": "Vasten"
   },
   "RecipeList": {
     "searchPlaceholder": "Zoeken…",
@@ -579,6 +580,33 @@
       "analyzing": "Bezig met analyseren…",
       "photoEstimateNote": "Geschat op basis van een foto — controleer en pas aan.",
       "photoFailed": "Kan de foto niet analyseren."
+    }
+  },
+  "Fasting": {
+    "title": "Vasten",
+    "chooseProgram": "Kies een vastenprogramma",
+    "startFast": "Vasten starten",
+    "starting": "Starten…",
+    "stopFast": "Vasten beëindigen",
+    "stopping": "Bezig met beëindigen…",
+    "custom": "Aangepast",
+    "customHours": "Uren",
+    "hoursShort": "u",
+    "elapsed": "Verstreken",
+    "remaining": "Resterend",
+    "goalReached": "Doel bereikt",
+    "overtimeLabel": "over",
+    "target": "Doel",
+    "history": "Geschiedenis",
+    "historyEmpty": "Nog geen voltooide vastenperiodes.",
+    "achieved": "Behaald",
+    "removeEntry": "Item verwijderen",
+    "errorGeneric": "Actie mislukt. Probeer het opnieuw.",
+    "presets": {
+      "16:8": "16:8",
+      "18:6": "18:6",
+      "20:4": "20:4",
+      "omad": "OMAD"
     }
   },
   "Admin": {

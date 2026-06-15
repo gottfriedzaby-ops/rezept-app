@@ -25,6 +25,7 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
     /(recipes)               # Rezeptliste, [id] Detail, [id]/edit, [id]/cook
     /meal-plan               # Wochenplan (Feature 16, + KI-Wochenvorschlag)
     /nutrition               # Ernährungstagebuch + Kalorien-/Makro-Ziele (Feature 19)
+    /fasting                 # Intervallfasten-Tracker (Live-Timer, Feature 19 Phase 3)
     /assistant               # KI-Kochassistent („Was kann ich kochen?“)
     /collections             # Sammlungen (+ /[id] Detail)
     /shopping-list           # Einkaufsliste (+ /shop In-Store-Modus)
@@ -39,6 +40,7 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
     /recipes/[id]            # GET/PATCH/DELETE, + /duplicate, + /nutrition (POST, auth-pflichtig)
     /meal-plan               # GET ?week= / POST, + /[id] PATCH/DELETE
     /nutrition               # /profile GET/PUT (Ziele), /log GET ?date=/POST, /log/[id] PATCH/DELETE, /estimate-photo (Vision, 15/Tag)
+    /nutrition/fasting       # GET/POST (start, 1 offener Fast/User), /[id] PATCH (stop)/DELETE
     /assistant               # suggest, week-plan, cooking-question (Limit 30/Tag)
     /collections             # CRUD + /[id]/recipes Mitgliedschaft
     /shares /library-shares  # Token-Links bzw. Account-Sharing (invitation, reshare, …)
@@ -62,6 +64,7 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
   shopping-list-sync.ts      # Cloud-Sync: debounced Push, Pull-Merge, useShoppingListSync
   meal-plan.ts               # Wochen-Mathematik (getWeekStart, addDays, …)
   nutrition-goals.ts         # Pure BMR/TDEE/Makro-Mathematik (Mifflin-St Jeor), Feature 19
+  fasting.ts                 # Pure Fasten-Mathematik (Fortschritt/Presets/Formatierung), Feature 19 Phase 3
   image-validation.ts        # Magic-Byte-Sniffing für Uploads
   amounts.ts / tags.ts / tag-colors.ts / schemaOrg.ts / pdf-import.ts / parsers/
 /types                       # recipe.ts, meal-plan.ts, …
@@ -83,6 +86,7 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
 - `meal_plan_entries` — Wochenplan: user_id, recipe_id, date, meal_slot (fruehstueck/mittag/abend), servings-Override
 - `nutrition_profiles` — Körperdaten + Tagesziele (sex, birth_date, height_cm, weight_kg, activity_level, goal, target_*; `manual_targets`) — 1 Zeile/User (Feature 19)
 - `food_log_entries` — Ernährungstagebuch: user_id, date, meal_slot (+`snacks`), source (recipe/manual/photo), label, servings + Nährwert-Snapshot pro Portion; `recipe_id` nullable (ON DELETE SET NULL) (Feature 19)
+- `fasting_sessions` — Intervallfasten: user_id, started_at, ended_at (nullable), target_hours, preset (16:8/18:6/20:4/omad/custom); partieller Unique-Index `WHERE ended_at IS NULL` = max. 1 offener Fast/User (Feature 19 Phase 3)
 - `collections` (+ `collection_recipes`) — Rezept-Sammlungen pro User (UNIQUE name)
 - `recipes` zusätzlich: `rating` (1–5), `notes`, `cooked_count`, `last_cooked_at` (Feature 17)
 - `library_shares` (+ `library_share_reshare_requests`) — Account-zu-Account-Sharing
@@ -122,7 +126,8 @@ Siehe `.env.local.example` (vollständig kommentiert): Supabase-Keys, `ANTHROPIC
 - ✅ Wochenplan (Feature 16): Woche × Mahlzeit-Slots, Portions-Override, „Woche zur Einkaufsliste"
 - ✅ Ernährungstagebuch + Ziele (Feature 19, Yazio-Kern): Körperprofil → Tagesbudget (BMR/TDEE,
   `lib/nutrition-goals.ts`), Tagebuch pro Mahlzeit (Rezept-Snapshot, manuell oder Foto-Schätzung
-  via Claude Vision, 15/Tag), Kalorienring + Makro-Balken. Phase 3 (Intervallfasten) skizziert
+  via Claude Vision, 15/Tag), Kalorienring + Makro-Balken; Intervallfasten-Tracker (Phase 3,
+  `/fasting`: Live-Timer-Ring, Presets 16:8/18:6/20:4/OMAD, Verlauf)
 - ✅ Nährwertschätzung, PDF-/Cookidoo-Export
 - ✅ Server-seitige Suche + Pagination (`lib/recipe-search.ts`, Trigram-Index auf `search_text`;
   Hauptseite SSRt die erste Seite, „Mehr laden" via `/api/recipes/search`)
@@ -136,9 +141,9 @@ Siehe `.env.local.example` (vollständig kommentiert): Supabase-Keys, `ANTHROPIC
 - Google OAuth-, Push-, Store-Go-Lives; Prompt-Caching (Phase 4)
 
 ## Betriebshinweise
-- Sechs Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`, `recipe_search`,
-  `shopping_list_sync`, `feature17_discovery`, `feature19_nutrition_tracking`) müssen vom
-  Operator im Supabase SQL-Editor ausgeführt werden — Code degradiert bis dahin graceful
-  (Checkliste in docs/roadmap.md).
+- Sieben Migrationen vom Juni 2026 (`profiles`, `meal_plan_entries`, `recipe_search`,
+  `shopping_list_sync`, `feature17_discovery`, `feature19_nutrition_tracking`,
+  `feature19_fasting`) müssen vom Operator im Supabase SQL-Editor ausgeführt werden —
+  Code degradiert bis dahin graceful (Checkliste in docs/roadmap.md).
 - Sentry ist ohne `NEXT_PUBLIC_SENTRY_DSN` ein No-op; DSN + Auth-Token in Vercel setzen.
 - Beim Multi-User-Rollout wurden alle Alt-Rezepte gelöscht; jeder Nutzer startet leer.

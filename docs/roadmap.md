@@ -115,6 +115,26 @@ hundreds of recipes each.
    (ratings/notes/cooked columns + collections — until then: rating/notes UI
    errors are caught, cooked counter is a no-op, collections report 503)
 
+## Phase 3.5 — Nutrition tracking (Feature 19) ✅ Phase 1
+
+Yazio-style **food diary + personalized calorie/macro goals**. New `/nutrition`
+daily dashboard: a body-profile form computes a daily kcal + macro budget
+(Mifflin-St Jeor → activity-adjusted TDEE → goal adjustment, pure
+`lib/nutrition-goals.ts`); the user logs food per meal slot by picking a library
+recipe (per-serving nutrition snapshotted) or via manual quick-entry, and sees
+consumed-vs-remaining as a custom SVG calorie ring + macro bars. Two tables
+(`nutrition_profiles`, `food_log_entries`), `/api/nutrition/*` routes, full
+de/en/nl i18n. Spec: [requirements/19-nutrition-tracking.md](./requirements/19-nutrition-tracking.md).
+Photo-based estimation (Phase 2) and intermittent fasting (Phase 3) are outlined
+in the spec but not built.
+
+### 🔑 Operator checklist (after merge, in addition to Phases 1–3)
+
+7. Supabase SQL editor → run
+   `supabase/migrations/20260615000000_feature19_nutrition_tracking.sql`
+   (until then: `/nutrition` shows the onboarding/empty state, profile GET
+   returns null, and diary writes report 503 — all graceful).
+
 ## Phase 4 — Launch readiness
 
 1. **Google OAuth go-live** — code-complete; follow

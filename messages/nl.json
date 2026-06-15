@@ -25,7 +25,8 @@
     "language": "Taal",
     "mealPlan": "Weekmenu",
     "collections": "Collecties",
-    "assistant": "Assistent"
+    "assistant": "Assistent",
+    "nutrition": "Voeding"
   },
   "RecipeList": {
     "searchPlaceholder": "Zoeken…",
@@ -497,6 +498,82 @@
     "suggestApplying": "Overnemen …",
     "suggestDiscard": "Verwerpen",
     "suggestAppliedToast": "{count} recepten gepland"
+  },
+  "Nutrition": {
+    "title": "Voedingsdagboek",
+    "today": "Vandaag",
+    "prevDay": "Vorige dag",
+    "nextDay": "Volgende dag",
+    "remaining": "over",
+    "over": "te veel",
+    "removeEntry": "Item verwijderen",
+    "decreaseServings": "Minder porties",
+    "increaseServings": "Meer porties",
+    "cancel": "Annuleren",
+    "errorGeneric": "Actie mislukt. Probeer het opnieuw.",
+    "disclaimer": "Schattingen — geen vervanging voor medisch of voedingskundig advies.",
+    "units": {
+      "kcal": "kcal",
+      "gram": "g"
+    },
+    "onboarding": {
+      "title": "Stel je voedingsdoel in",
+      "intro": "Vul een paar gegevens in en we berekenen je dagelijkse calorie- en macrobudget."
+    },
+    "slots": {
+      "fruehstueck": "Ontbijt",
+      "mittag": "Lunch",
+      "abend": "Diner",
+      "snacks": "Snacks"
+    },
+    "goals": {
+      "sex": "Geslacht",
+      "sexOptions": {
+        "male": "Man",
+        "female": "Vrouw",
+        "diverse": "Divers"
+      },
+      "birthDate": "Geboortedatum",
+      "height": "Lengte (cm)",
+      "weight": "Gewicht (kg)",
+      "activity": "Activiteit",
+      "activityOptions": {
+        "sedentary": "Zittend",
+        "light": "Licht actief",
+        "moderate": "Matig actief",
+        "active": "Actief",
+        "very_active": "Zeer actief"
+      },
+      "goal": "Doel",
+      "goalOptions": {
+        "lose": "Afvallen",
+        "maintain": "Behouden",
+        "gain": "Aankomen"
+      },
+      "computedBudget": "Je dagbudget",
+      "protein": "Eiwit",
+      "carbs": "Koolhydraten",
+      "fat": "Vet",
+      "edit": "Doelen bewerken",
+      "save": "Opslaan",
+      "saving": "Bezig met opslaan…",
+      "savedToast": "Doel opgeslagen"
+    },
+    "addFood": {
+      "title": "Voedsel toevoegen",
+      "tabRecipe": "Recept",
+      "tabManual": "Eigen invoer",
+      "noRecipesYet": "Je hebt nog geen recepten.",
+      "searchPlaceholder": "Recept zoeken…",
+      "noRecipesFound": "Geen recepten gevonden.",
+      "noNutrition": "geen voedingswaarden",
+      "namePlaceholder": "Naam van het voedsel",
+      "nameRequired": "Voer een naam in.",
+      "kcalRequired": "Voer de calorieën in.",
+      "kcal": "kcal",
+      "add": "Toevoegen",
+      "adding": "Bezig met toevoegen…"
+    }
   },
   "Admin": {
     "loading": "Laden…",

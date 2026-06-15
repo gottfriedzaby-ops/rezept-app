@@ -25,7 +25,8 @@
     "language": "Language",
     "mealPlan": "Meal plan",
     "collections": "Collections",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "nutrition": "Nutrition"
   },
   "RecipeList": {
     "searchPlaceholder": "Search…",
@@ -497,6 +498,82 @@
     "suggestApplying": "Applying …",
     "suggestDiscard": "Discard",
     "suggestAppliedToast": "{count} recipes planned"
+  },
+  "Nutrition": {
+    "title": "Food diary",
+    "today": "Today",
+    "prevDay": "Previous day",
+    "nextDay": "Next day",
+    "remaining": "left",
+    "over": "over",
+    "removeEntry": "Remove entry",
+    "decreaseServings": "Fewer servings",
+    "increaseServings": "More servings",
+    "cancel": "Cancel",
+    "errorGeneric": "Action failed. Please try again.",
+    "disclaimer": "Estimates — not a substitute for medical or nutritional advice.",
+    "units": {
+      "kcal": "kcal",
+      "gram": "g"
+    },
+    "onboarding": {
+      "title": "Set up your nutrition goal",
+      "intro": "Enter a few details and we'll calculate your daily calorie and macro budget."
+    },
+    "slots": {
+      "fruehstueck": "Breakfast",
+      "mittag": "Lunch",
+      "abend": "Dinner",
+      "snacks": "Snacks"
+    },
+    "goals": {
+      "sex": "Sex",
+      "sexOptions": {
+        "male": "Male",
+        "female": "Female",
+        "diverse": "Diverse"
+      },
+      "birthDate": "Date of birth",
+      "height": "Height (cm)",
+      "weight": "Weight (kg)",
+      "activity": "Activity",
+      "activityOptions": {
+        "sedentary": "Sedentary",
+        "light": "Lightly active",
+        "moderate": "Moderately active",
+        "active": "Active",
+        "very_active": "Very active"
+      },
+      "goal": "Goal",
+      "goalOptions": {
+        "lose": "Lose weight",
+        "maintain": "Maintain",
+        "gain": "Gain weight"
+      },
+      "computedBudget": "Your daily budget",
+      "protein": "Protein",
+      "carbs": "Carbs",
+      "fat": "Fat",
+      "edit": "Edit goals",
+      "save": "Save",
+      "saving": "Saving…",
+      "savedToast": "Goal saved"
+    },
+    "addFood": {
+      "title": "Add food",
+      "tabRecipe": "Recipe",
+      "tabManual": "Custom entry",
+      "noRecipesYet": "You don't have any recipes yet.",
+      "searchPlaceholder": "Search recipe…",
+      "noRecipesFound": "No recipes found.",
+      "noNutrition": "no nutrition",
+      "namePlaceholder": "Food name",
+      "nameRequired": "Please enter a name.",
+      "kcalRequired": "Please enter the calories.",
+      "kcal": "kcal",
+      "add": "Add",
+      "adding": "Adding…"
+    }
   },
   "Admin": {
     "loading": "Loading…",

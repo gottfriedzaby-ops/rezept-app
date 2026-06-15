@@ -53,7 +53,7 @@ export default function UserNav() {
   if (loading || !user) return null;
 
   return (
-    <div className="flex items-center gap-3 text-sm text-ink-tertiary shrink-0">
+    <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2 text-sm text-ink-tertiary">
       <span className="hidden sm:block truncate max-w-[180px]" title={user.email ?? undefined}>
         {user.email}
       </span>

@@ -84,7 +84,7 @@ export default async function NutritionPage({
             >
               {tCommon("allRecipes")}
             </Link>
-            <h1 className="font-serif text-3xl sm:text-4xl font-medium text-ink-primary tracking-[-0.02em]">
+            <h1 className="font-serif text-2xl sm:text-4xl font-medium text-ink-primary tracking-[-0.02em]">
               {t("title")}
             </h1>
           </div>

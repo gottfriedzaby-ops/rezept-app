@@ -115,7 +115,7 @@ hundreds of recipes each.
    (ratings/notes/cooked columns + collections — until then: rating/notes UI
    errors are caught, cooked counter is a no-op, collections report 503)
 
-## Phase 3.5 — Nutrition tracking (Feature 19) ✅ Phase 1
+## Phase 3.5 — Nutrition tracking (Feature 19) ✅ Phase 1 + 2
 
 Yazio-style **food diary + personalized calorie/macro goals**. New `/nutrition`
 daily dashboard: a body-profile form computes a daily kcal + macro budget
@@ -125,8 +125,12 @@ recipe (per-serving nutrition snapshotted) or via manual quick-entry, and sees
 consumed-vs-remaining as a custom SVG calorie ring + macro bars. Two tables
 (`nutrition_profiles`, `food_log_entries`), `/api/nutrition/*` routes, full
 de/en/nl i18n. Spec: [requirements/19-nutrition-tracking.md](./requirements/19-nutrition-tracking.md).
-Photo-based estimation (Phase 2) and intermittent fasting (Phase 3) are outlined
-in the spec but not built.
+**Phase 2 (shipped, no migration):** a "Foto" tab in the add-food dialog sends a
+dish photo to `POST /api/nutrition/estimate-photo` → Claude Vision
+(`estimateNutritionFromPhoto`) estimates kcal/macros → prefills the manual form for
+review → saved with `source='photo'`. Capped at 15/user/day
+(`lib/nutrition-photo-rate-limit.ts`); the photo is not persisted. Intermittent
+fasting (Phase 3) remains outlined in the spec but not built.
 
 ### 🔑 Operator checklist (after merge, in addition to Phases 1–3)
 

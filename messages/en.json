@@ -572,7 +572,13 @@
       "kcalRequired": "Please enter the calories.",
       "kcal": "kcal",
       "add": "Add",
-      "adding": "Adding…"
+      "adding": "Adding…",
+      "tabPhoto": "Photo",
+      "photoHint": "Take or choose a photo of your meal — we'll estimate the nutrition.",
+      "analyzePhoto": "Analyze photo",
+      "analyzing": "Analyzing…",
+      "photoEstimateNote": "Estimated from a photo — please review and adjust.",
+      "photoFailed": "Couldn't analyze the photo."
     }
   },
   "Admin": {

@@ -3,7 +3,7 @@
 |               |                                                                        |
 | ------------- | ---------------------------------------------------------------------- |
 | ID            | 19                                                                     |
-| Status        | ✅ Phase 1 shipped (2026-06-15)                                        |
+| Status        | ✅ Phase 1 + 2 shipped (2026-06-15)                                    |
 | Priority      | High                                                                   |
 | Effort        | L                                                                      |
 | Components    | `app/[locale]/nutrition/`, `app/api/nutrition/`, `components/nutrition/*`, `lib/nutrition-goals.ts`, `types/nutrition.ts` |
@@ -90,14 +90,18 @@ Two new tables (see migration):
 | PATCH | `/api/nutrition/log/[id]` | edit servings/slot/macros |
 | DELETE | `/api/nutrition/log/[id]` | remove entry |
 
-## Phase 2 — Photo nutrition estimation (planned)
+## Phase 2 — Photo nutrition estimation ✅ shipped (2026-06-15)
 
-`POST /api/nutrition/estimate-photo`: validate the upload
-(`lib/image-validation.ts`), call Claude Vision (`claude-sonnet-4-6`) to return
-`{label, kcal_per_serving, protein_g, carbs_g, fat_g}`, logged via `claudeCreate`
-(admin metrics) with a daily rate limit (`lib/nutrition-photo-rate-limit.ts`).
-The result prefills the manual add-food form; entry stored with `source='photo'`
-(already in the CHECK constraint).
+`POST /api/nutrition/estimate-photo` (no migration): validates the upload via
+`lib/image-validation.ts` magic-byte sniffing (+ 10 MB cap, HEIC→JPEG via
+`heic-convert`), then calls Claude Vision (`claude-sonnet-4-6`,
+`estimateNutritionFromPhoto` in `lib/claude.ts`) to return
+`{label, kcal_per_serving, protein_g, carbs_g, fat_g}`. Logged via `claudeCreate`
+(admin metrics) and capped at **15/user/day** (`lib/nutrition-photo-rate-limit.ts`,
+German 429). The photo is **not persisted** — only the estimate is returned. A
+"Foto" tab in `AddFoodDialog` analyses the image, then prefills the manual form for
+review; the confirmed entry is stored with `source='photo'` (already in the CHECK
+constraint). Estimates are clearly labelled as such.
 
 ## Phase 3 — Intermittent fasting (planned)
 

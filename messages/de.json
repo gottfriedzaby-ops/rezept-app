@@ -354,6 +354,13 @@
     "dismiss": "Verstanden",
     "versionShort": "v{version}",
     "releases": {
+      "v1_4_2": {
+        "title": "Sammlungen auf der Startseite",
+        "items": [
+          "Deine Sammlungen erscheinen jetzt direkt auf der Startseite — gleich unter dem Import-Bereich.",
+          "Ein Tipp auf eine Sammlung öffnet sie sofort; „Alle ansehen“ führt zur Verwaltung."
+        ]
+      },
       "v1_4_1": {
         "title": "Ernährungs-Auswertung",
         "items": [
@@ -826,6 +833,7 @@
   },
   "Collections": {
     "title": "Sammlungen",
+    "viewAll": "Alle ansehen",
     "createPlaceholder": "Neue Sammlung …",
     "create": "Anlegen",
     "creating": "Wird angelegt …",

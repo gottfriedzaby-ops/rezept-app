@@ -354,6 +354,13 @@
     "dismiss": "Begrepen",
     "versionShort": "v{version}",
     "releases": {
+      "v1_4_2": {
+        "title": "Collecties op het startscherm",
+        "items": [
+          "Je collecties verschijnen nu direct op het startscherm — vlak onder het importgedeelte.",
+          "Tik op een collectie om deze meteen te openen; “Alle bekijken” brengt je naar het beheer."
+        ]
+      },
       "v1_4_1": {
         "title": "Voedingsoverzicht",
         "items": [
@@ -826,6 +833,7 @@
   },
   "Collections": {
     "title": "Collecties",
+    "viewAll": "Alle bekijken",
     "createPlaceholder": "Nieuwe collectie …",
     "create": "Aanmaken",
     "creating": "Aanmaken …",

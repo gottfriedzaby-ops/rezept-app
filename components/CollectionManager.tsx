@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { CollectionIcon } from "@/lib/collection-icons";
 import type { CollectionWithCount } from "@/types/collection";
 
 interface CollectionManagerProps {
@@ -111,17 +112,7 @@ export default function CollectionManager({ collections }: CollectionManagerProp
             >
               <div className="flex items-start justify-between gap-2 mb-3">
                 <div className="flex items-center justify-center w-10 h-10 rounded-full bg-forest-soft shrink-0">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                    className="w-5 h-5 text-forest"
-                    aria-hidden="true"
-                  >
-                    <path d="M17 17H3a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 3 3h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 17 17z" />
-                  </svg>
+                  <CollectionIcon name={collection.name} className="w-5 h-5 text-forest" />
                 </div>
                 <button
                   type="button"

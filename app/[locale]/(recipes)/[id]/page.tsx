@@ -16,6 +16,8 @@ import PrivacyToggle from "@/components/PrivacyToggle";
 import RecipeRating from "@/components/RecipeRating";
 import RecipeNotes from "@/components/RecipeNotes";
 import CollectionPicker from "@/components/CollectionPicker";
+import RecipeCollectionSuggestion from "@/components/RecipeCollectionSuggestion";
+import { categorizeRecipe } from "@/lib/collection-suggestions";
 import { getTagColor } from "@/lib/tag-colors";
 import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { toSchemaOrgRecipe } from "@/lib/schemaOrg";
@@ -55,6 +57,14 @@ export default async function RecipeDetailPage({
 
   const totalTime = (recipe.prep_time ?? 0) + (recipe.cook_time ?? 0);
   const recipeType: RecipeType = recipe.recipe_type ?? "kochen";
+  const suggestedCollectionKey = isOwner
+    ? categorizeRecipe({
+        id: recipe.id,
+        title: recipe.title,
+        recipe_type: recipeType,
+        tags: recipe.tags ?? [],
+      })[0]
+    : undefined;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -124,9 +134,17 @@ export default async function RecipeDetailPage({
         </div>
 
         {isOwner && (
-          <div className="mb-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-            <RecipeRating recipeId={recipe.id} initialRating={recipe.rating ?? null} />
-            <CollectionPicker recipeId={recipe.id} />
+          <div className="mb-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <RecipeRating recipeId={recipe.id} initialRating={recipe.rating ?? null} />
+              <CollectionPicker recipeId={recipe.id} />
+            </div>
+            {suggestedCollectionKey && (
+              <RecipeCollectionSuggestion
+                recipeId={recipe.id}
+                smartKey={suggestedCollectionKey}
+              />
+            )}
           </div>
         )}
 

@@ -354,6 +354,14 @@
     "dismiss": "Begrepen",
     "versionShort": "v{version}",
     "releases": {
+      "v1_5_0": {
+        "title": "Voorgestelde collecties",
+        "items": [
+          "Nieuw: de app stelt nu automatisch passende collecties voor zoals “Desserts”, “Soepen” of “Dranken” op basis van je recepten — met één tik aangemaakt.",
+          "Met ontworpen iconen voor de belangrijkste categorieën; via “Meer ideeën met AI” vind je extra thema's.",
+          "Jij houdt de controle: collecties kun je altijd hernoemen, aanvullen, verwijderen of verbergen."
+        ]
+      },
       "v1_4_2": {
         "title": "Collecties op het startscherm",
         "items": [
@@ -854,6 +862,39 @@
     "pickerError": "Actie mislukt. Probeer het opnieuw.",
     "pickerClose": "Klaar",
     "loadError": "Collecties konden niet worden geladen."
+  },
+  "CollectionSuggestions": {
+    "sectionTitle": "Voorgestelde collecties",
+    "sectionSubtitle": "Automatisch herkend uit je recepten — met één tik aangemaakt.",
+    "matchCount": "{count, plural, one {# passend recept} other {# passende recepten}}",
+    "apply": "Collectie aanmaken",
+    "applying": "Aanmaken …",
+    "applyError": "Collectie kon niet worden aangemaakt.",
+    "dismissAriaLabel": "Voorstel verbergen",
+    "aiButton": "Meer ideeën met AI",
+    "aiLoading": "AI zoekt passende thema's …",
+    "aiTitle": "AI-voorstellen",
+    "aiEmpty": "De AI heeft geen verdere thema's gevonden.",
+    "aiError": "AI-voorstellen konden niet worden geladen.",
+    "aiBadge": "AI",
+    "afterImportPrompt": "Dit recept past bij “{name}”.",
+    "addToCollection": "Toevoegen",
+    "adding": "Toevoegen …",
+    "added": "Toegevoegd aan “{name}”",
+    "categories": {
+      "drinks": { "name": "Dranken & Cocktails" },
+      "desserts": { "name": "Desserts & Zoet" },
+      "baking": { "name": "Bakken" },
+      "soups": { "name": "Soepen & Stoofschotels" },
+      "salads": { "name": "Salades" },
+      "grilling": { "name": "Grillen & BBQ" },
+      "breakfast": { "name": "Ontbijt" },
+      "pasta": { "name": "Pasta & Noedels" },
+      "meat": { "name": "Vleesgerechten" },
+      "fish": { "name": "Vis & Zeevruchten" },
+      "vegetarian": { "name": "Vegetarisch" },
+      "quick": { "name": "Snel & Makkelijk" }
+    }
   },
   "Assistant": {
     "title": "Kookassistent",

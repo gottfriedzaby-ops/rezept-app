@@ -46,6 +46,7 @@ export type ClaudeFunctionName =
   | "suggestRecipesFromPantry"
   | "suggestWeekPlan"
   | "answerCookingQuestion"
+  | "suggestThematicCollections"
   | "lookupFoodNutrition";
 
 // Functions counted against the assistant's daily rate limit
@@ -54,6 +55,7 @@ export const ASSISTANT_FUNCTION_NAMES: ClaudeFunctionName[] = [
   "suggestRecipesFromPantry",
   "suggestWeekPlan",
   "answerCookingQuestion",
+  "suggestThematicCollections",
 ];
 
 // Counted against the photo-nutrition daily limit (lib/nutrition-photo-rate-limit.ts).

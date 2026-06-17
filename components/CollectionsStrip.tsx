@@ -1,5 +1,6 @@
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
+import { CollectionIcon } from "@/lib/collection-icons";
 import type { CollectionWithCount } from "@/types/collection";
 
 interface CollectionsStripProps {
@@ -35,17 +36,7 @@ export default async function CollectionsStrip({ collections }: CollectionsStrip
             aria-label={`${collection.name} – ${t("recipeCount", { count: collection.recipe_count })}`}
             className="inline-flex items-center gap-2.5 rounded-full border border-stone bg-surface-card px-4 py-2 hover:border-ink-secondary hover:shadow-sm transition-all"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 20 20"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              className="w-4 h-4 text-forest shrink-0"
-              aria-hidden="true"
-            >
-              <path d="M17 17H3a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 3 3h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 17 17z" />
-            </svg>
+            <CollectionIcon name={collection.name} className="w-4 h-4 text-forest shrink-0" />
             <span className="text-sm font-medium text-ink-primary">{collection.name}</span>
             <span className="text-xs text-ink-tertiary tabular-nums">
               {collection.recipe_count}

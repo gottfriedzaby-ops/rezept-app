@@ -354,6 +354,14 @@
     "dismiss": "Verstanden",
     "versionShort": "v{version}",
     "releases": {
+      "v1_5_0": {
+        "title": "Vorgeschlagene Sammlungen",
+        "items": [
+          "Neu: Die App schlägt dir passende Sammlungen wie „Desserts“, „Suppen“ oder „Getränke“ automatisch aus deinen Rezepten vor — mit einem Tippen angelegt.",
+          "Gestaltete Icons für die wichtigsten Kategorien; über „Weitere Ideen mit KI“ findest du zusätzliche Themen.",
+          "Du behältst die Kontrolle: Sammlungen lassen sich jederzeit umbenennen, ergänzen, löschen oder ausblenden."
+        ]
+      },
       "v1_4_2": {
         "title": "Sammlungen auf der Startseite",
         "items": [
@@ -854,6 +862,39 @@
     "pickerError": "Aktion fehlgeschlagen. Bitte erneut versuchen.",
     "pickerClose": "Fertig",
     "loadError": "Sammlungen konnten nicht geladen werden."
+  },
+  "CollectionSuggestions": {
+    "sectionTitle": "Vorgeschlagene Sammlungen",
+    "sectionSubtitle": "Automatisch aus deinen Rezepten erkannt — mit einem Tippen anlegen.",
+    "matchCount": "{count, plural, one {# passendes Rezept} other {# passende Rezepte}}",
+    "apply": "Sammlung erstellen",
+    "applying": "Wird erstellt …",
+    "applyError": "Sammlung konnte nicht erstellt werden.",
+    "dismissAriaLabel": "Vorschlag ausblenden",
+    "aiButton": "Weitere Ideen mit KI",
+    "aiLoading": "KI sucht passende Themen …",
+    "aiTitle": "KI-Vorschläge",
+    "aiEmpty": "Die KI hat keine weiteren Themen gefunden.",
+    "aiError": "KI-Vorschläge konnten nicht geladen werden.",
+    "aiBadge": "KI",
+    "afterImportPrompt": "Dieses Rezept passt zu „{name}“.",
+    "addToCollection": "Hinzufügen",
+    "adding": "Wird hinzugefügt …",
+    "added": "Zu „{name}“ hinzugefügt",
+    "categories": {
+      "drinks": { "name": "Getränke & Cocktails" },
+      "desserts": { "name": "Desserts & Süßes" },
+      "baking": { "name": "Backen" },
+      "soups": { "name": "Suppen & Eintöpfe" },
+      "salads": { "name": "Salate" },
+      "grilling": { "name": "Grillen & BBQ" },
+      "breakfast": { "name": "Frühstück" },
+      "pasta": { "name": "Pasta & Nudeln" },
+      "meat": { "name": "Fleischgerichte" },
+      "fish": { "name": "Fisch & Meeresfrüchte" },
+      "vegetarian": { "name": "Vegetarisch" },
+      "quick": { "name": "Schnelle Küche" }
+    }
   },
   "Assistant": {
     "title": "Koch-Assistent",

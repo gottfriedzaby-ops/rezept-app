@@ -550,6 +550,36 @@
   },
   "Nutrition": {
     "title": "Voedingsdagboek",
+    "tabs": {
+      "diary": "Dagboek",
+      "insights": "Overzicht"
+    },
+    "insights": {
+      "title": "Overzicht",
+      "range": {
+        "week": "Week",
+        "month": "Maand",
+        "sixMonths": "6 maanden"
+      },
+      "metric": {
+        "kcal": "Calorieën",
+        "protein": "Eiwitten",
+        "carbs": "Koolhydraten",
+        "fat": "Vet"
+      },
+      "kpi": {
+        "avgDaily": "Gem. calorieën per dag",
+        "macros": "Gem. macro's per dag",
+        "daysLogged": "Gelogde dagen",
+        "adherence": "{pct}% gelogd"
+      },
+      "avgNote": "Gemiddelde over gelogde dagen",
+      "empty": "Nog geen items in deze periode.",
+      "emptyCta": "Naar dagboek",
+      "insufficient": "Meer gegevens nodig om trends te tonen.",
+      "chartLabel": "{metric} per dag",
+      "loadError": "Overzicht kon niet worden geladen. Probeer het opnieuw."
+    },
     "today": "Vandaag",
     "prevDay": "Vorige dag",
     "nextDay": "Volgende dag",

@@ -30,3 +30,41 @@ jobs:
       # data pages are force-dynamic (see lib/supabase.ts).
       - name: Build
         run: npm run build
+
+  changelog:
+    name: Changelog entry
+    runs-on: ubuntu-latest
+    # PRs only — pushes to master have already passed this gate.
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Enforces the "Changelog / Was ist neu" convention (see CLAUDE.md):
+      # user-facing changes (app/ or components/) must add a release entry in
+      # lib/changelog.ts so the WhatsNewPopup fires. Opt out for pure
+      # bugfixes/refactors via the `skip-changelog` label or `[skip changelog]`
+      # in the PR title.
+      - name: Require a changelog entry for user-facing changes
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          SKIP_LABEL: ${{ contains(github.event.pull_request.labels.*.name, 'skip-changelog') }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          if [ "$SKIP_LABEL" = "true" ] || printf '%s' "$PR_TITLE" | grep -qiF '[skip changelog]'; then
+            echo "Changelog check skipped (opt-out present)."
+            exit 0
+          fi
+          git fetch --no-tags origin "$BASE_REF"
+          CHANGED="$(git diff --name-only "origin/${BASE_REF}...HEAD")"
+          echo "Changed files:"; echo "$CHANGED"
+          if echo "$CHANGED" | grep -qE '^(app|components)/'; then
+            if ! echo "$CHANGED" | grep -qx 'lib/changelog.ts'; then
+              echo "::error::User-facing changes detected (app/ or components/) but lib/changelog.ts was not updated."
+              echo "Add a release entry (see CLAUDE.md -> 'Changelog / Was ist neu'), or opt out with the 'skip-changelog' label or '[skip changelog]' in the PR title for minor fixes."
+              exit 1
+            fi
+          fi
+          echo "Changelog check passed."

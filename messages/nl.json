@@ -354,6 +354,14 @@
     "dismiss": "Begrepen",
     "versionShort": "v{version}",
     "releases": {
+      "v1_4_1": {
+        "title": "Voedingsoverzicht",
+        "items": [
+          "Nieuw: een overzichtsdashboard in het voedingsdagboek met een trendgrafiek voor calorieën en macro's.",
+          "Wissel van periode: week, maand en 6 maanden.",
+          "Kerncijfers in één oogopslag: gem. calorieën & macro's per dag en je gelogde dagen."
+        ]
+      },
       "v1_4_0": {
         "title": "Releaseopmerkingen & verfijning",
         "items": [

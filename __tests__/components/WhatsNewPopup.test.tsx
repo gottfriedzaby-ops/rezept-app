@@ -25,14 +25,14 @@ describe("WhatsNewPopup", () => {
 
     // German messages back the test intl mock.
     expect(
-      await screen.findByText("Sammlungen auf der Startseite")
+      await screen.findByText("Vorgeschlagene Sammlungen")
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Verstanden" }));
 
     expect(localStorage.getItem(LAST_SEEN_VERSION_KEY)).toBe(APP_VERSION);
     expect(
-      screen.queryByText("Sammlungen auf der Startseite")
+      screen.queryByText("Vorgeschlagene Sammlungen")
     ).not.toBeInTheDocument();
   });
 
@@ -48,9 +48,12 @@ describe("WhatsNewPopup", () => {
     localStorage.setItem(LAST_SEEN_VERSION_KEY, "1.1.0");
     render(<WhatsNewPopup />);
 
-    // 1.4.2, 1.4.1, 1.4.0, 1.3.0 and 1.2.0 are all newer than 1.1.0.
+    // 1.5.0, 1.4.2, 1.4.1, 1.4.0, 1.3.0 and 1.2.0 are all newer than 1.1.0.
     expect(
-      await screen.findByText("Sammlungen auf der Startseite")
+      await screen.findByText("Vorgeschlagene Sammlungen")
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Sammlungen auf der Startseite")
     ).toBeInTheDocument();
     expect(
       screen.getByText("Ernährungs-Auswertung")

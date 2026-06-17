@@ -354,6 +354,14 @@
     "dismiss": "Got it",
     "versionShort": "v{version}",
     "releases": {
+      "v1_5_0": {
+        "title": "Suggested collections",
+        "items": [
+          "New: the app now suggests fitting collections like “Desserts”, “Soups” or “Drinks” automatically from your recipes — create them with a single tap.",
+          "Designed icons for the most important categories; tap “More ideas with AI” to discover extra themes.",
+          "You stay in control: collections can be renamed, extended, deleted or hidden anytime."
+        ]
+      },
       "v1_4_2": {
         "title": "Collections on the home screen",
         "items": [
@@ -854,6 +862,39 @@
     "pickerError": "Action failed. Please try again.",
     "pickerClose": "Done",
     "loadError": "Could not load collections."
+  },
+  "CollectionSuggestions": {
+    "sectionTitle": "Suggested collections",
+    "sectionSubtitle": "Detected automatically from your recipes — create one with a single tap.",
+    "matchCount": "{count, plural, one {# matching recipe} other {# matching recipes}}",
+    "apply": "Create collection",
+    "applying": "Creating …",
+    "applyError": "Could not create the collection.",
+    "dismissAriaLabel": "Dismiss suggestion",
+    "aiButton": "More ideas with AI",
+    "aiLoading": "AI is finding themes …",
+    "aiTitle": "AI suggestions",
+    "aiEmpty": "The AI didn't find any further themes.",
+    "aiError": "Could not load AI suggestions.",
+    "aiBadge": "AI",
+    "afterImportPrompt": "This recipe fits “{name}”.",
+    "addToCollection": "Add",
+    "adding": "Adding …",
+    "added": "Added to “{name}”",
+    "categories": {
+      "drinks": { "name": "Drinks & Cocktails" },
+      "desserts": { "name": "Desserts & Sweets" },
+      "baking": { "name": "Baking" },
+      "soups": { "name": "Soups & Stews" },
+      "salads": { "name": "Salads" },
+      "grilling": { "name": "Grilling & BBQ" },
+      "breakfast": { "name": "Breakfast" },
+      "pasta": { "name": "Pasta & Noodles" },
+      "meat": { "name": "Meat Dishes" },
+      "fish": { "name": "Fish & Seafood" },
+      "vegetarian": { "name": "Vegetarian" },
+      "quick": { "name": "Quick & Easy" }
+    }
   },
   "Assistant": {
     "title": "Cooking Assistant",

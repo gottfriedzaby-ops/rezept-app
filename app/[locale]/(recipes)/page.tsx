@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
 import { getCollectionsWithCounts } from "@/lib/collections";
+import { getCollectionSuggestionsForUser } from "@/lib/collection-suggestions-server";
 import {
   getSharedOwnerIds,
   getVisibleTags,
@@ -11,6 +12,7 @@ import {
   searchRecipes,
 } from "@/lib/recipe-search";
 import CollectionsStrip from "@/components/CollectionsStrip";
+import HomeCollectionSuggestion from "@/components/HomeCollectionSuggestion";
 import ImportTabs from "@/components/ImportTabs";
 import RecipeList from "@/components/RecipeList";
 import RecipeListSkeleton from "@/components/RecipeListSkeleton";
@@ -41,7 +43,7 @@ export default async function RecipesPage({
       : searchParams.tag ?? [];
 
   const sharedOwnerIds = await getSharedOwnerIds(user.id);
-  const [result, allTags, collections] = await Promise.all([
+  const [result, allTags, collections, suggestions] = await Promise.all([
     searchRecipes(user.id, sharedOwnerIds, {
       q: searchParams.q,
       tags: activeTags,
@@ -51,6 +53,7 @@ export default async function RecipesPage({
     }),
     getVisibleTags(user.id, sharedOwnerIds),
     getCollectionsWithCounts(user.id),
+    getCollectionSuggestionsForUser(user.id),
   ]);
 
   // Attach owner display names to recipes from shared libraries
@@ -92,6 +95,12 @@ export default async function RecipesPage({
         {collections.length > 0 && (
           <section className="mb-16">
             <CollectionsStrip collections={collections} />
+          </section>
+        )}
+
+        {suggestions.length > 0 && (
+          <section className="mb-16">
+            <HomeCollectionSuggestion suggestion={suggestions[0]} />
           </section>
         )}
 

@@ -2,8 +2,11 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { supabaseAdmin } from "@/lib/supabase";
 import { getCollectionsWithCounts } from "@/lib/collections";
+import { getCollectionSuggestionsForUser } from "@/lib/collection-suggestions-server";
 import CollectionManager from "@/components/CollectionManager";
+import CollectionSuggestions from "@/components/CollectionSuggestions";
 import UserNav from "@/components/UserNav";
 
 export const dynamic = "force-dynamic";
@@ -18,7 +21,15 @@ export default async function CollectionsPage() {
     getTranslations("Common"),
   ]);
 
-  const collections = await getCollectionsWithCounts(user.id);
+  const [collections, suggestions, recipeCount] = await Promise.all([
+    getCollectionsWithCounts(user.id),
+    getCollectionSuggestionsForUser(user.id),
+    supabaseAdmin
+      .from("recipes")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id),
+  ]);
+  const hasRecipes = (recipeCount.count ?? 0) > 0;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -37,6 +48,8 @@ export default async function CollectionsPage() {
           </div>
           <UserNav />
         </header>
+
+        {hasRecipes && <CollectionSuggestions suggestions={suggestions} />}
 
         <CollectionManager collections={collections} />
       </div>

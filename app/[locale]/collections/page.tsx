@@ -2,16 +2,11 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { supabaseAdmin } from "@/lib/supabase";
+import { getCollectionsWithCounts } from "@/lib/collections";
 import CollectionManager from "@/components/CollectionManager";
 import UserNav from "@/components/UserNav";
-import type { Collection, CollectionWithCount } from "@/types/collection";
 
 export const dynamic = "force-dynamic";
-
-type CollectionCountRow = Collection & {
-  collection_recipes: { count: number }[] | null;
-};
 
 export default async function CollectionsPage() {
   const supabase = await createSupabaseServerClient();
@@ -23,29 +18,7 @@ export default async function CollectionsPage() {
     getTranslations("Common"),
   ]);
 
-  const { data, error } = await supabaseAdmin
-    .from("collections")
-    .select("*, collection_recipes(count)")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    if (error.code === "42P01") {
-      // Migration not applied yet — render the empty state instead of crashing.
-      console.warn(
-        "[collections] Tabelle 'collections' fehlt — Migration 20260611000004_feature17_discovery.sql ausführen."
-      );
-    } else {
-      console.error("[collections] query failed:", error.message);
-    }
-  }
-
-  const collections: CollectionWithCount[] = ((data ?? []) as CollectionCountRow[]).map(
-    ({ collection_recipes, ...rest }) => ({
-      ...rest,
-      recipe_count: collection_recipes?.[0]?.count ?? 0,
-    })
-  );
+  const collections = await getCollectionsWithCounts(user.id);
 
   return (
     <div className="min-h-screen bg-surface-primary">

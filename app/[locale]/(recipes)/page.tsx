@@ -3,12 +3,14 @@ import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getProfilesByIds, profileDisplayName } from "@/lib/profiles";
+import { getCollectionsWithCounts } from "@/lib/collections";
 import {
   getSharedOwnerIds,
   getVisibleTags,
   parseSort,
   searchRecipes,
 } from "@/lib/recipe-search";
+import CollectionsStrip from "@/components/CollectionsStrip";
 import ImportTabs from "@/components/ImportTabs";
 import RecipeList from "@/components/RecipeList";
 import RecipeListSkeleton from "@/components/RecipeListSkeleton";
@@ -39,7 +41,7 @@ export default async function RecipesPage({
       : searchParams.tag ?? [];
 
   const sharedOwnerIds = await getSharedOwnerIds(user.id);
-  const [result, allTags] = await Promise.all([
+  const [result, allTags, collections] = await Promise.all([
     searchRecipes(user.id, sharedOwnerIds, {
       q: searchParams.q,
       tags: activeTags,
@@ -48,6 +50,7 @@ export default async function RecipesPage({
       offset: 0,
     }),
     getVisibleTags(user.id, sharedOwnerIds),
+    getCollectionsWithCounts(user.id),
   ]);
 
   // Attach owner display names to recipes from shared libraries
@@ -85,6 +88,12 @@ export default async function RecipesPage({
             <ImportTabs />
           </div>
         </section>
+
+        {collections.length > 0 && (
+          <section className="mb-16">
+            <CollectionsStrip collections={collections} />
+          </section>
+        )}
 
         <section>
           <p className="label-overline mb-8">{t("allRecipesSection")}</p>

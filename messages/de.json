@@ -354,6 +354,14 @@
     "dismiss": "Verstanden",
     "versionShort": "v{version}",
     "releases": {
+      "v1_4_1": {
+        "title": "Ernährungs-Auswertung",
+        "items": [
+          "Neu: Auswertungs-Dashboard im Ernährungstagebuch mit Trend-Graph für Kalorien und Makros.",
+          "Zeiträume umschaltbar: Woche, Monat und 6 Monate.",
+          "Kennzahlen auf einen Blick: Ø Kalorien & Makros pro Tag sowie erfasste Tage."
+        ]
+      },
       "v1_4_0": {
         "title": "Versionshinweise & Feinschliff",
         "items": [

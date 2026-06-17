@@ -68,6 +68,6 @@ describe("getReleasesSince", () => {
 
   it("keeps newest-first ordering for a mid-history version", () => {
     const versions = getReleasesSince("1.1.0").map((r) => r.version);
-    expect(versions).toEqual(["1.4.0", "1.3.0", "1.2.0"]);
+    expect(versions).toEqual(["1.4.1", "1.4.0", "1.3.0", "1.2.0"]);
   });
 });

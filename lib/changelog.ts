@@ -23,6 +23,7 @@ export interface Release {
 
 /** Releases, neueste zuerst. */
 export const RELEASES: Release[] = [
+  { version: "1.4.1", date: "2026-06-17", messageKey: "v1_4_1" },
   { version: "1.4.0", date: "2026-06-15", messageKey: "v1_4_0" },
   { version: "1.3.0", date: "2026-06-08", messageKey: "v1_3_0" },
   { version: "1.2.0", date: "2026-06-01", messageKey: "v1_2_0" },

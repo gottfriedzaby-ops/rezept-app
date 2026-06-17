@@ -105,6 +105,21 @@ npm run test:e2e     # Playwright (hermetisch, Supabase gemockt)
 - Loading-/Error-/Empty-States sind Pflicht (siehe Skills `rezept-conventions`, `frontend-ux`)
 - Migrationen: idempotent, RLS-Policies in derselben Datei, Namensschema `YYYYMMDD000000_name.sql`
 
+## Changelog / „Was ist neu" (Pflicht bei Feature-Updates)
+Jedes nutzersichtbare Feature-Update **muss** den „Was ist neu"-Hinweis auslösen.
+Der `WhatsNewPopup` zeigt ihn automatisch, sobald `APP_VERSION` (= oberstes Release
+in `lib/changelog.ts`) größer ist als die zuletzt gesehene Version des Nutzers.
+Beim Abschluss eines Features daher **immer**:
+1. Neues Release **oben** in `RELEASES` (`lib/changelog.ts`) ergänzen — eindeutige,
+   aufsteigende Semver-Version + ISO-Datum + `messageKey`.
+2. `WhatsNew.releases.<messageKey>` (`title` + `items`-Array) in **alle drei**
+   `messages/*.json` pflegen (de/en/nl).
+3. `package.json` `"version"` an die neue Version angleichen.
+
+**Ausnahmen (kein Eintrag):** reine Bugfixes/Typos/Refactors ohne sichtbare
+Änderung, oder wenn ausdrücklich gewünscht ist, das Update **nicht** dort zu zeigen.
+Im Zweifel: Eintrag hinzufügen.
+
 ## Import-Pipeline
 1. Rohdaten holen (Scraping / Vision / YouTube-Transcript / Instagram / PDF via mupdf)
 2. **Parse-Pass** (Sonnet) → `ParsedRecipe`; **Review-Pass** (Sonnet) prüft + übersetzt — überspringbar bei starkem JSON-LD (`canSkipReviewPass`)

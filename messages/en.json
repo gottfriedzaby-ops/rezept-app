@@ -354,6 +354,14 @@
     "dismiss": "Got it",
     "versionShort": "v{version}",
     "releases": {
+      "v1_4_1": {
+        "title": "Nutrition insights",
+        "items": [
+          "New: an insights dashboard in the food diary with a trend graph for calories and macros.",
+          "Switch ranges: week, month and 6 months.",
+          "Key figures at a glance: average daily calories & macros and your logged days."
+        ]
+      },
       "v1_4_0": {
         "title": "Release notes & polish",
         "items": [

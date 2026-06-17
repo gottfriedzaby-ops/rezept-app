@@ -550,6 +550,36 @@
   },
   "Nutrition": {
     "title": "Ernährungstagebuch",
+    "tabs": {
+      "diary": "Tagebuch",
+      "insights": "Auswertung"
+    },
+    "insights": {
+      "title": "Auswertung",
+      "range": {
+        "week": "Woche",
+        "month": "Monat",
+        "sixMonths": "6 Monate"
+      },
+      "metric": {
+        "kcal": "Kalorien",
+        "protein": "Protein",
+        "carbs": "Kohlenhydrate",
+        "fat": "Fett"
+      },
+      "kpi": {
+        "avgDaily": "Ø Kalorien pro Tag",
+        "macros": "Ø Makros pro Tag",
+        "daysLogged": "Erfasste Tage",
+        "adherence": "{pct}% erfasst"
+      },
+      "avgNote": "Durchschnitt über erfasste Tage",
+      "empty": "Noch keine Einträge in diesem Zeitraum.",
+      "emptyCta": "Zum Tagebuch",
+      "insufficient": "Mehr Daten nötig, um aussagekräftige Trends zu zeigen.",
+      "chartLabel": "{metric} pro Tag",
+      "loadError": "Auswertung konnte nicht geladen werden. Bitte versuche es erneut."
+    },
     "today": "Heute",
     "prevDay": "Vorheriger Tag",
     "nextDay": "Nächster Tag",

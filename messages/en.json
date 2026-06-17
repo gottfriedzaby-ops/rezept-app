@@ -550,6 +550,36 @@
   },
   "Nutrition": {
     "title": "Food diary",
+    "tabs": {
+      "diary": "Diary",
+      "insights": "Insights"
+    },
+    "insights": {
+      "title": "Insights",
+      "range": {
+        "week": "Week",
+        "month": "Month",
+        "sixMonths": "6 months"
+      },
+      "metric": {
+        "kcal": "Calories",
+        "protein": "Protein",
+        "carbs": "Carbs",
+        "fat": "Fat"
+      },
+      "kpi": {
+        "avgDaily": "Avg. calories per day",
+        "macros": "Avg. macros per day",
+        "daysLogged": "Days logged",
+        "adherence": "{pct}% logged"
+      },
+      "avgNote": "Average across logged days",
+      "empty": "No entries in this period yet.",
+      "emptyCta": "Go to diary",
+      "insufficient": "More data needed to show meaningful trends.",
+      "chartLabel": "{metric} per day",
+      "loadError": "Could not load insights. Please try again."
+    },
     "today": "Today",
     "prevDay": "Previous day",
     "nextDay": "Next day",

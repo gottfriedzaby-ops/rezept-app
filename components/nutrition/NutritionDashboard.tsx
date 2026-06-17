@@ -10,6 +10,7 @@ import MacroBars from "@/components/nutrition/MacroBars";
 import FoodLogSection from "@/components/nutrition/FoodLogSection";
 import AddFoodDialog from "@/components/nutrition/AddFoodDialog";
 import NutritionGoalForm from "@/components/nutrition/NutritionGoalForm";
+import NutritionInsights from "@/components/nutrition/NutritionInsights";
 import {
   LOG_MEAL_SLOTS,
   type FoodLogEntry,
@@ -46,6 +47,7 @@ export default function NutritionDashboard({
   const [addSlot, setAddSlot] = useState<LogMealSlot | null>(null);
   const [editingGoals, setEditingGoals] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [view, setView] = useState<"diary" | "insights">("diary");
 
   // ── Onboarding: no profile yet ────────────────────────────────────────────
   if (!profile) {
@@ -139,6 +141,38 @@ export default function NutritionDashboard({
 
   return (
     <div>
+      {/* View toggle: diary vs insights dashboard */}
+      <div className="flex gap-2 mb-8" role="group" aria-label={t("title")}>
+        <button
+          type="button"
+          onClick={() => setView("diary")}
+          aria-pressed={view === "diary"}
+          className={`text-sm px-4 py-2 rounded border transition-colors ${
+            view === "diary"
+              ? "border-forest bg-forest-soft text-forest-deep font-medium"
+              : "border-stone text-ink-secondary hover:bg-surface-hover"
+          }`}
+        >
+          {t("tabs.diary")}
+        </button>
+        <button
+          type="button"
+          onClick={() => setView("insights")}
+          aria-pressed={view === "insights"}
+          className={`text-sm px-4 py-2 rounded border transition-colors ${
+            view === "insights"
+              ? "border-forest bg-forest-soft text-forest-deep font-medium"
+              : "border-stone text-ink-secondary hover:bg-surface-hover"
+          }`}
+        >
+          {t("tabs.insights")}
+        </button>
+      </div>
+
+      {view === "insights" ? (
+        <NutritionInsights onBackToDiary={() => setView("diary")} />
+      ) : (
+        <>
       {/* Date navigation */}
       <div className="flex items-center gap-2 mb-8">
         <Link
@@ -209,6 +243,8 @@ export default function NutritionDashboard({
       </div>
 
       <p className="text-xs text-ink-tertiary mt-6">{t("disclaimer")}</p>
+        </>
+      )}
 
       {addSlot && (
         <AddFoodDialog

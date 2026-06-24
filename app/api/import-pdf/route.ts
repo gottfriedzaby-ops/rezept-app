@@ -142,8 +142,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(respBody, { status });
   } catch (error) {
     if (storageKey && !keepObject) await deletePdf(storageKey);
+    // Never surface raw error messages (e.g. a JSON.parse error) to the user —
+    // the UI is German and these strings are technical. Log the detail server-side.
     console.error("[import-pdf] unhandled error:", error);
-    const message = error instanceof Error ? error.message : "Import fehlgeschlagen";
-    return NextResponse.json({ data: null, error: message }, { status: 500 });
+    return NextResponse.json({ data: null, error: PDF_MSG.importFailed }, { status: 500 });
   }
 }

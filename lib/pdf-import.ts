@@ -24,6 +24,7 @@ export const PDF_MSG = {
   claudeFailed: "Das Rezept konnte nicht extrahiert werden. Bitte versuche es erneut.",
   sessionExpired: "Die Sitzung ist abgelaufen. Bitte lade die PDF erneut hoch.",
   notFound: "Die PDF konnte nicht gefunden werden. Bitte lade sie erneut hoch.",
+  importFailed: "Der Import ist fehlgeschlagen. Bitte versuche es erneut.",
 } as const;
 
 export interface PdfSessionRow {

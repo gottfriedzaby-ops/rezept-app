@@ -340,7 +340,22 @@ export async function reviewAndImproveRecipe(
   const block = message.content[0];
   if (block.type !== "text") throw new Error("Unexpected Claude response type");
 
-  const improved = parseClaudeJson(block.text) as ParsedRecipe;
+  // The review pass is a best-effort improvement/translation step — the parse
+  // pass already produced a complete, German recipe. When Claude's review
+  // response is malformed or truncated (e.g. it runs into max_tokens mid-JSON)
+  // parseClaudeJson can't repair it and throws. Falling back to the un-reviewed
+  // recipe keeps the import working; throwing here would otherwise surface a raw
+  // "Expected property name…" JSON error to the user and fail the whole import.
+  let improved: ParsedRecipe;
+  try {
+    improved = parseClaudeJson(block.text) as ParsedRecipe;
+  } catch (error) {
+    console.warn(
+      "[reviewAndImproveRecipe] unparseable review response, keeping parsed recipe:",
+      error instanceof Error ? error.message : error,
+    );
+    return { recipe, meta };
+  }
   improved.source = recipe.source;
   improved.recipe_type = recipe.recipe_type;
   improved.tags = normalizeTags(improved.tags);

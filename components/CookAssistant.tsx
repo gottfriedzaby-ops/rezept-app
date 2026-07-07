@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 interface CookAssistantProps {
   recipeId: string;
@@ -15,6 +16,7 @@ type Phase = "idle" | "loading" | "done" | "error";
 // context to /api/assistant/cooking-question (Haiku, short German answers).
 export default function CookAssistant({ recipeId, stepIndex, servings }: CookAssistantProps) {
   const t = useTranslations("CookMode");
+  const { track } = useAnalytics();
   const [open, setOpen] = useState(false);
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export default function CookAssistant({ recipeId, stepIndex, servings }: CookAss
       }
       setAnswer(json.data.answer as string);
       setPhase("done");
+      track("assistant_query", { kind: "cooking_question" });
     } catch {
       setError(t("assistantError"));
       setPhase("error");

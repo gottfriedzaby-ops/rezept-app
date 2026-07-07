@@ -6,6 +6,7 @@ import type { Recipe } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { addRecipeItems } from "@/lib/shopping-list";
 import { useToast } from "@/contexts/ToastContext";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 interface AddToShoppingListButtonProps {
   recipe: Recipe;
@@ -15,6 +16,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
   const t = useTranslations("ShoppingList");
   const tCommon = useTranslations("Common");
   const { showToast } = useToast();
+  const { track } = useAnalytics();
   const defaultServings = recipe.servings ?? 1;
   const [modalOpen, setModalOpen] = useState(false);
   const [desiredServings, setDesiredServings] = useState(defaultServings);
@@ -49,6 +51,7 @@ export default function AddToShoppingListButton({ recipe }: AddToShoppingListBut
     );
     setModalOpen(false);
     showToast(t("addedToast", { count }));
+    track("shopping_items_added", { item_count: count, source: "recipe" });
   }
 
   return (

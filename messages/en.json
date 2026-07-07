@@ -346,7 +346,10 @@
     "themeDark": "Dark",
     "about": "About",
     "appVersion": "Version {version}",
-    "viewChangelog": "What's new?"
+    "viewChangelog": "What's new?",
+    "privacy": "Privacy",
+    "analyticsLabel": "Anonymous usage statistics",
+    "analyticsDesc": "Help us improve the app. When enabled, we anonymously record which features are used — for example recipe imports, cook mode or meal planning. We never store personal content: no search terms, recipe titles, notes or ingredients. This data is never shared with third parties and is used solely to improve the app. You can turn this off here at any time."
   },
   "WhatsNew": {
     "eyebrow": "Update",
@@ -354,6 +357,14 @@
     "dismiss": "Got it",
     "versionShort": "v{version}",
     "releases": {
+      "v1_6_0": {
+        "title": "Privacy setting & anonymous statistics",
+        "items": [
+          "New: under Settings → Privacy you can enable or disable anonymous usage statistics at any time.",
+          "We only record which features are used — never personal content like search terms, recipe titles or notes.",
+          "This data helps us improve the app and is never shared with third parties."
+        ]
+      },
       "v1_5_0": {
         "title": "Suggested collections",
         "items": [
@@ -820,7 +831,61 @@
     "inviteConfirmYes": "Yes, remove",
     "inviteRemoveAriaLabel": "Remove invitation",
     "inviteRemove": "Remove",
-    "inviteRegisteredNote": "Note: This person is already registered. Removing this invitation does NOT delete the user account."
+    "inviteRegisteredNote": "Note: This person is already registered. Removing this invitation does NOT delete the user account.",
+    "interactionTitle": "Usage analytics",
+    "interactionSubtitle": "How users interact with the app.",
+    "noEvents": "No events in this period.",
+    "totalEvents": "Total events",
+    "activeUsersEvents": "Active users",
+    "eventsPerUser": "Events per user",
+    "activityOverTime": "Activity over time",
+    "chartMaxLabel": "Maximum: {value}",
+    "funnelsTitle": "Conversion funnels",
+    "funnelImport": "Import funnel",
+    "funnelCook": "Cook funnel",
+    "conversionRate": "Conversion rate",
+    "eventsByName": "Events by type",
+    "eventsByCategory": "Events by category",
+    "topPages": "Most viewed pages",
+    "colPath": "Page",
+    "colViews": "Views",
+    "funnelStep": {
+      "recipe_import_started": "Import started",
+      "recipe_import_review": "Preview reached",
+      "recipe_imported": "Recipe saved",
+      "cook_started": "Cooking started",
+      "cook_completed": "Cooking finished"
+    },
+    "eventName": {
+      "page_view": "Page view",
+      "recipe_import_started": "Import started",
+      "recipe_import_review": "Import preview",
+      "recipe_imported": "Recipe imported",
+      "recipe_import_failed": "Import failed",
+      "recipe_import_duplicate": "Duplicate detected",
+      "recipe_viewed": "Recipe viewed",
+      "recipe_search": "Search",
+      "favorite_toggled": "Favorite toggled",
+      "recipe_rated": "Rating given",
+      "cook_started": "Cooking started",
+      "cook_completed": "Cooking finished",
+      "meal_plan_added": "Added to meal plan",
+      "meal_plan_week_suggested": "Week suggestion created",
+      "meal_plan_suggestions_applied": "Week suggestion applied",
+      "assistant_query": "AI assistant used",
+      "shopping_items_added": "Added to shopping list"
+    },
+    "category": {
+      "navigation": "Navigation",
+      "import": "Import",
+      "recipe": "Recipes",
+      "search": "Search",
+      "engagement": "Engagement",
+      "cooking": "Cooking",
+      "planning": "Meal plan",
+      "assistant": "Assistant",
+      "shopping": "Shopping list"
+    }
   },
   "ShareManager": {
     "title": "Shared links",

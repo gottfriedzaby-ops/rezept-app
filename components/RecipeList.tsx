@@ -7,6 +7,7 @@ import { Link } from "@/i18n/navigation";
 import type { Recipe } from "@/types/recipe";
 import RecipeCover from "@/components/RecipeCover";
 import { getTagColor } from "@/lib/tag-colors";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 type SharedRecipe = Recipe & { _ownerName: string };
 type RecipeEntry = Recipe & { _ownerName?: string };
@@ -41,6 +42,7 @@ export default function RecipeList({
   initialTotal,
 }: Props) {
   const t = useTranslations('RecipeList');
+  const { track } = useAnalytics();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -183,6 +185,7 @@ export default function RecipeList({
 
   async function toggleFavorite(id: string) {
     const next = !favoriteIds.has(id);
+    track("favorite_toggled", { favorited: next, surface: "list" });
     setFavoriteIds((prev) => {
       const s = new Set(prev);
       if (next) s.add(id); else s.delete(id);
@@ -244,6 +247,20 @@ export default function RecipeList({
     }
     return result;
   }, [allRecipes, inputValue, activeTags, showFavoritesOnly, favoriteIds, sort]);
+
+  // Analytics: debounced search event — never the query text, counts only.
+  useEffect(() => {
+    if (inputValue.trim() === "") return;
+    const id = setTimeout(() => {
+      track("recipe_search", {
+        result_count: filtered.length,
+        has_tag_filter: activeTags.size > 0,
+        favorites_only: showFavoritesOnly,
+        sort,
+      });
+    }, 500);
+    return () => clearTimeout(id);
+  }, [inputValue]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Tags shown in the filter bar, ranked: active tags first, then by usage
   // count desc (alphabetical tiebreaker). In client mode counts come from the

@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase";
 import { computeCostUsd } from "@/lib/claude-pricing";
+import { EVENT_CATEGORY } from "@/lib/analytics-events";
 
 export type WindowKey = "24h" | "7d" | "30d" | "all";
 
@@ -505,5 +506,209 @@ export async function fetchAdminUserDetail(
     recipes_by_source_in_window: recipesBySource,
     api_by_function_and_model_in_window: apiByFnModel,
     cost_breakdown_in_window: costBreakdown,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Interaction analytics (Feature 20) — aggregated in Postgres via RPCs over the
+// high-volume `interaction_events` table. Degrades gracefully to an empty
+// object while the migration has not yet been applied.
+// ---------------------------------------------------------------------------
+
+export interface FunnelStep {
+  key: string;
+  count: number;
+}
+export interface FunnelResult {
+  steps: FunnelStep[];
+  conversionPct: number | null;
+}
+
+export interface InteractionMetrics {
+  window: WindowKey;
+  windowStart: string;
+  generatedAt: string;
+  totals: { totalEvents: number; activeUsers: number; eventsPerUser: number };
+  byName: Array<{ name: string; count: number; percentage: number }>;
+  byCategory: Array<{ category: string; count: number; percentage: number }>;
+  topPages: Array<{ path: string; count: number }>;
+  timeSeries: Array<{ date: string; count: number }>; // dense UTC daily buckets, ascending
+  funnels: { import: FunnelResult; cook: FunnelResult };
+}
+
+// Shapes of the RPC result rows (bigint counts may arrive as string → Number()).
+interface EventCountRow {
+  name: string;
+  count: number;
+}
+interface DailyCountRow {
+  day: string;
+  count: number;
+}
+interface TopPageRow {
+  path: string;
+  count: number;
+}
+
+// Funnel definitions — keys mirror the analytics taxonomy; the UI localises them.
+const IMPORT_FUNNEL_KEYS = [
+  "recipe_import_started",
+  "recipe_import_review",
+  "recipe_imported",
+] as const;
+const COOK_FUNNEL_KEYS = ["cook_started", "cook_completed"] as const;
+
+function buildFunnel(
+  keys: readonly string[],
+  countByName: Map<string, number>,
+): FunnelResult {
+  const steps: FunnelStep[] = keys.map((key) => ({
+    key,
+    count: countByName.get(key) ?? 0,
+  }));
+  const first = steps[0]?.count ?? 0;
+  const last = steps[steps.length - 1]?.count ?? 0;
+  return {
+    steps,
+    conversionPct: first > 0 ? (last / first) * 100 : null,
+  };
+}
+
+// A `YYYY-MM-DD` key from a Date in UTC.
+function utcDateKey(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function emptyInteractionMetrics(
+  window: WindowKey,
+  startIso: string,
+): InteractionMetrics {
+  const emptyCounts = new Map<string, number>();
+  return {
+    window,
+    windowStart: startIso,
+    generatedAt: new Date().toISOString(),
+    totals: { totalEvents: 0, activeUsers: 0, eventsPerUser: 0 },
+    byName: [],
+    byCategory: [],
+    topPages: [],
+    timeSeries: [],
+    funnels: {
+      import: buildFunnel(IMPORT_FUNNEL_KEYS, emptyCounts),
+      cook: buildFunnel(COOK_FUNNEL_KEYS, emptyCounts),
+    },
+  };
+}
+
+export async function fetchInteractionMetrics(
+  window: WindowKey,
+): Promise<InteractionMetrics> {
+  const startIso = windowStart(window).toISOString();
+
+  const [countsResp, dailyResp, pagesResp, activeResp] = await Promise.all([
+    supabaseAdmin.rpc("analytics_event_counts", { p_start: startIso }),
+    supabaseAdmin.rpc("analytics_daily_counts", { p_start: startIso }),
+    supabaseAdmin.rpc("analytics_top_pages", { p_start: startIso, p_limit: 10 }),
+    supabaseAdmin.rpc("analytics_active_users", { p_start: startIso }),
+  ]);
+
+  // Graceful degradation: if the analytics schema is not yet present, return an
+  // empty object instead of throwing so the dashboard still renders.
+  const primaryError = countsResp.error;
+  if (primaryError) {
+    const code = primaryError.code;
+    if (
+      code === "42P01" ||
+      code === "PGRST202" ||
+      (primaryError.message ?? "").includes("does not exist")
+    ) {
+      return emptyInteractionMetrics(window, startIso);
+    }
+    throw primaryError;
+  }
+  // Any other RPC failing (schema exists but query broke) is a real 500.
+  if (dailyResp.error) throw dailyResp.error;
+  if (pagesResp.error) throw pagesResp.error;
+  if (activeResp.error) throw activeResp.error;
+
+  // ── Events by name ────────────────────────────────────────────────────────
+  const countRows = (countsResp.data ?? []) as EventCountRow[];
+  const byNameRaw = countRows
+    .map((r) => ({ name: r.name, count: Number(r.count) }))
+    .sort((a, b) => b.count - a.count);
+  const totalEvents = byNameRaw.reduce((sum, r) => sum + r.count, 0);
+  const byName = byNameRaw.map((r) => ({
+    name: r.name,
+    count: r.count,
+    percentage: totalEvents ? (r.count / totalEvents) * 100 : 0,
+  }));
+
+  const countByName = new Map<string, number>();
+  for (const r of byNameRaw) countByName.set(r.name, r.count);
+
+  // ── Events by category (folded from names server-side) ────────────────────
+  const categoryOf = EVENT_CATEGORY as Record<string, string>;
+  const categoryCounts = new Map<string, number>();
+  for (const r of byNameRaw) {
+    const category = categoryOf[r.name] ?? "navigation";
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + r.count);
+  }
+  const byCategory = Array.from(categoryCounts.entries())
+    .map(([category, count]) => ({
+      category,
+      count,
+      percentage: totalEvents ? (count / totalEvents) * 100 : 0,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // ── Active users + events per user ────────────────────────────────────────
+  const activeUsers = Number(activeResp.data ?? 0);
+  const eventsPerUser = activeUsers > 0 ? totalEvents / activeUsers : 0;
+
+  // ── Top pages ─────────────────────────────────────────────────────────────
+  const pageRows = (pagesResp.data ?? []) as TopPageRow[];
+  const topPages = pageRows.map((r) => ({ path: r.path, count: Number(r.count) }));
+
+  // ── Time series — densified daily buckets in UTC, ascending ───────────────
+  const dailyRows = (dailyResp.data ?? []) as DailyCountRow[];
+  const dailyMap = new Map<string, number>();
+  for (const r of dailyRows) {
+    dailyMap.set(r.day.slice(0, 10), Number(r.count));
+  }
+  const todayKey = utcDateKey(new Date());
+  const startKey =
+    window === "all"
+      ? dailyRows.length > 0
+        ? dailyRows[0].day.slice(0, 10)
+        : todayKey
+      : startIso.slice(0, 10);
+
+  const timeSeries: Array<{ date: string; count: number }> = [];
+  const [sy, sm, sd] = startKey.split("-").map(Number);
+  const [ty, tm, td] = todayKey.split("-").map(Number);
+  let cursor = Date.UTC(sy, sm - 1, sd);
+  const endUtc = Date.UTC(ty, tm - 1, td);
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  let guard = 0;
+  while (cursor <= endUtc && guard < 20000) {
+    const key = utcDateKey(new Date(cursor));
+    timeSeries.push({ date: key, count: dailyMap.get(key) ?? 0 });
+    cursor += DAY_MS;
+    guard++;
+  }
+
+  return {
+    window,
+    windowStart: startIso,
+    generatedAt: new Date().toISOString(),
+    totals: { totalEvents, activeUsers, eventsPerUser },
+    byName,
+    byCategory,
+    topPages,
+    timeSeries,
+    funnels: {
+      import: buildFunnel(IMPORT_FUNNEL_KEYS, countByName),
+      cook: buildFunnel(COOK_FUNNEL_KEYS, countByName),
+    },
   };
 }

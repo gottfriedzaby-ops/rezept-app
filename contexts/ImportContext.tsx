@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import type { ParsedRecipe } from "@/types/recipe";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 type Phase = "idle" | "loading" | "review" | "success";
 type ImportType = "url" | "youtube" | "photo" | "instagram" | "pdf";
@@ -38,6 +39,26 @@ export function ImportProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<string | null>(null);
   const [duplicateId, setDuplicateId] = useState<string | null>(null);
   const [duplicateTitle, setDuplicateTitle] = useState<string | null>(null);
+
+  // Analytics: centralise the import-funnel events here (mounted inside the
+  // AnalyticsProvider), firing once per phase transition.
+  const { track } = useAnalytics();
+  const activeTypeRef = useRef(activeType);
+  activeTypeRef.current = activeType;
+  const parseResultRef = useRef(parseResult);
+  parseResultRef.current = parseResult;
+  const prevPhaseRef = useRef<Phase>("idle");
+  useEffect(() => {
+    const prev = prevPhaseRef.current;
+    if (phase === prev) return;
+    prevPhaseRef.current = phase;
+    const source = activeTypeRef.current;
+    if (!source) return;
+    if (phase === "loading") track("recipe_import_started", { source });
+    else if (phase === "review") track("recipe_import_review", { source });
+    else if (phase === "success")
+      track("recipe_imported", { source, recipe_type: parseResultRef.current?.recipe.recipe_type });
+  }, [phase, track]);
 
   function reset() {
     setPhase("idle");

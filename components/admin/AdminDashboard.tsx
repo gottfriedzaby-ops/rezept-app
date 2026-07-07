@@ -7,8 +7,10 @@ import { useTranslations } from "next-intl";
 import type {
   AdminUserRow,
   DashboardMetrics,
+  InteractionMetrics,
   WindowKey,
 } from "@/lib/admin-metrics";
+import InteractionAnalytics from "./InteractionAnalytics";
 
 // Message keys in the "Admin" namespace for each window option.
 const WINDOW_LABELS: Record<WindowKey, string> = {
@@ -45,6 +47,8 @@ export default function AdminDashboard() {
 
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null);
   const [users, setUsers] = useState<AdminUserRow[] | null>(null);
+  const [interactions, setInteractions] = useState<InteractionMetrics | null>(null);
+  const [interactionsError, setInteractionsError] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -61,15 +65,21 @@ export default function AdminDashboard() {
     let cancelled = false;
     setLoading(true);
     setLoadError(null);
+    setInteractionsError(false);
     (async () => {
       try {
-        const [m, u] = await Promise.all([
+        const [m, u, a] = await Promise.all([
           fetch(`/api/admin/metrics?window=${window}`, { cache: "no-store" }).then(
             (r) => r.json(),
           ),
           fetch(`/api/admin/users?window=${window}`, { cache: "no-store" }).then(
             (r) => r.json(),
           ),
+          // Isolated: a failure here must not break the metrics/users load, so
+          // it resolves to null instead of rejecting the Promise.all.
+          fetch(`/api/admin/analytics?window=${window}`, { cache: "no-store" })
+            .then((r) => r.json())
+            .catch(() => null),
         ]);
         if (cancelled) return;
         if (m?.error || !m?.data) {
@@ -81,6 +91,11 @@ export default function AdminDashboard() {
           setLoadError((prev) => prev ?? u?.error ?? null);
         } else {
           setUsers(u.data);
+        }
+        if (a?.error || !a?.data) {
+          setInteractionsError(true);
+        } else {
+          setInteractions(a.data);
         }
       } catch (err) {
         if (cancelled) return;
@@ -390,6 +405,17 @@ export default function AdminDashboard() {
         </>
       )}
 
+      {/* Section 5 — Interaction analytics (loaded independently) */}
+      {interactionsError && (
+        <div
+          role="alert"
+          className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700"
+        >
+          {t("loadErrorData")}
+        </div>
+      )}
+      {interactions && <InteractionAnalytics data={interactions} />}
+
       {/* User table */}
       <section>
         <h3 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-3">
@@ -482,7 +508,7 @@ export default function AdminDashboard() {
   );
 }
 
-function Stat({
+export function Stat({
   label,
   value,
   subtle,

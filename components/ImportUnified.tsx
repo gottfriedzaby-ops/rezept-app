@@ -8,6 +8,7 @@ import type { ParsedRecipe } from "@/types/recipe";
 import RecipeReviewForm from "@/components/RecipeReviewForm";
 import ImportProgress from "@/components/ImportProgress";
 import { useImport } from "@/contexts/ImportContext";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 // PDF import pulls in pdf.js (~1 MB) for client-side thumbnails — load it only
 // once a PDF is actually selected, never on the URL/photo path.
@@ -87,6 +88,7 @@ async function compressImage(file: File, canvasError: string, compressionError: 
 
 export default function ImportUnified() {
   const t = useTranslations("Import");
+  const { track } = useAnalytics();
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -225,10 +227,12 @@ export default function ImportUnified() {
       }
 
       if (json.error === "duplicate" && json.existingRecipeId) {
+        track("recipe_import_duplicate", { source: inputType });
         setDuplicateId(json.existingRecipeId);
         setDuplicateTitle(json.existingTitle ?? null);
         setPhase("idle");
       } else if (json.error || !json.data) {
+        track("recipe_import_failed", { source: inputType, stage: "parse" });
         setError(json.error ?? t("importError"));
         setPhase("idle");
       } else {
@@ -260,6 +264,7 @@ export default function ImportUnified() {
       const json = (await res.json()) as ImportApiResponse;
 
       if (json.error === "duplicate" && json.existingRecipeId) {
+        if (activeType) track("recipe_import_duplicate", { source: activeType });
         setDuplicateId(json.existingRecipeId);
         setDuplicateTitle(json.existingTitle ?? null);
         setPhase("idle");

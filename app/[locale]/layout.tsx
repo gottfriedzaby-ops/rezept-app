@@ -6,6 +6,7 @@ import { getMessages } from 'next-intl/server';
 import { routing } from '@/i18n/routing';
 import { ImportProvider } from "@/contexts/ImportContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { AnalyticsProvider } from "@/contexts/AnalyticsContext";
 import { ToastProvider } from "@/contexts/ToastContext";
 import ImportStatusPill from "@/components/ImportStatusPill";
 import WhatsNewPopup from "@/components/WhatsNewPopup";
@@ -73,13 +74,15 @@ export default async function LocaleLayout({
       <body className="font-sans antialiased bg-surface-primary text-ink-primary">
         <NextIntlClientProvider messages={messages}>
           <AuthProvider>
-            <ToastProvider>
-              <ImportProvider>
-                {children}
-                <ImportStatusPill />
-                <WhatsNewPopup />
-              </ImportProvider>
-            </ToastProvider>
+            <AnalyticsProvider>
+              <ToastProvider>
+                <ImportProvider>
+                  {children}
+                  <ImportStatusPill />
+                  <WhatsNewPopup />
+                </ImportProvider>
+              </ToastProvider>
+            </AnalyticsProvider>
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

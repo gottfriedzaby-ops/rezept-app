@@ -346,7 +346,10 @@
     "themeDark": "Dunkel",
     "about": "Über die App",
     "appVersion": "Version {version}",
-    "viewChangelog": "Was ist neu?"
+    "viewChangelog": "Was ist neu?",
+    "privacy": "Datenschutz",
+    "analyticsLabel": "Anonyme Nutzungsstatistiken",
+    "analyticsDesc": "Hilf uns, die App zu verbessern. Wenn aktiviert, erfassen wir anonym, welche Funktionen genutzt werden – zum Beispiel Rezept-Importe, Kochmodus oder Wochenplanung. Wir speichern keine persönlichen Inhalte: keine Suchbegriffe, Rezepttitel, Notizen oder Zutaten. Die Daten werden nicht an Dritte weitergegeben und dienen ausschließlich der Verbesserung der App. Du kannst dies jederzeit hier deaktivieren."
   },
   "WhatsNew": {
     "eyebrow": "Update",
@@ -354,6 +357,14 @@
     "dismiss": "Verstanden",
     "versionShort": "v{version}",
     "releases": {
+      "v1_6_0": {
+        "title": "Datenschutz-Einstellung & anonyme Statistiken",
+        "items": [
+          "Neu: In den Einstellungen unter „Datenschutz“ kannst du anonyme Nutzungsstatistiken jederzeit aktivieren oder deaktivieren.",
+          "Wir erfassen nur, welche Funktionen genutzt werden – niemals persönliche Inhalte wie Suchbegriffe, Rezepttitel oder Notizen.",
+          "Die Daten helfen uns, die App gezielt zu verbessern, und werden nicht an Dritte weitergegeben."
+        ]
+      },
       "v1_5_0": {
         "title": "Vorgeschlagene Sammlungen",
         "items": [
@@ -820,7 +831,61 @@
     "inviteConfirmYes": "Ja, entfernen",
     "inviteRemoveAriaLabel": "Einladung entfernen",
     "inviteRemove": "Entfernen",
-    "inviteRegisteredNote": "Hinweis: Die Person ist bereits registriert. Das Entfernen dieser Einladung löscht das Nutzerkonto NICHT."
+    "inviteRegisteredNote": "Hinweis: Die Person ist bereits registriert. Das Entfernen dieser Einladung löscht das Nutzerkonto NICHT.",
+    "interactionTitle": "Nutzungsanalyse",
+    "interactionSubtitle": "Wie Nutzer mit der App interagieren.",
+    "noEvents": "Keine Ereignisse im Zeitraum.",
+    "totalEvents": "Ereignisse gesamt",
+    "activeUsersEvents": "Aktive Nutzer",
+    "eventsPerUser": "Ereignisse pro Nutzer",
+    "activityOverTime": "Aktivität im Zeitverlauf",
+    "chartMaxLabel": "Maximum: {value}",
+    "funnelsTitle": "Conversion-Trichter",
+    "funnelImport": "Import-Trichter",
+    "funnelCook": "Koch-Trichter",
+    "conversionRate": "Abschlussrate",
+    "eventsByName": "Ereignisse nach Typ",
+    "eventsByCategory": "Ereignisse nach Kategorie",
+    "topPages": "Meistbesuchte Seiten",
+    "colPath": "Seite",
+    "colViews": "Aufrufe",
+    "funnelStep": {
+      "recipe_import_started": "Import gestartet",
+      "recipe_import_review": "Vorschau erreicht",
+      "recipe_imported": "Rezept gespeichert",
+      "cook_started": "Kochen gestartet",
+      "cook_completed": "Kochen abgeschlossen"
+    },
+    "eventName": {
+      "page_view": "Seitenaufruf",
+      "recipe_import_started": "Import gestartet",
+      "recipe_import_review": "Import-Vorschau",
+      "recipe_imported": "Rezept importiert",
+      "recipe_import_failed": "Import fehlgeschlagen",
+      "recipe_import_duplicate": "Duplikat erkannt",
+      "recipe_viewed": "Rezept angesehen",
+      "recipe_search": "Suche",
+      "favorite_toggled": "Favorit geändert",
+      "recipe_rated": "Bewertung abgegeben",
+      "cook_started": "Kochen gestartet",
+      "cook_completed": "Kochen abgeschlossen",
+      "meal_plan_added": "Zum Wochenplan hinzugefügt",
+      "meal_plan_week_suggested": "Wochenvorschlag erstellt",
+      "meal_plan_suggestions_applied": "Wochenvorschlag übernommen",
+      "assistant_query": "KI-Assistent genutzt",
+      "shopping_items_added": "Zur Einkaufsliste hinzugefügt"
+    },
+    "category": {
+      "navigation": "Navigation",
+      "import": "Import",
+      "recipe": "Rezepte",
+      "search": "Suche",
+      "engagement": "Interaktion",
+      "cooking": "Kochen",
+      "planning": "Wochenplan",
+      "assistant": "Assistent",
+      "shopping": "Einkaufsliste"
+    }
   },
   "ShareManager": {
     "title": "Geteilte Links",

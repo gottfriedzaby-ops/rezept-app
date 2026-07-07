@@ -100,6 +100,7 @@ describe("GET /api/settings", () => {
     expect(insertChain.insert).toHaveBeenCalledWith({
       user_id: USER_ID,
       show_shared_in_main_library: true,
+      analytics_enabled: true,
     });
   });
 
@@ -196,6 +197,27 @@ describe("PATCH /api/settings", () => {
     expect(body.data).toEqual(updated);
     expect(upsertChain.upsert).toHaveBeenCalledWith(
       { user_id: USER_ID, show_shared_in_main_library: false },
+      { onConflict: "user_id" }
+    );
+  });
+
+  it("upserts the analytics consent flag", async () => {
+    setAuthenticated();
+    const updated = { user_id: USER_ID, analytics_enabled: false };
+    const upsertChain = {
+      upsert: jest.fn().mockReturnThis(),
+      select: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: updated, error: null }),
+    };
+    fromMock.mockReturnValueOnce(upsertChain);
+
+    const res = await PATCH(makePatchRequest({ analytics_enabled: false }));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(body.data).toEqual(updated);
+    expect(upsertChain.upsert).toHaveBeenCalledWith(
+      { user_id: USER_ID, analytics_enabled: false },
       { onConflict: "user_id" }
     );
   });

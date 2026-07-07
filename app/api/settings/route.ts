@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase";
+import { ANALYTICS_DEFAULT_ENABLED } from "@/lib/analytics-events";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,11 @@ export async function GET() {
 
   const { data: created, error: insertError } = await supabaseAdmin
     .from("user_settings")
-    .insert({ user_id: user.id, show_shared_in_main_library: true })
+    .insert({
+      user_id: user.id,
+      show_shared_in_main_library: true,
+      analytics_enabled: ANALYTICS_DEFAULT_ENABLED,
+    })
     .select()
     .single();
 
@@ -69,6 +74,10 @@ export async function PATCH(request: NextRequest) {
 
   if (typeof body.show_shared_in_main_library === "boolean") {
     update.show_shared_in_main_library = body.show_shared_in_main_library;
+  }
+
+  if (typeof body.analytics_enabled === "boolean") {
+    update.analytics_enabled = body.analytics_enabled;
   }
 
   if (Object.keys(update).length === 0) {

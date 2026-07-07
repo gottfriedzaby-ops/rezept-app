@@ -7,6 +7,7 @@ import { recipeTypeBadgeFor } from "@/lib/recipeTypeLabels";
 import { addRecipeItems, notifyListChanged } from "@/lib/shopping-list";
 import { useToast } from "@/contexts/ToastContext";
 import { getTagColor } from "@/lib/tag-colors";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 import type { RecipeType } from "@/types/recipe";
 
 interface SuggestionRecipe {
@@ -31,6 +32,7 @@ export default function AssistantSuggest() {
   const t = useTranslations("Assistant");
   const tList = useTranslations("RecipeList");
   const { showToast } = useToast();
+  const { track } = useAnalytics();
 
   const [pantry, setPantry] = useState("");
   const [phase, setPhase] = useState<Phase>("idle");
@@ -54,8 +56,15 @@ export default function AssistantSuggest() {
         setPhase("error");
         return;
       }
-      setSuggestions(json.data.suggestions as Suggestion[]);
+      const list = json.data.suggestions as Suggestion[];
+      setSuggestions(list);
       setPhase("done");
+      const bucket = text.length < 20 ? "<20" : text.length <= 60 ? "20-60" : ">60";
+      track("assistant_query", {
+        kind: "pantry",
+        result_count: list.length,
+        pantry_length_bucket: bucket,
+      });
     } catch {
       setError(t("errorGeneric"));
       setPhase("error");

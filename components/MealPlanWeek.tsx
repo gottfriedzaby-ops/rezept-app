@@ -6,6 +6,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { addDays, getWeekDates, getWeekStart } from "@/lib/meal-plan";
 import { addRecipeItems, notifyListChanged } from "@/lib/shopping-list";
 import { useToast } from "@/contexts/ToastContext";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 import MealPlanRecipePicker from "@/components/MealPlanRecipePicker";
 import {
   MEAL_SLOTS,
@@ -50,6 +51,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
   const format = useFormatter();
   const router = useRouter();
   const { showToast } = useToast();
+  const { track } = useAnalytics();
 
   const [pickerTarget, setPickerTarget] = useState<PickerTarget | null>(null);
   const [busy, setBusy] = useState(false);
@@ -108,6 +110,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
         showToast(json.error ?? t("errorGeneric"));
         return;
       }
+      track("meal_plan_added", { meal_slot: pickerTarget.slot, source: "manual" });
       setPickerTarget(null);
       router.refresh();
     } catch {
@@ -171,7 +174,9 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
         showToast(json?.error ?? t("errorGeneric"));
         return;
       }
-      setSuggestions(json.data.suggestions as WeekSuggestion[]);
+      const list = json.data.suggestions as WeekSuggestion[];
+      setSuggestions(list);
+      track("meal_plan_week_suggested", { suggestion_count: list.length });
     } catch {
       showToast(t("errorGeneric"));
     } finally {
@@ -196,6 +201,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
         });
         if (res.ok) appliedCount++;
       }
+      track("meal_plan_suggestions_applied", { applied_count: appliedCount });
       setSuggestions(null);
       router.refresh();
       if (appliedCount > 0) {
@@ -220,6 +226,7 @@ export default function MealPlanWeek({ weekStart, entries, recipes }: MealPlanWe
     if (total > 0) {
       notifyListChanged();
       showToast(tShopping("addedToast", { count: total }));
+      track("shopping_items_added", { item_count: total, source: "week" });
     }
   }
 

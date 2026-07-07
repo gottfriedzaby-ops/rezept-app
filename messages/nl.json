@@ -346,7 +346,10 @@
     "themeDark": "Donker",
     "about": "Over de app",
     "appVersion": "Versie {version}",
-    "viewChangelog": "Wat is er nieuw?"
+    "viewChangelog": "Wat is er nieuw?",
+    "privacy": "Privacy",
+    "analyticsLabel": "Anonieme gebruiksstatistieken",
+    "analyticsDesc": "Help ons de app te verbeteren. Indien ingeschakeld registreren we anoniem welke functies worden gebruikt — bijvoorbeeld recept-imports, kookmodus of weekplanning. We slaan geen persoonlijke inhoud op: geen zoektermen, recepttitels, notities of ingrediënten. Deze gegevens worden nooit met derden gedeeld en dienen uitsluitend om de app te verbeteren. Je kunt dit hier op elk moment uitschakelen."
   },
   "WhatsNew": {
     "eyebrow": "Update",
@@ -354,6 +357,14 @@
     "dismiss": "Begrepen",
     "versionShort": "v{version}",
     "releases": {
+      "v1_6_0": {
+        "title": "Privacy-instelling & anonieme statistieken",
+        "items": [
+          "Nieuw: onder Instellingen → Privacy kun je anonieme gebruiksstatistieken op elk moment in- of uitschakelen.",
+          "We registreren alleen welke functies worden gebruikt — nooit persoonlijke inhoud zoals zoektermen, recepttitels of notities.",
+          "Deze gegevens helpen ons de app te verbeteren en worden nooit met derden gedeeld."
+        ]
+      },
       "v1_5_0": {
         "title": "Voorgestelde collecties",
         "items": [
@@ -820,7 +831,61 @@
     "inviteConfirmYes": "Ja, verwijderen",
     "inviteRemoveAriaLabel": "Uitnodiging verwijderen",
     "inviteRemove": "Verwijderen",
-    "inviteRegisteredNote": "Let op: deze persoon is al geregistreerd. Het verwijderen van deze uitnodiging verwijdert het gebruikersaccount NIET."
+    "inviteRegisteredNote": "Let op: deze persoon is al geregistreerd. Het verwijderen van deze uitnodiging verwijdert het gebruikersaccount NIET.",
+    "interactionTitle": "Gebruiksanalyse",
+    "interactionSubtitle": "Hoe gebruikers met de app omgaan.",
+    "noEvents": "Geen gebeurtenissen in deze periode.",
+    "totalEvents": "Totaal aantal gebeurtenissen",
+    "activeUsersEvents": "Actieve gebruikers",
+    "eventsPerUser": "Gebeurtenissen per gebruiker",
+    "activityOverTime": "Activiteit in de tijd",
+    "chartMaxLabel": "Maximum: {value}",
+    "funnelsTitle": "Conversietrechters",
+    "funnelImport": "Import-trechter",
+    "funnelCook": "Kook-trechter",
+    "conversionRate": "Conversiepercentage",
+    "eventsByName": "Gebeurtenissen per type",
+    "eventsByCategory": "Gebeurtenissen per categorie",
+    "topPages": "Meest bekeken pagina's",
+    "colPath": "Pagina",
+    "colViews": "Weergaven",
+    "funnelStep": {
+      "recipe_import_started": "Import gestart",
+      "recipe_import_review": "Voorbeeld bereikt",
+      "recipe_imported": "Recept opgeslagen",
+      "cook_started": "Koken gestart",
+      "cook_completed": "Koken voltooid"
+    },
+    "eventName": {
+      "page_view": "Paginaweergave",
+      "recipe_import_started": "Import gestart",
+      "recipe_import_review": "Import-voorbeeld",
+      "recipe_imported": "Recept geïmporteerd",
+      "recipe_import_failed": "Import mislukt",
+      "recipe_import_duplicate": "Duplicaat gedetecteerd",
+      "recipe_viewed": "Recept bekeken",
+      "recipe_search": "Zoeken",
+      "favorite_toggled": "Favoriet gewijzigd",
+      "recipe_rated": "Beoordeling gegeven",
+      "cook_started": "Koken gestart",
+      "cook_completed": "Koken voltooid",
+      "meal_plan_added": "Toegevoegd aan weekplan",
+      "meal_plan_week_suggested": "Weekvoorstel gemaakt",
+      "meal_plan_suggestions_applied": "Weekvoorstel toegepast",
+      "assistant_query": "AI-assistent gebruikt",
+      "shopping_items_added": "Toegevoegd aan boodschappenlijst"
+    },
+    "category": {
+      "navigation": "Navigatie",
+      "import": "Import",
+      "recipe": "Recepten",
+      "search": "Zoeken",
+      "engagement": "Interactie",
+      "cooking": "Koken",
+      "planning": "Weekplan",
+      "assistant": "Assistent",
+      "shopping": "Boodschappenlijst"
+    }
   },
   "ShareManager": {
     "title": "Gedeelde links",

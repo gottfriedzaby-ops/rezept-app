@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import { useTranslations } from "next-intl";
+
+interface Props {
+  initialValue: boolean;
+}
+
+export default function AnalyticsToggle({ initialValue }: Props) {
+  const t = useTranslations("Settings");
+  const [enabled, setEnabled] = useState(initialValue);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleToggle() {
+    const next = !enabled;
+    setEnabled(next);
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analytics_enabled: next }),
+      });
+      if (!res.ok) {
+        setEnabled(!next);
+        setError(t("settingsSaveError"));
+        return;
+      }
+      // Let the AnalyticsProvider honour the change live (no reload needed).
+      window.dispatchEvent(
+        new CustomEvent("analytics:consent-changed", { detail: { enabled: next } }),
+      );
+    } catch {
+      setEnabled(!next);
+      setError(t("settingsSaveError"));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border-secondary bg-surface-primary p-5">
+      <div className="flex items-start gap-4">
+        <button
+          type="button"
+          role="switch"
+          aria-checked={enabled}
+          aria-label={t("analyticsLabel")}
+          onClick={handleToggle}
+          disabled={saving}
+          className={[
+            "relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-forest disabled:opacity-50 shrink-0 mt-0.5",
+            enabled ? "bg-forest" : "bg-stone-300",
+          ].join(" ")}
+        >
+          <span
+            className={[
+              "inline-block h-3.5 w-3.5 rounded-full bg-surface-card shadow transition-transform",
+              enabled ? "translate-x-4.5" : "translate-x-0.5",
+            ].join(" ")}
+          />
+        </button>
+        <div>
+          <p className="text-sm font-medium text-ink-primary">{t("analyticsLabel")}</p>
+          <p className="text-xs text-ink-tertiary mt-1 leading-relaxed">
+            {t("analyticsDesc")}
+          </p>
+          {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+        </div>
+      </div>
+    </div>
+  );
+}

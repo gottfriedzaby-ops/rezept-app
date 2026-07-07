@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 interface RecipeRatingProps {
   recipeId: string;
@@ -11,6 +12,7 @@ interface RecipeRatingProps {
 // Owner-only star rating (1–5). Clicking the current rating clears it.
 export default function RecipeRating({ recipeId, initialRating }: RecipeRatingProps) {
   const t = useTranslations("RecipeDetail");
+  const { track } = useAnalytics();
   const [rating, setRating] = useState<number | null>(initialRating);
   const [saving, setSaving] = useState(false);
 
@@ -18,6 +20,7 @@ export default function RecipeRating({ recipeId, initialRating }: RecipeRatingPr
     if (saving) return;
     const next = value === rating ? null : value;
     const previous = rating;
+    track("recipe_rated", { rating: next });
     setRating(next);
     setSaving(true);
     try {

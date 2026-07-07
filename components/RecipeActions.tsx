@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl';
 import { useRouter, Link } from "@/i18n/navigation";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { useToast } from "@/contexts/ToastContext";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 interface Props {
   recipeId: string;
@@ -16,6 +17,7 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
   const t = useTranslations('RecipeActions');
   const router = useRouter();
   const { showToast } = useToast();
+  const { track } = useAnalytics();
   const [isFavorite, setIsFavorite] = useState(initialFavorite);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -24,6 +26,7 @@ export default function RecipeActions({ recipeId, initialFavorite, readOnly = fa
 
   async function toggleFavorite() {
     const next = !isFavorite;
+    track("favorite_toggled", { favorited: next, surface: "detail" });
     setIsFavorite(next);
     try {
       const res = await fetch(`/api/recipes/${recipeId}`, {

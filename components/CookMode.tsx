@@ -7,6 +7,7 @@ import type { Recipe, Step, Ingredient } from "@/types/recipe";
 import { getRecipeSections } from "@/types/recipe";
 import { formatScaledAmount as formatAmount, resolveStepText } from "@/lib/stepText";
 import CookAssistant from "@/components/CookAssistant";
+import { useAnalytics } from "@/contexts/AnalyticsContext";
 
 function formatTime(s: number): string {
   const m = Math.floor(s / 60);
@@ -93,6 +94,7 @@ interface Props {
 
 export default function CookMode({ recipe, initialServings }: Props) {
   const t = useTranslations("CookMode");
+  const { track } = useAnalytics();
   const sections = useMemo(() => getRecipeSections(recipe), [recipe]);
   const multiSection = sections.length > 1 || sections[0]?.title !== null;
 
@@ -126,6 +128,18 @@ export default function CookMode({ recipe, initialServings }: Props) {
       else next.add(globalIdx);
       return next;
     });
+  }, []);
+
+  // Analytics: one cook_started per mount.
+  useEffect(() => {
+    track("cook_started", {
+      recipe_id: recipe.id,
+      recipe_type: recipe.recipe_type,
+      step_count: cookSteps.length,
+      has_timer: cookSteps.some((cs) => cs.step.timerSeconds !== null),
+      servings: initialServings,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reset scroll on every step change (instant, not smooth)
@@ -479,6 +493,11 @@ export default function CookMode({ recipe, initialServings }: Props) {
           <Link
             href={`/${recipe.id}`}
             onClick={() => {
+              track("cook_completed", {
+                recipe_id: recipe.id,
+                recipe_type: recipe.recipe_type,
+                step_count: cookSteps.length,
+              });
               // Discovery: bump the cooked counter. Fire-and-forget — fails
               // silently for shared recipes (owner-scoped) or offline.
               void fetch(`/api/recipes/${recipe.id}/cooked`, { method: "POST" }).catch(() => {});

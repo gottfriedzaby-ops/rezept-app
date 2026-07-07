@@ -6,6 +6,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Recipe } from "@/types/recipe";
 import RecipeDetail from "@/components/RecipeDetail";
 import OfflineRecipeCacher from "@/components/OfflineRecipeCacher";
+import RecipeViewTracker from "@/components/RecipeViewTracker";
 import AddToShoppingListButton from "@/components/AddToShoppingListButton";
 import RecipeCover from "@/components/RecipeCover";
 import RecipeActions from "@/components/RecipeActions";
@@ -74,6 +75,13 @@ export default async function RecipeDetailPage({
       />
       {/* Persist this recipe to IndexedDB for offline viewing */}
       <OfflineRecipeCacher recipe={recipe} />
+      {/* Analytics: recipe_viewed (owner detail) */}
+      <RecipeViewTracker
+        recipeId={recipe.id}
+        sourceType={recipe.source_type}
+        recipeType={recipe.recipe_type}
+        isOwner={isOwner}
+      />
       {/* Hero cover — full width */}
       <RecipeCover
         imageUrl={recipe.image_url}

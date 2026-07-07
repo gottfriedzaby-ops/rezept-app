@@ -11,6 +11,7 @@ import LibraryShareManager from "@/components/LibraryShareManager";
 import IncomingSharesManager from "@/components/IncomingSharesManager";
 import NotificationsToggle from "@/components/NotificationsToggle";
 import TagMergeToggle from "@/components/TagMergeToggle";
+import AnalyticsToggle from "@/components/AnalyticsToggle";
 import InvitedEmailsManager, {
   type InvitedEmail,
 } from "@/components/admin/InvitedEmailsManager";
@@ -105,6 +106,7 @@ export default async function SettingsPage() {
     : { data: [] };
 
   const showSharedDefault = userSettings?.show_shared_in_main_library ?? true;
+  const analyticsEnabledDefault = userSettings?.analytics_enabled ?? true;
 
   return (
     <div className="min-h-screen bg-surface-primary">
@@ -194,6 +196,14 @@ export default async function SettingsPage() {
             {t('notifications')}
           </h2>
           <NotificationsToggle />
+        </section>
+
+        {/* Privacy / analytics consent */}
+        <section className="mb-10">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-tertiary mb-4">
+            {t('privacy')}
+          </h2>
+          <AnalyticsToggle initialValue={analyticsEnabledDefault} />
         </section>
 
         {/* Share links */}
